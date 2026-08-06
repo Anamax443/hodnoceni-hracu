@@ -170,7 +170,16 @@ export default {
                 return json({ status: 'ok', module: MODUL, timestamp: new Date().toISOString() });
             }
             if (cesta === '/api/version') {
-                return soubor(env, url, '/version.json');
+                // Bez no-store by se odpověď držela na edge a po nasazení
+                // by lišta ještě chvíli ukazovala předchozí commit.
+                const v = await soubor(env, url, '/version.json');
+                return new Response(v.body, {
+                    status: v.status,
+                    headers: {
+                        'content-type': 'application/json; charset=utf-8',
+                        'cache-control': 'no-store'
+                    }
+                });
             }
 
             /* ---------- stránka sebehodnocení ----------
