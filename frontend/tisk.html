@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hodnocení hráčů – tiskové listy</title>
+<link rel="stylesheet" href="src/styl.css">
+</head>
+<body>
+
+<div class="toolbar noprint">
+    <span class="stav" id="stav">Načítám…</span>
+    <button onclick="window.print()" title="Otevře dialog tisku. Jeden hráč = jedna stránka A4.">🖨️ Vytisknout všechny listy</button>
+</div>
+
+<div id="chyba"></div>
+<div id="output"></div>
+
+<!-- Pořadí je závazné: definice -> vykreslování -> data -> spuštění.
+     Klasické <script> (ne moduly) schválně — stránka se pak otevře
+     dvojklikem z disku, bez serveru a bez buildu. -->
+<script src="src/sablony.js"></script>
+<script src="src/radar.js"></script>
+<script src="src/list.js"></script>
+<script src="data/kadr.js"></script>
+<script>
+try {
+    const pocet = vykresli(HRACI, NASTAVENI, document.getElementById('output'));
+    const bez = HRACI.filter(h => h.aktivni !== false && !h.hodnoceni).length;
+    document.getElementById('stav').textContent =
+        `Listů k tisku: ${pocet}` + (bez ? ` (z toho ${bez} zatím nevyplněných)` : '');
+} catch (e) {
+    document.getElementById('chyba').innerHTML =
+        '<div class="chyba"><b>Listy se nevykreslily.</b><br>' +
+        String(e && e.message || e) +
+        '<br><br>Nejčastější příčina: chybějící nebo přebývající čárka mezi hráči ' +
+        'v souboru <code>data/kadr.js</code>, nebo překlep v názvu osy.</div>';
+    document.getElementById('stav').textContent = 'Chyba v datech';
+}
+</script>
+</body>
+</html>
