@@ -945,7 +945,8 @@ async function posliSms(env: Env, cislo: string, text: string): Promise<{ ok: bo
 
     try {
         const telo = new URLSearchParams({
-            To: cislo,
+            // Twilio chce E.164 bez mezer; lidé je do formuláře píšou běžně.
+            To: cislo.replace(/[\s()-]/g, ''),
             From: env.SMS_ODESILATEL || 'SKRicmanice',
             Body: zprava
         });
