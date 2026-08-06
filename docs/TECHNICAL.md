@@ -534,8 +534,28 @@ a začíná `SK`, což je nejčastější záměna (stálo to i tady dvě kola).
 protelefonovala kredit. Počítá se z logu; po vyčerpání se zpráva nepošle a zaloguje se
 `preskoceno` s kódem `STROP`.
 
-Odesílatel je alfanumerický (`SMS_ODESILATEL`, výchozí `SKRicmanice`) — zdarma, ale nejde
-na něj odpovědět. Telefonní číslo by bylo 12 $/měsíc a je potřeba, jen když má někdo odpovídat.
+### Odesílatel v Česku vyžaduje registraci
+
+Ověřeno 2026-08-06 proti pravidlům Twilia pro ČR a potvrzeno chybou `21612` z ostrého pokusu:
+
+> „Sender ID Registration is required in Czech Republic for networks T-Mobile and O2.
+> Starting on July 14, 2025, messages with unregistered Sender IDs to these networks
+> will be blocked."
+
+Alfanumerický odesílatel (`SMS_ODESILATEL`, výchozí `SKRicmanice`) je sice zdarma a na účtu
+povolený, ale **neregistrovaný ho čeští operátoři zahodí**. Nestačí ani povolit Česko
+v Geo Permissions — to bylo zapnuté a chyba zůstala stejná.
+
+| Cesta | Cena | Čas | Kde |
+|---|---|---|---|
+| Registrace alfanumerického odesílatele | zdarma | ~3 týdny na schválení | Trust Hub → Registrations |
+| České telefonní číslo (domestic long code) | ~12 $/měsíc | hned | Numbers & senders |
+
+**Mezinárodní long code T-Mobile a O2 nepodporují** — kdyby se šlo druhou cestou, musí to být
+české číslo, ne americké. Krátká čísla (short codes) v ČR nejdou vůbec.
+
+Zvoleno: **registrace**, protože SMS nespěchají (Telegram funguje) a měsíční poplatek by byl
+zbytečný. Změna cesty = přepsat `SMS_ODESILATEL`, v kódu nic.
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
