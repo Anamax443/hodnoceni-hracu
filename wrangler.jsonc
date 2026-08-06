@@ -23,6 +23,17 @@
         }
     ],
 
+    // Cloudflare Email Sending — odkaz na obnovu hesla. Bez SMTP a bez klíčů.
+    // Doména odesílatele (EMAIL_FROM) musí být onboardovaná: Dashboard → Email Service
+    // → Email Sending → Onboard Domain (maxferit.cz). Jinak send() vrátí
+    // E_SENDER_NOT_VERIFIED; v režimu Email Routing musí být navíc ověřená i adresa
+    // příjemce, jinak E_RECIPIENT_NOT_ALLOWED.
+    "send_email": [{ "name": "EMAIL" }],
+
+    "vars": {
+        "EMAIL_FROM": "hodnoceni@maxferit.cz"
+    },
+
     "observability": { "enabled": true },
 
     // Aplikace drží osobní údaje nezletilých — čím míň veřejných adres, tím líp.
@@ -30,9 +41,8 @@
     "workers_dev": true,
     "preview_urls": false,
 
-    // ADMIN_HESLO a SESSION_KEY jsou secrety, ne proměnné:
-    //   npx wrangler secret put ADMIN_HESLO
-    //   npx wrangler secret put SESSION_KEY
-    // Lokálně se berou z .dev.vars (v .gitignore).
-    "vars": {}
+    // Secrety (ne proměnné) — `npx wrangler secret put <jméno>`, lokálně .dev.vars:
+    //   ADMIN_HESLO    první přihlášení, než se heslo poprvé nastaví z aplikace
+    //   SESSION_KEY    podpis session cookie
+    //   OBNOVA_EMAILY  čárkami oddělené adresy, kam smí jít odkaz na obnovu hesla
 }

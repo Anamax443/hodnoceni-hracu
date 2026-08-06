@@ -13,16 +13,27 @@
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
 import { SABLONY, klice, zkontrolujHodnoty } from '../../web/src/sablony.js';
 
+interface EmailBinding {
+    send(zprava: { to: string; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown>;
+}
+
 export interface Env {
     DB: D1Database;
     ASSETS: Fetcher;
     ADMIN_HESLO: string;
     SESSION_KEY: string;
+    EMAIL?: EmailBinding;      // Cloudflare Email Sending, binding [[send_email]]
+    EMAIL_FROM?: string;
+    OBNOVA_EMAILY?: string;    // čárkami oddělené adresy, na které smí jít obnova hesla
 }
 
 const MODUL = 'hodnoceni-hracu';
 const SESSION_HODIN = 12;
-const PASMO_SUMU = 2;   // §7.4: posun o 1 bod u subjektivního hodnocení není signál
+const PASMO_SUMU = 2;         // §7.4: posun o 1 bod u subjektivního hodnocení není signál
+const OBNOVA_MINUT = 15;      // platnost odkazu na obnovu hesla
+const OBNOVA_MAX_ZA_OKNO = 3; // víc žádostí za 15 minut se nepošle (brzda na spamování schránky)
+const HESLO_MIN = 10;
+const PBKDF2_ITERACE = 210_000;
 
 /* ===================== pomocné ===================== */
 
@@ -42,6 +53,67 @@ function b64url(bajty: ArrayBuffer | Uint8Array): string {
     let s = '';
     for (const b of u8) s += String.fromCharCode(b);
     return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Časově konstantní porovnání dvou řetězců — ať se z doby odpovědi nedá nic vyčíst. */
+function stejne(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let rozdil = 0;
+    for (let i = 0; i < a.length; i++) rozdil |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return rozdil === 0;
+}
+
+/* ===================== heslo ===================== */
+
+async function odvodHash(heslo: string, sul: Uint8Array, iterace: number): Promise<string> {
+    const klic = await crypto.subtle.importKey('raw', new TextEncoder().encode(heslo), 'PBKDF2', false, ['deriveBits']);
+    const bity = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: sul as BufferSource, iterations: iterace, hash: 'SHA-256' }, klic, 256
+    );
+    return b64url(bity);
+}
+
+function zB64url(text: string): Uint8Array {
+    const doplneno = text.replace(/-/g, '+').replace(/_/g, '/');
+    const surove = atob(doplneno);
+    return Uint8Array.from(surove, z => z.charCodeAt(0));
+}
+
+/** Uloží nové heslo. Od téhle chvíle se secret ADMIN_HESLO ignoruje. */
+async function nastavHeslo(env: Env, heslo: string): Promise<void> {
+    const sul = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await odvodHash(heslo, sul, PBKDF2_ITERACE);
+    await env.DB.prepare(
+        `INSERT INTO auth (id, heslo_hash, heslo_sul, iterace, zmeneno)
+         VALUES (1, ?, ?, ?, datetime('now'))
+         ON CONFLICT(id) DO UPDATE SET
+            heslo_hash = excluded.heslo_hash,
+            heslo_sul  = excluded.heslo_sul,
+            iterace    = excluded.iterace,
+            zmeneno    = excluded.zmeneno`
+    ).bind(hash, b64url(sul), PBKDF2_ITERACE).run();
+}
+
+/**
+ * Ověří heslo. Je-li v databázi hash, platí jen ten — secret ADMIN_HESLO
+ * slouží pouze k prvnímu přihlášení, než se heslo poprvé nastaví z aplikace.
+ * Kdyby se ztratilo i to: `DELETE FROM auth;` a secret zase platí.
+ */
+async function overHeslo(env: Env, heslo: string): Promise<boolean> {
+    const a = await env.DB.prepare('SELECT heslo_hash, heslo_sul, iterace FROM auth WHERE id = 1')
+        .first<{ heslo_hash: string; heslo_sul: string; iterace: number }>();
+    if (a) {
+        return stejne(await odvodHash(heslo, zB64url(a.heslo_sul), a.iterace), a.heslo_hash);
+    }
+    return !!env.ADMIN_HESLO && stejne(heslo, env.ADMIN_HESLO);
+}
+
+function zkontrolujNoveHeslo(heslo: unknown): string | null {
+    if (typeof heslo !== 'string' || heslo.length < HESLO_MIN) {
+        return `Nové heslo musí mít aspoň ${HESLO_MIN} znaků.`;
+    }
+    if (heslo.length > 200) return 'Nové heslo je nesmyslně dlouhé.';
+    return null;
 }
 
 /* ===================== session ===================== */
@@ -72,12 +144,7 @@ async function overSession(env: Env, cookie: string | null): Promise<boolean> {
     const [telo, sig] = sess.split('.');
     if (!telo || !sig) return false;
 
-    const ocekavany = await podepis(env.SESSION_KEY, telo);
-    // časově konstantní porovnání
-    if (sig.length !== ocekavany.length) return false;
-    let rozdil = 0;
-    for (let i = 0; i < sig.length; i++) rozdil |= sig.charCodeAt(i) ^ ocekavany.charCodeAt(i);
-    if (rozdil !== 0) return false;
+    if (!stejne(sig, await podepis(env.SESSION_KEY, telo))) return false;
 
     try {
         const { exp } = JSON.parse(atob(telo.replace(/-/g, '+').replace(/_/g, '/')));
@@ -195,11 +262,21 @@ export default {
                 return await self(request, env, cesta.slice('/api/self/'.length));
             }
 
+            /* ---------- obnova zapomenutého hesla (veřejné) ---------- */
+            if (cesta === '/obnova' || cesta.startsWith('/obnova/')) {
+                return soubor(env, url, '/obnova.html');
+            }
+            if (cesta === '/api/obnova' && request.method === 'POST') {
+                return await zadostOObnovu(request, env, url);
+            }
+            if (cesta.startsWith('/api/obnova/')) {
+                return await obnovaHesla(request, env, cesta.slice('/api/obnova/'.length));
+            }
+
             /* ---------- přihlášení ---------- */
             if (cesta === '/api/login' && request.method === 'POST') {
                 const { heslo } = await request.json<{ heslo?: string }>();
-                if (!env.ADMIN_HESLO) return chyba('Na serveru není nastaveno ADMIN_HESLO.', 500);
-                if (!heslo || heslo !== env.ADMIN_HESLO) {
+                if (!heslo || !await overHeslo(env, heslo)) {
                     // Aplikace je na veřejné adrese a chrání data nezletilých.
                     // Prodleva u špatného hesla dělá hádání hesla ve smyčce nepraktickým.
                     await new Promise(hotovo => setTimeout(hotovo, 700));
@@ -293,12 +370,122 @@ async function self(request: Request, env: Env, token: string): Promise<Response
     return json({ ulozeno: true });
 }
 
+/* ===================== obnova zapomenutého hesla ===================== */
+
+/** Adresy, na které se smí obnova poslat. Nastavuje se secretem, ne z aplikace —
+ *  jinak by si cíl obnovy přesměroval ten, kdo se do aplikace zrovna dostal. */
+function povoleneAdresy(env: Env): string[] {
+    return (env.OBNOVA_EMAILY ?? '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
+}
+
+async function posliMail(env: Env, komu: string, predmet: string, text: string): Promise<boolean> {
+    if (!env.EMAIL) {
+        console.warn('Obnova hesla: binding EMAIL chybí, mail se neodeslal.');
+        return false;
+    }
+    const from = { email: env.EMAIL_FROM || 'hodnoceni@maxferit.cz', name: 'Hodnocení hráčů' };
+    try {
+        await env.EMAIL.send({
+            to: komu, from, subject: predmet, text,
+            html: `<pre style="font:inherit;white-space:pre-wrap;margin:0">${text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`
+        });
+        return true;
+    } catch (e: any) {
+        // E_SENDER_NOT_VERIFIED = doména odesílatele není onboardovaná,
+        // E_RECIPIENT_NOT_ALLOWED = adresa příjemce není ověřená destination address.
+        console.warn(`Obnova hesla — odeslání selhalo: ${e?.code ?? ''} ${e?.message ?? e}`);
+        return false;
+    }
+}
+
+/**
+ * Žádost o obnovu. Odpověď je vždycky stejná, ať se nedá zjistit, které adresy
+ * jsou nastavené. Neposílá se heslo, ale jednorázový odkaz s krátkou platností.
+ */
+async function zadostOObnovu(request: Request, env: Env, url: URL): Promise<Response> {
+    const { email, lang } = await request.json<{ email?: string; lang?: string }>();
+    const neutralni = json({ odeslano: true });
+
+    const adresa = (email ?? '').trim().toLowerCase();
+    if (!adresa || !povoleneAdresy(env).includes(adresa)) return neutralni;
+
+    // Brzda na spamování schránky: pár žádostí za okno a dost.
+    const nedavno = await env.DB.prepare(
+        `SELECT COUNT(*) AS pocet FROM obnova WHERE created_at > datetime('now', ?)`
+    ).bind(`-${OBNOVA_MINUT} minutes`).first<{ pocet: number }>();
+    if ((nedavno?.pocet ?? 0) >= OBNOVA_MAX_ZA_OKNO) {
+        console.warn('Obnova hesla: překročen limit žádostí, mail se neodeslal.');
+        return neutralni;
+    }
+
+    const token = novyToken();
+    const platnyDo = new Date(Date.now() + OBNOVA_MINUT * 60_000).toISOString();
+    await env.DB.prepare('INSERT INTO obnova (token, email, platny_do) VALUES (?, ?, ?)')
+        .bind(token, adresa, platnyDo).run();
+
+    const odkaz = `${url.origin}/obnova/${token}`;
+    const en = lang === 'en';
+    await posliMail(
+        env, adresa,
+        en ? 'Player evaluation — password reset' : 'Hodnocení hráčů — obnova hesla',
+        en
+            ? `Someone asked to reset the coach password.\n\nSet a new one here (valid ${OBNOVA_MINUT} minutes, single use):\n${odkaz}\n\nIf it wasn't you, ignore this e-mail — nothing has changed and the current password keeps working.`
+            : `Někdo požádal o obnovu hesla trenéra.\n\nNové heslo si nastavíš tady (platí ${OBNOVA_MINUT} minut, jen jednou):\n${odkaz}\n\nPokud to nebyl ty, e-mail ignoruj — nic se nezměnilo a stávající heslo platí dál.`
+    );
+
+    return neutralni;
+}
+
+/** GET = platí ještě odkaz?  POST = nastav nové heslo. */
+async function obnovaHesla(request: Request, env: Env, token: string): Promise<Response> {
+    const t = token && token.length >= 20
+        ? await env.DB.prepare('SELECT token, pouzit, platny_do FROM obnova WHERE token = ?')
+            .bind(token).first<{ token: string; pouzit: number; platny_do: string }>()
+        : null;
+
+    const platny = !!t && !t.pouzit && new Date(t.platny_do) > new Date();
+
+    if (request.method === 'GET') return json({ platny });
+    if (request.method !== 'POST') return chyba('Nepodporovaná metoda.', 405);
+    if (!platny) return chyba('Odkaz už neplatí. Požádej o nový.', 410);
+
+    const { heslo } = await request.json<{ heslo?: string }>();
+    const problem = zkontrolujNoveHeslo(heslo);
+    if (problem) return chyba(problem, 400);
+
+    await nastavHeslo(env, heslo as string);
+    // Ostatní rozeslané odkazy tím padají — platí jen ten poslední použitý.
+    await env.DB.prepare('DELETE FROM obnova').run();
+
+    return json({ nastaveno: true });
+}
+
 /* ===================== admin část (trenér) ===================== */
 
 async function admin(request: Request, env: Env, url: URL): Promise<Response> {
     const cesta = url.pathname;
     const metoda = request.method;
     const q = url.searchParams;
+
+    /* ---------- změna hesla ---------- */
+    if (cesta === '/api/heslo' && metoda === 'POST') {
+        const { stare, nove } = await request.json<{ stare?: string; nove?: string }>();
+        if (!stare || !await overHeslo(env, stare)) {
+            await new Promise(hotovo => setTimeout(hotovo, 700));
+            return chyba('Stávající heslo nesouhlasí.', 401);
+        }
+        const problem = zkontrolujNoveHeslo(nove);
+        if (problem) return chyba(problem, 400);
+        await nastavHeslo(env, nove as string);
+        await env.DB.prepare('DELETE FROM obnova').run();   // rozeslané odkazy padají
+        return json({ zmeneno: true });
+    }
+
+    /* ---------- kam chodí obnova hesla (jen ke čtení, mění se secretem) ---------- */
+    if (cesta === '/api/obnova-adresy' && metoda === 'GET') {
+        return json({ adresy: povoleneAdresy(env), mailFunguje: !!env.EMAIL });
+    }
 
     /* ---------- nastavení ---------- */
     if (cesta === '/api/settings') {

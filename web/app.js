@@ -80,6 +80,14 @@ function prekresliShell() {
     $('#login-heslo-label').textContent = t('login.heslo');
     $('#prihlasit').textContent = t('login.prihlasit');
     $('#prihlasit').title = t('login.prihlasit.tip');
+    $('#zapomenute').textContent = t('login.zapomenute');
+    $('#zapomenute').title = t('login.zapomenute.tip');
+    $('#obnova-nadpis').textContent = t('login.zapomenute');
+    $('#obnova-popis').textContent = t('login.obnova.popis');
+    $('#obnova-email-label').textContent = t('login.obnova.email');
+    $('#obnova-poslat').textContent = t('login.obnova.poslat');
+    $('#obnova-poslat').title = t('login.obnova.poslat.tip');
+    $('#obnova-zpet').textContent = t('login.obnova.zpet');
     $('#odhlasit').textContent = t('shell.odhlasit');
     $('#odhlasit').title = t('shell.odhlasit.tip');
     $('#jazykBtn').textContent = t('jazyk.dalsi');
@@ -109,6 +117,25 @@ function ukazPrihlaseni() {
     $('#aplikace').hidden = true;
     $('#odhlasit').hidden = true;
     $('#hl-obdobi').textContent = '';
+    prepniObnovu(false);
+}
+
+/** Přepne mezi přihlašovacím formulářem a žádostí o obnovu hesla. */
+function prepniObnovu(zapnout) {
+    $('#prihlaseni').querySelector('.login').hidden = zapnout;
+    $('#obnova-karta').hidden = !zapnout;
+    $('#obnova-hlaska').innerHTML = '';
+}
+
+async function poslatObnovu() {
+    const tlacitko = $('#obnova-poslat');
+    tlacitko.disabled = true;
+    try {
+        // Odpověď je vždycky stejná, ať se nedá zjišťovat, které adresy jsou povolené.
+        await api('/api/obnova', { telo: { email: $('#obnova-email').value, lang: jazyk() } });
+    } catch { /* i chybu bereme jako neutrální výsledek */ }
+    $('#obnova-hlaska').innerHTML = `<div class="hlaska ok">${t('login.obnova.odeslano')}</div>`;
+    tlacitko.disabled = false;
 }
 
 async function prihlas() {
@@ -601,7 +628,44 @@ async function nastaveni(kam) {
                     ${MA_NAPOVEDU.includes(klic) ? `<div class="popis">${t('nastaveni.' + klic + '.napoveda')}</div>` : ''}
                 </div>`).join('')}
             <button class="hl" id="ulozit-nastaveni" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>
+        </div>
+
+        <div class="karta" id="karta-hesla">
+            <h2>${t('heslo.nadpis')}</h2>
+            <p class="popis">${t('heslo.popis')}</p>
+            <div id="obnova-info"></div>
+            <div class="pole"><label for="h-stare">${t('heslo.stare')}</label>
+                <input type="password" id="h-stare" autocomplete="current-password"></div>
+            <div class="pole"><label for="h-nove">${t('heslo.nove')}</label>
+                <input type="password" id="h-nove" autocomplete="new-password"></div>
+            <div class="pole"><label for="h-nove2">${t('heslo.nove2')}</label>
+                <input type="password" id="h-nove2" autocomplete="new-password"></div>
+            <button class="hl" id="zmenit-heslo" title="${t('heslo.ulozit.tip')}">${t('heslo.ulozit')}</button>
         </div>`;
+
+    // Kam chodí obnova hesla — ať je vidět, jestli je vůbec zapojená.
+    api('/api/obnova-adresy').then(o => {
+        const info = $('#obnova-info');
+        if (!info) return;
+        if (!o.adresy.length) info.innerHTML = `<div class="hlaska pozor">${t('heslo.obnovaNikam')}</div>`;
+        else if (!o.mailFunguje) info.innerHTML = `<div class="hlaska pozor">${t('heslo.mailNefunguje')}</div>`;
+        else info.innerHTML = `<div class="hlaska info">${t('heslo.obnovaKam', esc(o.adresy.join(', ')))}</div>`;
+    }).catch(() => { /* informativní, bez toho se obejdeme */ });
+
+    $('#zmenit-heslo').onclick = async () => {
+        const karta = $('#karta-hesla');
+        if ($('#h-nove').value !== $('#h-nove2').value) {
+            hlaska(karta, 'chyba', t('heslo.nesouhlasi'));
+            return;
+        }
+        try {
+            await api('/api/heslo', { telo: { stare: $('#h-stare').value, nove: $('#h-nove').value } });
+            ['h-stare', 'h-nove', 'h-nove2'].forEach(id => { $('#' + id).value = ''; });
+            hlaska(karta, 'ok', t('heslo.zmeneno'));
+        } catch (e) {
+            hlaska(karta, 'chyba', e.message);
+        }
+    };
 
     $('#ulozit-nastaveni').onclick = async () => {
         const telo = Object.fromEntries(KLICE_NASTAVENI.map(k => [k, $('#n-' + k).value]));
@@ -618,6 +682,10 @@ async function nastaveni(kam) {
 
 $('#prihlasit').onclick = prihlas;
 $('#heslo').onkeydown = e => { if (e.key === 'Enter') prihlas(); };
+$('#zapomenute').onclick = () => prepniObnovu(true);
+$('#obnova-zpet').onclick = () => prepniObnovu(false);
+$('#obnova-poslat').onclick = poslatObnovu;
+$('#obnova-email').onkeydown = e => { if (e.key === 'Enter') poslatObnovu(); };
 $('#odhlasit').onclick = async () => { await api('/api/logout', { telo: {} }); ukazPrihlaseni(); };
 $('#themeBtn').onclick = () => nastavVzhled(vzhled() === 'dark' ? 'light' : 'dark');
 $('#jazykBtn').onclick = async () => {

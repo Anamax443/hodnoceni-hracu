@@ -4,5 +4,14 @@
 # SESSION_KEY vygeneruješ takhle:
 #   [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 }))
 
+# Slouží jen k prvnímu přihlášení. Jakmile se heslo poprvé nastaví z aplikace
+# (Nastavení → Změna hesla, nebo obnovovacím odkazem), uloží se jako hash do D1
+# a tenhle secret se ignoruje. Nouzové odemčení: DELETE FROM auth;
 ADMIN_HESLO="sem-heslo-trenera"
+
 SESSION_KEY="sem-nahodny-klic-32-bajtu-v-base64"
+
+# Adresy oddělené čárkou, na které smí přijít odkaz na obnovu hesla.
+# Musí to být adresy ověřené v Cloudflare (Email Routing → destination addresses),
+# jinak odeslání skončí na E_RECIPIENT_NOT_ALLOWED.
+OBNOVA_EMAILY="nekdo@example.com"
