@@ -512,6 +512,17 @@ v neobsluhované garáži je obrácené. Přidat `mikrotik` providera později j
 funkce, takže se nic nezavírá. Pro *garáže* samotné naopak dává smysl jako lokální poplach,
 protože funguje i při výpadku uplinku.
 
+**WhatsApp (Twilio to umí) — zvažováno, nižší priorita než SMS.** Mimo 24hodinové okno po
+poslední zprávě od uživatele projdou jen **předem schválené šablony** od Mety; souhrn iniciovaný
+aplikací je přesně tenhle případ, takže by musel být šablona s proměnnými, ne volný text.
+Navíc chce WhatsApp Business účet a ověření subjektu. Proti tomu stojí jediný, zato silný
+argument: v ČR ho má skoro každý, kdežto Telegram ne. Pořadí: e-mail (zdarma, běží) →
+SMS (bez schvalování, na každém telefonu) → WhatsApp (nejlepší dosah, nejvíc byrokracie).
+
+**Účet Twilio je založený** (Pay as you go, kredit bez expirace, bonus 100 SMS na testování).
+Telefonní číslo záměrně nekoupeno — na jednosměrné notifikace stačí alfanumerický odesílatel
+zdarma, české mobilní číslo by bylo 12 $/měsíc.
+
 **Twilio přes víc projektů:** jeden účet, **subúčet na projekt** (vlastní SID a token, vlastní
 logy a spotřeba, sloučená fakturace), k tomu API Key na aplikaci kvůli odvolatelnosti
 a Messaging Service na projekt kvůli sender ID. Do Workeru jdou jen údaje jeho subúčtu.
