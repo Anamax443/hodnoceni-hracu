@@ -33,7 +33,9 @@ const PASMO_SUMU = 2;         // §7.4: posun o 1 bod u subjektivního hodnocen�
 const OBNOVA_MINUT = 15;      // platnost odkazu na obnovu hesla
 const OBNOVA_MAX_ZA_OKNO = 3; // víc žádostí za 15 minut se nepošle (brzda na spamování schránky)
 const HESLO_MIN = 10;
-const PBKDF2_ITERACE = 210_000;
+// Strop workerd: „iteration counts above 100000 are not supported".
+// Víc nejde, i když by OWASP chtěl výrazně víc.
+const PBKDF2_ITERACE = 100_000;
 
 /* ===================== pomocné ===================== */
 
@@ -99,13 +101,17 @@ async function nastavHeslo(env: Env, heslo: string): Promise<void> {
  * slouží pouze k prvnímu přihlášení, než se heslo poprvé nastaví z aplikace.
  * Kdyby se ztratilo i to: `DELETE FROM auth;` a secret zase platí.
  */
-async function overHeslo(env: Env, heslo: string): Promise<boolean> {
+async function overHeslo(env: Env, heslo: string): Promise<'ok' | 'spatne' | 'nenastaveno'> {
     const a = await env.DB.prepare('SELECT heslo_hash, heslo_sul, iterace FROM auth WHERE id = 1')
         .first<{ heslo_hash: string; heslo_sul: string; iterace: number }>();
     if (a) {
-        return stejne(await odvodHash(heslo, zB64url(a.heslo_sul), a.iterace), a.heslo_hash);
+        return stejne(await odvodHash(heslo, zB64url(a.heslo_sul), a.iterace), a.heslo_hash)
+            ? 'ok' : 'spatne';
     }
-    return !!env.ADMIN_HESLO && stejne(heslo, env.ADMIN_HESLO);
+    // Žádné heslo v databázi ani v secretu = server není nastavený. To se
+    // nesmí tvářit jako „špatné heslo", jinak se to hledá zbytečně dlouho.
+    if (!env.ADMIN_HESLO) return 'nenastaveno';
+    return stejne(heslo, env.ADMIN_HESLO) ? 'ok' : 'spatne';
 }
 
 function zkontrolujNoveHeslo(heslo: unknown): string | null {
@@ -276,7 +282,12 @@ export default {
             /* ---------- přihlášení ---------- */
             if (cesta === '/api/login' && request.method === 'POST') {
                 const { heslo } = await request.json<{ heslo?: string }>();
-                if (!heslo || !await overHeslo(env, heslo)) {
+                const vysledek = heslo ? await overHeslo(env, heslo) : 'spatne';
+                if (vysledek === 'nenastaveno') {
+                    return chyba('Na serveru není nastavené žádné heslo (chybí secret ADMIN_HESLO '
+                        + 'a v databázi není uložené heslo). Aplikace se takhle nedá odemknout.', 500);
+                }
+                if (vysledek !== 'ok') {
                     // Aplikace je na veřejné adrese a chrání data nezletilých.
                     // Prodleva u špatného hesla dělá hádání hesla ve smyčce nepraktickým.
                     await new Promise(hotovo => setTimeout(hotovo, 700));
@@ -471,7 +482,7 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
     /* ---------- změna hesla ---------- */
     if (cesta === '/api/heslo' && metoda === 'POST') {
         const { stare, nove } = await request.json<{ stare?: string; nove?: string }>();
-        if (!stare || !await overHeslo(env, stare)) {
+        if (!stare || await overHeslo(env, stare) !== 'ok') {
             await new Promise(hotovo => setTimeout(hotovo, 700));
             return chyba('Stávající heslo nesouhlasí.', 401);
         }

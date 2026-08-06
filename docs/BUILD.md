@@ -49,14 +49,28 @@ Dva, oba povinné a oba už nastavené:
 
 | Secret | K čemu |
 |---|---|
-| `ADMIN_HESLO` | přihlášení trenéra do aplikace |
+| `ADMIN_HESLO` | **jen první přihlášení**, než se heslo poprvé nastaví z aplikace |
 | `SESSION_KEY` | podpis session cookie; 32+ náhodných bajtů |
+| `OBNOVA_EMAILY` | adresy oddělené čárkou, kam smí přijít odkaz na obnovu hesla |
 
 ```powershell
 npx wrangler secret list                  # co je nastavene
-npx wrangler secret put ADMIN_HESLO       # zmena hesla
+npx wrangler secret put ADMIN_HESLO
 npx wrangler secret put SESSION_KEY       # rotace klice = vsichni se odhlasi
+npx wrangler secret put OBNOVA_EMAILY
 ```
+
+**Heslo se běžně mění v aplikaci** (Nastavení → Změna hesla), ne přes secret — ukládá se
+jako hash do D1 a od té chvíle se `ADMIN_HESLO` ignoruje. Když se heslo ztratí i s obnovou:
+
+```powershell
+npx wrangler d1 execute hodnoceni-hracu --remote --command="DELETE FROM auth"
+# pak plati zase secret ADMIN_HESLO
+```
+
+Adresy v `OBNOVA_EMAILY` musí být **ověřené destination addresses** v Cloudflare
+(Email Routing), jinak odeslání skončí na `E_RECIPIENT_NOT_ALLOWED`. Nová adresa trenéra
+= nejdřív ji ověřit v Cloudflare, teprve pak přidat do secretu.
 
 Generování `SESSION_KEY`:
 

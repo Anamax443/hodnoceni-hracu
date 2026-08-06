@@ -74,7 +74,37 @@ Tiskové listy mají **vlastní stránku** (`listy.html`), protože `src/styl.cs
 
 ## 3. Autorizace
 
-Rozhodnuto: jedno admin heslo jako Worker secret + podepsaná session cookie (zadání §14/1).
+Rozhodnuto: jedno společné heslo trenéra + podepsaná session cookie (zadání §14/1).
+
+**Heslo žije v databázi, ne v secretu.** Ukládá se jako PBKDF2-SHA256 hash s náhodnou
+16bajtovou solí, 100 000 iterací (víc workerd nedovolí — „iteration counts above 100000 are
+not supported"). Důvod přesunu: Worker si secret sám přepsat nemůže, takže dokud heslo bylo
+jen v `ADMIN_HESLO`, nešlo ho změnit z aplikace ani obnovit odkazem.
+
+- dokud v tabulce `auth` není řádek, přihlašuje se proti secretu `ADMIN_HESLO` (bootstrap)
+- jakmile se heslo jednou nastaví z aplikace, **secret se ignoruje** — jinak by staré sdílené
+  heslo platilo napořád i po změně
+- nouzové odemčení, když se ztratí i obnova: `DELETE FROM auth;` a secret zase platí
+- server rozlišuje „špatné heslo" (401) a „na serveru není nastavené žádné heslo" (500),
+  ať se to druhé nehledá zbytečně dlouho
+
+### Obnova zapomenutého hesla
+
+Neposílá se heslo, ale **jednorázový odkaz** — heslo poslané mailem zůstane ve schránce
+navždy. Stejná logika jako u tokenů hráčů:
+
+- platnost 15 minut, jedno použití; po nastavení hesla se smažou i všechny ostatní odkazy
+- cílové adresy jsou v secretu `OBNOVA_EMAILY` (čárkami), **ne v nastavení aplikace** —
+  jinak by si cíl obnovy přesměroval ten, kdo se zrovna dostal dovnitř
+- odpověď na žádost je vždy stejná, ať se nedá zjistit, které adresy jsou povolené
+- nejvýš 3 žádosti za 15 minut (brzda na spamování schránky), počítá se z tabulky `obnova`
+- odesílá se přes **Cloudflare Email Sending**, binding `[[send_email]] name = "EMAIL"`,
+  `env.EMAIL.send({to, from, subject, text, html})` — stejný mechanismus jako JobWatch.
+  Doména odesílatele musí být onboardovaná (jinak `E_SENDER_NOT_VERIFIED`) a v režimu
+  Email Routing musí být ověřená i adresa příjemce (jinak `E_RECIPIENT_NOT_ALLOWED`).
+
+Změna hesla z aplikace (Nastavení → Změna hesla) chce stávající heslo a nové 2×, minimálně
+10 znaků. Běžící session se změnou hesla neruší — kdo je přihlášený, dojede svých 12 hodin.
 
 - `POST /api/login` porovná heslo s `ADMIN_HESLO` a nastaví cookie
   `sess=<payload>.<HMAC-SHA256>`; payload nese jen čas vypršení
@@ -240,6 +270,12 @@ GET    /api/version                               {commit, commitFull, branch, b
 POST   /api/login          {heslo}                nastaví session cookie
 POST   /api/logout
 GET    /api/me                                    {prihlasen}
+
+POST   /api/heslo          {stare, nove}          admin — změna hesla
+GET    /api/obnova-adresy                         admin — kam chodí obnova, je zapojený mail?
+POST   /api/obnova         {email, lang}          veřejné — pošle jednorázový odkaz
+GET    /api/obnova/:token                         veřejné — {platny}
+POST   /api/obnova/:token  {heslo}                veřejné — nastaví nové heslo, odkaz zneplatní
 
 GET    /api/settings                              admin
 PUT    /api/settings       {klic: hodnota, …}     admin

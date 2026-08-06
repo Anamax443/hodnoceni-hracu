@@ -3,8 +3,20 @@
 Co se dělá pravidelně a co dělat, když něco nesedí.
 
 **Adresa:** https://hodnoceni-hracu.bass443.workers.dev
-**Heslo trenéra:** uložené jako Worker secret `ADMIN_HESLO`, v repozitáři není.
-Změna: `npx wrangler secret put ADMIN_HESLO` (projeví se hned, deploy není potřeba).
+**Heslo trenéra:** v repozitáři není. Mění se v aplikaci — **Nastavení → Změna hesla**.
+
+**Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo* → zadat adresu →
+přijde jednorázový odkaz (platí 15 minut, funguje jednou). Odkaz chodí jen na adresy
+v secretu `OBNOVA_EMAILY`; teď je tam `maxla@seznam.cz`. Nová adresa musí být nejdřív
+ověřená v Cloudflare (Email Routing → destination addresses), pak
+`npx wrangler secret put OBNOVA_EMAILY`.
+
+**Když se ztratí heslo i přístup k té schránce:**
+
+```powershell
+npx wrangler d1 execute hodnoceni-hracu --remote --command="DELETE FROM auth"
+npx wrangler secret put ADMIN_HESLO
+```
 
 ---
 

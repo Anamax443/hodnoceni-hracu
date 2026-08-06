@@ -2,6 +2,45 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (4) — kádr v databázi + obnova zapomenutého hesla
+
+**Hotové:**
+
+- **Kádr nahraný:** 19 hráčů (jména sedí s `ricmanice_hraci.txt`) + 3 trenéři
+  (Maxla, Julek, Maso). Brankářskou šablonu mají Peša Robin a Trnka Ferdinand.
+- **Heslo přestěhováno z Worker secretu do D1** jako PBKDF2 hash (migrace `003_auth.sql`).
+  Bez toho nešlo heslo změnit z aplikace — Worker si secret sám přepsat nemůže.
+  `ADMIN_HESLO` slouží už jen k prvnímu přihlášení; nouzové odemčení `DELETE FROM auth`.
+- **Nastavení → Změna hesla** a **přihlašovací stránka → Zapomenuté heslo**
+  (jednorázový odkaz mailem, platnost 15 min, po použití padají všechny ostatní odkazy).
+- E-mail přes **Cloudflare Email Sending**, binding `[[send_email]] name = "EMAIL"`,
+  odesílatel `hodnoceni@maxferit.cz` — stejný mechanismus jako JobWatch.
+
+**Ověřeno naživo:** 27 testů obnovy hesla, 0 chyb (včetně jednorázovosti odkazu, brzdy na
+3 žádosti za 15 minut a toho, že odpověď neprozradí povolené adresy). Cloudflare maily
+přijal k odeslání — v `wrangler tail` není `E_SENDER_NOT_VERIFIED` ani `E_RECIPIENT_NOT_ALLOWED`.
+
+**Dvě chyby nalezené a opravené při ověřování:**
+
+1. workerd nedovolí PBKDF2 nad **100 000 iterací** („iteration counts above 100000 are not
+   supported") — nastavení hesla končilo na 500. Sníženo na 100 000.
+2. při přepisu přihlašování se ztratila hláška „na serveru není nastavené heslo" a server
+   vracel mlčky „špatné heslo". Vráceno jako samostatný stav (500 s vysvětlením).
+
+**Nedovysvětleno:** secret `ADMIN_HESLO` přestal odpovídat hodnotě, se kterou byl nastavený
+(přihlášení hlásilo špatné heslo, ačkoli hodnota seděla). Po `wrangler secret put` se stejnou
+hodnotou začalo fungovat. Příčinu se nepodařilo doložit; heslo od té doby žije v databázi,
+takže na secretu už provoz nestojí.
+
+**Zbývá:**
+
+1. **Kumulovaná pozice** (Ferda je brankář i hráč v poli) — přesunout šablonu z osoby na
+   hodnocení. Návrh je popsaný, čeká na odsouhlasení.
+2. **Notifikace** na Telegram/e-mail při novém hodnocení, zapínatelné per osoba.
+3. Vlastní doména pod maxferit.cz.
+
+---
+
 ## 2026-08-06 (3) — NASAZENO do cloudu + frontpage (čas, commit, dark/light, CS/EN)
 
 **Živě na https://hodnoceni-hracu.bass443.workers.dev**

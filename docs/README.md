@@ -47,6 +47,13 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 Aplikace běží na **https://hodnoceni-hracu.bass443.workers.dev**. Zadáš heslo trenéra,
 přihlášení platí 12 hodin. Heslo je jedno společné — kdo ho má, vidí všechno.
 
+**Změna hesla:** Nastavení → Změna hesla (stávající + nové dvakrát, aspoň 10 znaků).
+
+**Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo*. Napíšeš adresu
+a přijde na ni odkaz, kterým si nastavíš nové. Odkaz platí 15 minut a funguje jen jednou;
+heslo se mailem nikdy neposílá. Chodí jen na adresu, která je pro obnovu povolená — když
+tam potřebuješ přidat další, řekni si, nastavuje se to mimo aplikaci.
+
 ### Horní lišta
 
 Vpravo nahoře je na každé stránce:
