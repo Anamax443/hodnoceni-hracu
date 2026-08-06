@@ -42,12 +42,14 @@
         // kde není žádný request, ze kterého by šla adresa odvodit.
         "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz",
 
-        // 'console' = SMS se jen zaloguje a nikam neodejde; 'twilio' = ostré
-        // odesílání. Secrety TWILIO_ACCOUNT_SID a TWILIO_AUTH_TOKEN nastaveny
-        // 2026-08-06. Proti protelefonování kreditu hlídá settings.smsDenniStrop.
-        "SMS_PROVIDER": "twilio",
-        // Alfanumerický odesílatel (max 11 znaků). Zdarma; číslo se kupovat
-        // nemusí, dokud nemá někdo na SMS odpovídat.
+        // 'console' = SMS se jen zaloguje a nikam neodejde; 'gosms' = ostré
+        // odesílání přes českou bránu (secrety GOSMS_CLIENT_ID, GOSMS_CLIENT_SECRET,
+        // GOSMS_KANAL); 'twilio' zůstává jako druhá cesta, ale do Česka končí
+        // na chybě 21612 — neregistrovaný odesílatel, viz docs/TECHNICAL.md.
+        // Proti protelefonování kreditu hlídá settings.smsDenniStrop.
+        "SMS_PROVIDER": "gosms",
+        // Alfanumerický odesílatel (max 11 znaků) — používá jen twilio.
+        // U GoSMS odesílatele určuje kanál, vlastní jméno je u nich placené.
         "SMS_ODESILATEL": "SKRicmanice"
     },
 

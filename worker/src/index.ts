@@ -27,10 +27,13 @@ export interface Env {
     OBNOVA_EMAILY?: string;    // čárkami oddělené adresy, na které smí jít obnova hesla
     TELEGRAM_BOT_TOKEN?: string;
     ZAKLADNI_URL?: string;     // adresa do odkazů v notifikacích (cron nemá request)
-    SMS_PROVIDER?: string;     // 'console' (jen zaloguje) | 'twilio'
-    SMS_ODESILATEL?: string;   // alfanumerický odesílatel, např. SKRicmanice
+    SMS_PROVIDER?: string;     // 'console' (jen zaloguje) | 'gosms' | 'twilio'
+    SMS_ODESILATEL?: string;   // alfanumerický odesílatel — používá jen twilio
     TWILIO_ACCOUNT_SID?: string;
     TWILIO_AUTH_TOKEN?: string;
+    GOSMS_CLIENT_ID?: string;
+    GOSMS_CLIENT_SECRET?: string;
+    GOSMS_KANAL?: string;      // ID kanálu z GoSMS (odesílatel je jejich, registrovaný)
 }
 
 const MODUL = 'hodnoceni-hracu';
@@ -927,26 +930,117 @@ function bezDiakritiky(text: string): string {
 }
 
 /**
- * Pošle SMS. Ve výchozím stavu provider 'console', který zprávu jen zaloguje —
- * reálná SMS odejde teprve po přepnutí SMS_PROVIDER na 'twilio'. Bez toho
- * by se kredit protelefonoval při každém testu.
+ * Čísla lidé píšou různě („777 123 456", „+420 777-123-456"). Brány chtějí E.164.
+ * Devítimístné číslo bez předvolby je české — jiné se nikdy nezadávalo.
  */
-async function posliSms(env: Env, cislo: string, text: string): Promise<{ ok: boolean; kod?: string; popis?: string }> {
+function naE164(cislo: string): string {
+    const holé = cislo.replace(/[^\d+]/g, '');
+    if (holé.startsWith('+')) return holé;
+    if (holé.startsWith('00')) return '+' + holé.slice(2);
+    if (holé.length === 9) return '+420' + holé;
+    return '+' + holé;
+}
+
+type VysledekSms = { ok: boolean; kod?: string; popis?: string };
+
+/** GoSMS jede na .eu; .cz na ni jen přesměrovává a POST by se cestou zvrhl na GET. */
+const GOSMS_URL = 'https://app.gosms.eu';
+
+/**
+ * Pošle SMS přes providera nastaveného v SMS_PROVIDER. Výchozí 'console' zprávu
+ * jen zaloguje — reálná SMS odejde teprve po přepnutí na bránu. Bez toho by se
+ * kredit protelefonoval při každém testu.
+ *
+ * `nanecisto` využije kontrolní endpoint brány: požadavek se ověří, ale nic se
+ * neodešle a nic nestojí. Umí to GoSMS, Twilio ne.
+ */
+async function posliSms(env: Env, cislo: string, text: string,
+                        nanecisto = false): Promise<VysledekSms> {
     const zprava = bezDiakritiky(text);
     const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
 
-    if (provider !== 'twilio') {
-        console.log(`SMS (console) → ${cislo}: ${zprava}`);
-        return { ok: true, kod: 'console', popis: 'Provider je console — SMS se neodeslala, jen zalogovala.' };
+    if (provider === 'gosms') return posliSmsGoSms(env, naE164(cislo), zprava, nanecisto);
+    if (provider === 'twilio') return posliSmsTwilio(env, naE164(cislo), zprava, nanecisto);
+
+    console.log(`SMS (console) → ${cislo}: ${zprava}`);
+    return { ok: true, kod: 'console', popis: 'Provider je console — SMS se neodeslala, jen zalogovala.' };
+}
+
+/**
+ * GoSMS: OAuth2 client_credentials, token platí hodinu. Bereme ho ke každému
+ * odeslání znovu — pár zpráv týdně nestojí za cache, která by přežívala restart isolate.
+ */
+async function gosmsToken(env: Env): Promise<{ ok: true; token: string } | { ok: false; kod: string; popis: string }> {
+    if (!env.GOSMS_CLIENT_ID || !env.GOSMS_CLIENT_SECRET) {
+        return { ok: false, kod: 'NO_CREDENTIALS', popis: 'Chybí GOSMS_CLIENT_ID nebo GOSMS_CLIENT_SECRET.' };
+    }
+    try {
+        // Form-encoded a doména .eu — přesně jak GoSMS ukazuje curl v samoobsluze.
+        const r = await fetch(`${GOSMS_URL}/oauth/v2/token`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: env.GOSMS_CLIENT_ID,
+                client_secret: env.GOSMS_CLIENT_SECRET,
+                grant_type: 'client_credentials'
+            })
+        });
+        const d = await r.json<any>();
+        // Do odpovědi nesmí prosáknout client_secret — bereme jen popis chyby od GoSMS.
+        if (!r.ok || !d?.access_token) {
+            return {
+                ok: false, kod: String(r.status),
+                popis: d?.error_description ?? d?.error ?? 'GoSMS nevydalo token — zkontroluj client_id a client_secret.'
+            };
+        }
+        return { ok: true, token: d.access_token };
+    } catch (e) {
+        return { ok: false, kod: 'FETCH', popis: e instanceof Error ? e.message : String(e) };
+    }
+}
+
+async function posliSmsGoSms(env: Env, cislo: string, zprava: string, nanecisto: boolean): Promise<VysledekSms> {
+    if (!env.GOSMS_KANAL) {
+        return { ok: false, kod: 'NO_CHANNEL', popis: 'Chybí GOSMS_KANAL — ID kanálu najdeš v GoSMS v menu Kanály.' };
+    }
+    const t = await gosmsToken(env);
+    if (!t.ok) return { ok: false, kod: t.kod, popis: t.popis };
+
+    try {
+        const url = nanecisto
+            ? `${GOSMS_URL}/api/v1/messages/test`
+            : `${GOSMS_URL}/api/v1/messages/`;
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: `Bearer ${t.token}` },
+            body: JSON.stringify({ message: zprava, recipients: [cislo], channel: Number(env.GOSMS_KANAL) })
+        });
+        const d = await r.json<any>().catch(() => null);
+        if (!r.ok) {
+            return {
+                ok: false, kod: String(d?.code ?? r.status),
+                popis: d?.message ?? d?.error_description ?? 'GoSMS zprávu odmítlo.'
+            };
+        }
+        if (nanecisto) {
+            return { ok: true, kod: 'nanecisto', popis: 'GoSMS požadavek přijalo. Nanečisto — nic se neodeslalo a nic to nestálo.' };
+        }
+        return { ok: true, kod: String(d?.id ?? d?.data?.id ?? 'ok') };
+    } catch (e) {
+        return { ok: false, kod: 'FETCH', popis: e instanceof Error ? e.message : String(e) };
+    }
+}
+
+async function posliSmsTwilio(env: Env, cislo: string, zprava: string, nanecisto: boolean): Promise<VysledekSms> {
+    if (nanecisto) {
+        return { ok: false, kod: 'NELZE', popis: 'Zkoušku nanečisto umí jen GoSMS. Twilio buď odešle, nebo odmítne.' };
     }
     if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) {
         return { ok: false, kod: 'NO_CREDENTIALS', popis: 'Chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.' };
     }
-
     try {
         const telo = new URLSearchParams({
-            // Twilio chce E.164 bez mezer; lidé je do formuláře píšou běžně.
-            To: cislo.replace(/[\s()-]/g, ''),
+            To: cislo,
             From: env.SMS_ODESILATEL || 'SKRicmanice',
             Body: zprava
         });
@@ -983,12 +1077,56 @@ async function smsZaDen(env: Env): Promise<number> {
     return r?.pocet ?? 0;
 }
 
+/**
+ * Stav SMS kanálu pro Nastavení. Popis je psaný pro člověka, který do útrob nevidí:
+ * musí z něj být poznat, jestli kanál mlčí schválně, nebo mu něco chybí.
+ */
+async function stavSms(env: Env) {
+    const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
+    const spolecne = {
+        provider,
+        zaDen: await smsZaDen(env),
+        strop: Number((await nastaveni(env)).smsDenniStrop) || 50
+    };
+
+    if (provider === 'gosms') {
+        const chybi = [
+            !env.GOSMS_CLIENT_ID && 'GOSMS_CLIENT_ID',
+            !env.GOSMS_CLIENT_SECRET && 'GOSMS_CLIENT_SECRET',
+            !env.GOSMS_KANAL && 'GOSMS_KANAL'
+        ].filter(Boolean);
+        return {
+            ...spolecne, zapojeno: chybi.length === 0,
+            odesilatel: `kanál ${env.GOSMS_KANAL ?? '—'} (odesílatele drží GoSMS)`,
+            popis: chybi.length
+                ? `Provider je GoSMS, ale chybí ${chybi.join(', ')}. Bez toho se neodešle nic.`
+                : 'GoSMS je zapojené, SMS se odesílají doopravdy. Příjemce uvidí odesílatele GoSMS, ne klub.'
+        };
+    }
+
+    if (provider === 'twilio') {
+        return {
+            ...spolecne, zapojeno: !!(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN),
+            odesilatel: env.SMS_ODESILATEL || 'SKRicmanice',
+            popis: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
+                ? 'Twilio je zapojené. Pozor: do Česka končí neregistrovaný odesílatel na chybě 21612.'
+                : 'Provider je twilio, ale chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.'
+        };
+    }
+
+    return {
+        ...spolecne, zapojeno: false, odesilatel: '—',
+        popis: 'Provider je console — SMS se jen logují, nic se neodesílá. Přepni SMS_PROVIDER na gosms.'
+    };
+}
+
 /** Odešle SMS s ohlídáním denního stropu a se záznamem do logu. */
 async function posliSmsHlidane(env: Env, cislo: string, text: string,
-                               typ: string, playerId?: number | null): Promise<{ ok: boolean; popis: string }> {
+                               typ: string, playerId?: number | null,
+                               nanecisto = false): Promise<{ ok: boolean; popis: string }> {
     const nas = await nastaveni(env);
     const strop = Number(nas.smsDenniStrop) || 50;
-    if (await smsZaDen(env) >= strop) {
+    if (!nanecisto && await smsZaDen(env) >= strop) {
         await zalogujKomunikaci(env, {
             kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',
             kod: 'STROP', poznamka: `Denní strop ${strop} SMS vyčerpán.`
@@ -1135,18 +1273,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     ? 'Binding EMAIL je nasazený. Doručení ověří až odeslaná zpráva.'
                     : 'Chybí binding EMAIL (Cloudflare Email Sending).'
             },
-            sms: {
-                zapojeno: (env.SMS_PROVIDER || 'console').toLowerCase() === 'twilio',
-                provider: (env.SMS_PROVIDER || 'console').toLowerCase(),
-                odesilatel: env.SMS_ODESILATEL || 'SKRicmanice',
-                zaDen: await smsZaDen(env),
-                strop: Number((await nastaveni(env)).smsDenniStrop) || 50,
-                popis: (env.SMS_PROVIDER || 'console').toLowerCase() === 'twilio'
-                    ? (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
-                        ? 'Twilio je zapojené, SMS se odesílají doopravdy.'
-                        : 'Provider je twilio, ale chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.')
-                    : 'Provider je console — SMS se jen logují, nic se neodesílá. Přepni SMS_PROVIDER na twilio.'
-            },
+            sms: await stavSms(env),
             telegram: tg.ok
                 ? {
                     zapojeno: true, ok: true,
@@ -1191,8 +1318,37 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json(results ?? []);
     }
 
-    /* ---------- kontrola přihlašovacích údajů Twilia (nic neodesílá) ---------- */
+    /* ---------- kontrola přihlašovacích údajů brány (nic neodesílá) ---------- */
     if (cesta === '/api/sms/ucet' && metoda === 'GET') {
+        const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
+
+        if (provider === 'gosms') {
+            const t = await gosmsToken(env);
+            if (!t.ok) return json({ ok: false, provider, kod: t.kod, popis: t.popis });
+            try {
+                // Kořen API vrací stav účtu včetně kreditu — bez odeslání zprávy.
+                const r = await fetch(`${GOSMS_URL}/api/v1/`, { headers: { authorization: `Bearer ${t.token}` } });
+                const d = await r.json<any>().catch(() => null);
+                if (!r.ok) {
+                    return json({ ok: false, provider, kod: String(r.status), popis: d?.message ?? 'GoSMS odmítlo přihlášení.' });
+                }
+                return json({
+                    ok: true, provider,
+                    ucet: d?.name ?? d?.organization ?? null,
+                    kredit: d?.credit ?? d?.wallet?.credit ?? null,
+                    kanal: env.GOSMS_KANAL ?? null,
+                    popis: env.GOSMS_KANAL
+                        ? 'Token i účet v pořádku. Zkus zprávu nanečisto, ta ověří i kanál.'
+                        : 'Token je v pořádku, ale chybí GOSMS_KANAL — bez ID kanálu se odeslat nedá.'
+                });
+            } catch (e) {
+                return json({ ok: false, provider, popis: e instanceof Error ? e.message : String(e) });
+            }
+        }
+
+        if (provider !== 'twilio') {
+            return json({ ok: false, provider, popis: `Provider je ${provider} — žádná brána, není co ověřovat.` });
+        }
         if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) {
             return json({ ok: false, popis: 'Chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.' });
         }
@@ -1219,13 +1375,38 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
     }
 
-    /* ---------- zkušební SMS ---------- */
+    /* ---------- výpis kanálů GoSMS (kvůli ID do GOSMS_KANAL) ---------- */
+    if (cesta === '/api/sms/kanaly' && metoda === 'GET') {
+        const t = await gosmsToken(env);
+        if (!t.ok) return json({ ok: false, kod: t.kod, popis: t.popis, kanaly: [] });
+        try {
+            const r = await fetch(`${GOSMS_URL}/api/v1/channels`, { headers: { authorization: `Bearer ${t.token}` } });
+            const d = await r.json<any>().catch(() => null);
+            if (!r.ok) {
+                return json({
+                    ok: false, kod: String(r.status), kanaly: [],
+                    popis: 'GoSMS výpis kanálů nevrátilo — ID kanálu najdeš v portálu v menu Kanály.'
+                });
+            }
+            // Odpověď bývá zabalená různě podle verze API; bereme první pole, které najdeme.
+            const seznam: any[] = Array.isArray(d) ? d : (d?.data ?? d?.channels ?? []);
+            return json({
+                ok: true,
+                kanaly: seznam.map((k: any) => ({ id: k?.id ?? null, nazev: k?.name ?? k?.title ?? null })),
+                popis: seznam.length ? `Kanálů: ${seznam.length}` : 'Účet nemá žádný kanál.'
+            });
+        } catch (e) {
+            return json({ ok: false, kanaly: [], popis: e instanceof Error ? e.message : String(e) });
+        }
+    }
+
+    /* ---------- zkušební SMS (nanečisto = ověří spojení, nic neodešle a nic nestojí) ---------- */
     if (cesta === '/api/sms/test' && metoda === 'POST') {
-        const { telefon } = await request.json<{ telefon?: string }>();
+        const { telefon, nanecisto } = await request.json<{ telefon?: string; nanecisto?: boolean }>();
         if (!telefon) return chyba('Chybí telefon.', 400);
         const nas = await nastaveni(env);
         const r = await posliSmsHlidane(env, String(telefon),
-            `${nas.klub}: zkusebni zprava z aplikace Hodnoceni hracu.`, 'test', null);
+            `${nas.klub}: zkusebni zprava z aplikace Hodnoceni hracu.`, 'test', null, !!nanecisto);
         return json({ ok: r.ok, popis: r.popis });
     }
 
