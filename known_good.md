@@ -5,6 +5,42 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-06 (8) — SMS kanál a log komunikace
+
+**Commit:** `c48a89f` · **Ověřeno proti** https://hodnoceni.maxferit.cz
+
+| Kontrola | Výsledek |
+|---|---|
+| provider `console` — SMS se neodešle, jen zaloguje | `{"ok":true,"popis":"Provider je console…"}` |
+| diakritika odstraněna | v logu `SK RICMANICE: zkusebni zprava` (1 segment místo 2) |
+| přihlašovací údaje Twilia | `{"ok":true,"ucet":"My First Twilio Account","stav":"active"}` |
+| špatný token rozpoznán | `delkaTokenu: 34` → API Key SID místo Auth Tokenu (32) |
+| reálné odeslání | ⛔ `21612` — neregistrované Sender ID pro ČR |
+| log komunikace | všechny pokusy zapsané s kódem chyby, dohledatelné zpětně |
+| zprávy z režimu `console` se nepočítají do denního stropu | ano |
+
+**Co ověřeno NEBYLO:** doručení SMS na telefon. Blokuje to Twilio, ne aplikace —
+česká Sender ID vyžadují registraci. Kanál nemá nikdo zapnutý (`notif_sms = 0`).
+
+---
+
+## 2026-08-06 (7) — shoda mezi trenéry a historie verzí
+
+**Commit:** `6203c47`
+
+| Kontrola | Výsledek |
+|---|---|
+| blind guard mezi trenéry | přihlášen `maxla`, neodevzdal → `{"cekaNaTebe":true}`, **žádná cizí čísla** |
+| chybějící povinní trenéři | `["Julek","Maxla"]` |
+| povinní podle nastavení | Maxla 1, Julek 1, Maso 0 |
+| historie u hráče bez hodnocení | `[]` |
+| tiskový list preferuje uzavřenou shodu | ano, jinak poslední hodnocení trenéra |
+
+**Co ověřeno NEBYLO:** uzavření shody na reálných datech — v databázi zatím není žádné
+hodnocení, takže tabulka osa × trenér se naplní až po prvním kole.
+
+---
+
 ## 2026-08-06 (6) — účty po lidech + vlastní obnova hesla
 
 **Commit:** `1c7f3bf` · **Ověřeno proti** https://hodnoceni.maxferit.cz

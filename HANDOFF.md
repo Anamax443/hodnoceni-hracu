@@ -2,6 +2,47 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (11) — SMS kanál, log komunikace, Twilio naráží na české Sender ID
+
+**Hotové a nasazené:**
+
+- **SMS kanál** (migrace `009_sms.sql`): telefon a přepínač u osoby, volání Twilio API,
+  odstranění diakritiky (háčky půlí segment ze 160 na 70 znaků = dvojnásobná cena),
+  denní strop jako pojistka proti smyčce.
+- **Provider je přepínač**: `console` jen loguje, `twilio` odesílá. Přepnuto na `twilio`.
+- **Log komunikace** — tabulka `komunikace`, posledních sto pokusů vidět v Nastavení.
+  Metadata a kód chyby, ne obsah; u SMS text kvůli segmentům. **Tokeny nikdy.**
+- `/api/sms/ucet` — kontrola přihlašovacích údajů bez odeslání.
+
+**Kde to stojí:** Twilio přijme požadavek, ale odmítne odeslat s `21612`.
+Podle pravidel Twilia pro ČR od 14. 7. 2025 **T-Mobile a O2 blokují neregistrované Sender ID**.
+Geo Permissions pro Česko bylo zapnuté, na tom to nebylo.
+
+**Rozhodnutí: `SKRicmanice` nepoužívat.** Registrace jména stojí 30 $/měsíc a nejde sdílet
+mezi projekty; české číslo je 12 $/měsíc, funguje hned a jedno stačí pro všechny aplikace.
+Značka patří do těla zprávy. Zatím se **nekupuje nic** — SMS na nikoho nečekají, Telegram jede.
+
+**Cestou opraveno:** dvě rady, které byly špatně — že registrace je zdarma (není, 30 $/měsíc)
+a že číslo není potřeba (v Česku bez registrace je).
+
+**Pro příště:** Auth Token má 32 znaků, API Key SID 34 a začíná `SK`. Ta záměna stála dvě kola;
+proto `/api/sms/ucet` vrací délku tokenu.
+
+---
+
+## 2026-08-06 (10) — obrazovky ke shodě a k historii verzí
+
+- **Záložka Shoda**: tabulka osa × trenér, sloupec „shoda / rozchází se" s velikostí rozdílu,
+  výběr výsledku (předvyplněný jen tam, kde se shodli), slovní bloky všech trenérů jako
+  podklad a jedno finální znění na list.
+- **Blind guard ověřen naostro**: povinný trenér, který ještě neodevzdal, dostane
+  `{"cekaNaTebe": true}` a **žádná cizí čísla**.
+- **Historie verzí** v Porovnání: všechny verze s datem a autorem, tisk kterékoli
+  (`listy.html?verze=<id>`) a posun mezi dvěma vybranými se šipkami.
+- Zaškrtávátko „jeho hodnocení je nutné" u trenéra; výchozí Maxla a Julek.
+
+---
+
 ## 2026-08-06 (9) — dokumentace srovnaná, cron potvrzený, SMS do backlogu
 
 - Celá dokumentace projita a srovnána se skutečností: README, uživatelská příručka,
