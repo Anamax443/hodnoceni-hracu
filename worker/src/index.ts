@@ -25,6 +25,7 @@ export interface Env {
     EMAIL?: EmailBinding;      // Cloudflare Email Sending, binding [[send_email]]
     EMAIL_FROM?: string;
     OBNOVA_EMAILY?: string;    // čárkami oddělené adresy, na které smí jít obnova hesla
+    TELEGRAM_BOT_TOKEN?: string;
 }
 
 const MODUL = 'hodnoceni-hracu';
@@ -491,6 +492,41 @@ async function obnovaHesla(request: Request, env: Env, token: string): Promise<R
     return json({ nastaveno: true });
 }
 
+/* ===================== Telegram ===================== */
+
+/**
+ * Zavolá Telegram Bot API. Nikdy nevrací token ani celou URL — do odpovědi jde
+ * jen `description` od Telegramu, ať se secret nedostane do UI ani do logu.
+ */
+async function telegramApi(env: Env, metoda: string, telo?: unknown): Promise<
+    { ok: true; vysledek: any } | { ok: false; popis: string }
+> {
+    if (!env.TELEGRAM_BOT_TOKEN) {
+        return { ok: false, popis: 'Není nastavený secret TELEGRAM_BOT_TOKEN.' };
+    }
+    try {
+        const odpoved = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${metoda}`,
+            telo
+                ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(telo) }
+                : undefined);
+        const data = await odpoved.json<{ ok: boolean; result?: any; description?: string }>();
+        if (!data.ok) {
+            return { ok: false, popis: data.description ?? `Telegram odpověděl HTTP ${odpoved.status}.` };
+        }
+        return { ok: true, vysledek: data.result };
+    } catch (e) {
+        return { ok: false, popis: `Telegram je nedostupný: ${e instanceof Error ? e.message : String(e)}` };
+    }
+}
+
+/** Pošle zprávu do konkrétního chatu. */
+async function posliTelegram(env: Env, chatId: string, text: string): Promise<{ ok: boolean; popis?: string }> {
+    const r = await telegramApi(env, 'sendMessage', {
+        chat_id: chatId, text, disable_web_page_preview: true
+    });
+    return r.ok ? { ok: true } : { ok: false, popis: r.popis };
+}
+
 /* ===================== admin část (trenér) ===================== */
 
 async function admin(request: Request, env: Env, url: URL): Promise<Response> {
@@ -510,6 +546,62 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         await nastavHeslo(env, nove as string);
         await env.DB.prepare('DELETE FROM obnova').run();   // rozeslané odkazy padají
         return json({ zmeneno: true });
+    }
+
+    /* ---------- stav notifikačních kanálů ---------- */
+    if (cesta === '/api/kanaly' && metoda === 'GET') {
+        const tg = await telegramApi(env, 'getMe');
+        return json({
+            email: {
+                zapojeno: !!env.EMAIL,
+                odesilatel: env.EMAIL_FROM || 'hodnoceni@maxferit.cz',
+                popis: env.EMAIL
+                    ? 'Binding EMAIL je nasazený. Doručení ověří až odeslaná zpráva.'
+                    : 'Chybí binding EMAIL (Cloudflare Email Sending).'
+            },
+            telegram: tg.ok
+                ? {
+                    zapojeno: true, ok: true,
+                    bot: tg.vysledek?.username ?? null,
+                    jmeno: tg.vysledek?.first_name ?? null,
+                    popis: `Bot @${tg.vysledek?.username} odpovídá.`
+                }
+                : { zapojeno: !!env.TELEGRAM_BOT_TOKEN, ok: false, bot: null, popis: tg.popis }
+        });
+    }
+
+    /* ---------- kdo botovi napsal (kvůli chat id) ---------- */
+    if (cesta === '/api/telegram/chaty' && metoda === 'GET') {
+        const r = await telegramApi(env, 'getUpdates');
+        if (!r.ok) return json({ ok: false, popis: r.popis, chaty: [] });
+
+        // Telegram drží updaty jen ~24 h. Kdo botovi nenapsal, tady nebude.
+        const chaty = new Map<string, { chat_id: string; jmeno: string }>();
+        for (const u of (r.vysledek as any[]) ?? []) {
+            const chat = u?.message?.chat ?? u?.edited_message?.chat ?? u?.channel_post?.chat;
+            if (!chat) continue;
+            const jmeno = [chat.first_name, chat.last_name].filter(Boolean).join(' ')
+                || chat.title || chat.username || String(chat.id);
+            chaty.set(String(chat.id), { chat_id: String(chat.id), jmeno });
+        }
+        return json({
+            ok: true,
+            chaty: [...chaty.values()],
+            popis: chaty.size
+                ? `Botovi zatím napsali: ${chaty.size}`
+                : 'Botovi zatím nikdo nenapsal. Telegram nedovolí psát prvnímu — každý trenér musí botovi poslat aspoň jednu zprávu.'
+        });
+    }
+
+    /* ---------- zkušební zpráva do Telegramu ---------- */
+    if (cesta === '/api/telegram/test' && metoda === 'POST') {
+        const { chat_id } = await request.json<{ chat_id?: string }>();
+        if (!chat_id) return chyba('Chybí chat_id.', 400);
+        const nas = await nastaveni(env);
+        const r = await posliTelegram(env, String(chat_id),
+            `✅ Zkušební zpráva z aplikace Hodnocení hráčů (${nas.klub}).\n`
+            + 'Když ti tohle přišlo, notifikace ti budou chodit sem.');
+        return json({ ok: r.ok, popis: r.ok ? 'Zpráva odeslána.' : r.popis });
     }
 
     /* ---------- kam chodí obnova hesla (jen ke čtení, mění se secretem) ---------- */
