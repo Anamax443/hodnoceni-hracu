@@ -546,16 +546,24 @@ Alfanumerický odesílatel (`SMS_ODESILATEL`, výchozí `SKRicmanice`) je sice z
 povolený, ale **neregistrovaný ho čeští operátoři zahodí**. Nestačí ani povolit Česko
 v Geo Permissions — to bylo zapnuté a chyba zůstala stejná.
 
-| Cesta | Cena | Čas | Kde |
+| Cesta | Cena | Čas | Sdílení mezi projekty |
 |---|---|---|---|
-| Registrace alfanumerického odesílatele | zdarma | ~3 týdny na schválení | Trust Hub → Registrations |
-| České telefonní číslo (domestic long code) | ~12 $/měsíc | hned | Numbers & senders |
+| Registrace alfanumerického odesílatele | **30 $/měsíc za jméno** | ~3 týdny | ne — každé jméno vlastní registrace |
+| České telefonní číslo (domestic long code) | ~12 $/měsíc | hned | **ano** — jedno číslo pro všechny appky |
 
-**Mezinárodní long code T-Mobile a O2 nepodporují** — kdyby se šlo druhou cestou, musí to být
-české číslo, ne americké. Krátká čísla (short codes) v ČR nejdou vůbec.
+**Mezinárodní long code T-Mobile a O2 nepodporují** — musí to být české číslo, ne americké.
+Krátká čísla (short codes) v ČR nejdou vůbec.
 
-Zvoleno: **registrace**, protože SMS nespěchají (Telegram funguje) a měsíční poplatek by byl
-zbytečný. Změna cesty = přepsat `SMS_ODESILATEL`, v kódu nic.
+**Rozhodnutí: `SKRicmanice` nepoužívat.** Značka patří do těla zprávy, ne do odesílatele —
+„SK Ricmanice: Novak odeslal sebehodnoceni" stojí pár znaků místo 30 $ měsíčně a příjemce
+pozná stejně dobře, o co jde. Až budou SMS opravdu potřeba, koupí se **jedno české číslo
+sdílené napříč projekty** (garáže, JobWatch, hodnocení) a `SMS_ODESILATEL` se přepíše na něj.
+
+Pozn. ke subúčtům: číslo patří jednomu účtu, takže subúčet na projekt a sdílené číslo se
+navzájem vylučují. Při tomhle objemu vede jeden hlavní účet se sdíleným číslem.
+
+**Do té doby zůstává `SMS_PROVIDER: twilio` a odesílání skončí na `21612`** — je to vidět
+v logu i v Nastavení, takže to není tiché selhání. Kanál nemá nikdo zapnutý.
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
