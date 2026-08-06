@@ -83,7 +83,33 @@ function zB64url(text: string): Uint8Array {
     return Uint8Array.from(surove, z => z.charCodeAt(0));
 }
 
-/** Uloží nové heslo. Od téhle chvíle se secret ADMIN_HESLO ignoruje. */
+interface Ucet {
+    id: number; jmeno: string; login: string;
+    heslo_hash: string | null; heslo_sul: string | null; heslo_iterace: number | null;
+    email: string | null; telegram_chat_id: string | null;
+}
+
+/** Najde trenéra podle přihlašovacího jména (velikost písmen nerozhoduje). */
+async function najdiUcet(env: Env, login: string): Promise<Ucet | null> {
+    return env.DB.prepare(
+        `SELECT id, jmeno, login, heslo_hash, heslo_sul, heslo_iterace, email, telegram_chat_id
+           FROM players
+          WHERE role = 'trener' AND aktivni = 1 AND lower(login) = lower(?)`
+    ).bind(login.trim()).first<Ucet>();
+}
+
+/** Uloží heslo konkrétnímu člověku. */
+async function nastavHesloUctu(env: Env, playerId: number, heslo: string): Promise<void> {
+    const sul = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await odvodHash(heslo, sul, PBKDF2_ITERACE);
+    await env.DB.prepare(
+        `UPDATE players SET heslo_hash = ?, heslo_sul = ?, heslo_iterace = ?,
+                            heslo_zmeneno = datetime('now')
+          WHERE id = ?`
+    ).bind(hash, b64url(sul), PBKDF2_ITERACE, playerId).run();
+}
+
+/** Uloží společné heslo. Od téhle chvíle se secret ADMIN_HESLO ignoruje. */
 async function nastavHeslo(env: Env, heslo: string): Promise<void> {
     const sul = crypto.getRandomValues(new Uint8Array(16));
     const hash = await odvodHash(heslo, sul, PBKDF2_ITERACE);
@@ -103,6 +129,20 @@ async function nastavHeslo(env: Env, heslo: string): Promise<void> {
  * slouží pouze k prvnímu přihlášení, než se heslo poprvé nastaví z aplikace.
  * Kdyby se ztratilo i to: `DELETE FROM auth;` a secret zase platí.
  */
+/**
+ * Ověří heslo konkrétního trenéra. Vrací i jeho id, aby se dalo uložit
+ * do session — díky tomu aplikace ví, kdo je přihlášený.
+ */
+async function overUcet(env: Env, login: string, heslo: string):
+    Promise<{ stav: 'ok'; ucet: Ucet } | { stav: 'spatne' | 'bezHesla' | 'neznamy' }> {
+    const u = await najdiUcet(env, login);
+    if (!u) return { stav: 'neznamy' };
+    if (!u.heslo_hash || !u.heslo_sul || !u.heslo_iterace) return { stav: 'bezHesla' };
+
+    const shoda = stejne(await odvodHash(heslo, zB64url(u.heslo_sul), u.heslo_iterace), u.heslo_hash);
+    return shoda ? { stav: 'ok', ucet: u } : { stav: 'spatne' };
+}
+
 async function overHeslo(env: Env, heslo: string): Promise<'ok' | 'spatne' | 'nenastaveno'> {
     const a = await env.DB.prepare('SELECT heslo_hash, heslo_sul, iterace FROM auth WHERE id = 1')
         .first<{ heslo_hash: string; heslo_sul: string; iterace: number }>();
@@ -138,27 +178,33 @@ async function podepis(tajemstvi: string, data: string): Promise<string> {
     return b64url(sig);
 }
 
-async function vytvorSession(env: Env): Promise<string> {
+/** `kdo` = přihlášený trenér; u společného hesla zůstává null. */
+async function vytvorSession(env: Env, kdo?: { id: number; jmeno: string }): Promise<string> {
     const platnost = Date.now() + SESSION_HODIN * 3600_000;
-    const telo = b64url(new TextEncoder().encode(JSON.stringify({ exp: platnost })));
+    const telo = b64url(new TextEncoder().encode(JSON.stringify({
+        exp: platnost, id: kdo?.id ?? null, jmeno: kdo?.jmeno ?? null
+    })));
     return `${telo}.${await podepis(env.SESSION_KEY, telo)}`;
 }
 
-async function overSession(env: Env, cookie: string | null): Promise<boolean> {
-    if (!cookie) return false;
+interface Session { id: number | null; jmeno: string | null }
+
+/** Vrátí session, nebo null. Podpis i platnost se ověřují vždy. */
+async function overSession(env: Env, cookie: string | null): Promise<Session | null> {
+    if (!cookie) return null;
     const sess = cookie.split(/;\s*/).find(c => c.startsWith('sess='))?.slice(5);
-    if (!sess) return false;
+    if (!sess) return null;
 
     const [telo, sig] = sess.split('.');
-    if (!telo || !sig) return false;
-
-    if (!stejne(sig, await podepis(env.SESSION_KEY, telo))) return false;
+    if (!telo || !sig) return null;
+    if (!stejne(sig, await podepis(env.SESSION_KEY, telo))) return null;
 
     try {
-        const { exp } = JSON.parse(atob(telo.replace(/-/g, '+').replace(/_/g, '/')));
-        return typeof exp === 'number' && exp > Date.now();
+        const data = JSON.parse(atob(telo.replace(/-/g, '+').replace(/_/g, '/')));
+        if (typeof data.exp !== 'number' || data.exp <= Date.now()) return null;
+        return { id: data.id ?? null, jmeno: data.jmeno ?? null };
     } catch {
-        return false;
+        return null;
     }
 }
 
@@ -458,19 +504,40 @@ export default {
 
             /* ---------- přihlášení ---------- */
             if (cesta === '/api/login' && request.method === 'POST') {
-                const { heslo } = await request.json<{ heslo?: string }>();
-                const vysledek = heslo ? await overHeslo(env, heslo) : 'spatne';
+                const { login, heslo } = await request.json<{ login?: string; heslo?: string }>();
+                // Prodleva u nezdaru: aplikace je veřejná a chrání data nezletilých,
+                // hádání hesla ve smyčce tím přestane být praktické.
+                const nezdar = async (zprava: string, kod = 401) => {
+                    await new Promise(hotovo => setTimeout(hotovo, 700));
+                    return chyba(zprava, kod);
+                };
+                if (!heslo) return nezdar('Chybí heslo.');
+
+                if (login && login.trim()) {
+                    const v = await overUcet(env, login, heslo);
+                    if (v.stav === 'neznamy' || v.stav === 'spatne') {
+                        return nezdar('Špatné přihlašovací jméno nebo heslo.');
+                    }
+                    if (v.stav === 'bezHesla') {
+                        return nezdar('Tenhle účet ještě nemá nastavené heslo. '
+                            + 'Použij „Zapomenuté heslo" a přijde ti odkaz na jeho nastavení.', 409);
+                    }
+                    return json({ prihlasen: true, jmeno: v.ucet.jmeno, id: v.ucet.id }, 200, {
+                        'set-cookie': cookieHlavicka(
+                            await vytvorSession(env, { id: v.ucet.id, jmeno: v.ucet.jmeno }),
+                            https, SESSION_HODIN * 3600)
+                    });
+                }
+
+                // Bez přihlašovacího jména platí přechodné společné heslo.
+                const vysledek = await overHeslo(env, heslo);
                 if (vysledek === 'nenastaveno') {
                     return chyba('Na serveru není nastavené žádné heslo (chybí secret ADMIN_HESLO '
-                        + 'a v databázi není uložené heslo). Aplikace se takhle nedá odemknout.', 500);
+                        + 'a v databázi není uložené společné heslo). Aplikace se takhle nedá odemknout.', 500);
                 }
-                if (vysledek !== 'ok') {
-                    // Aplikace je na veřejné adrese a chrání data nezletilých.
-                    // Prodleva u špatného hesla dělá hádání hesla ve smyčce nepraktickým.
-                    await new Promise(hotovo => setTimeout(hotovo, 700));
-                    return chyba('Špatné heslo.', 401);
-                }
-                return json({ prihlasen: true }, 200, {
+                if (vysledek !== 'ok') return nezdar('Špatné heslo.');
+
+                return json({ prihlasen: true, jmeno: null, id: null }, 200, {
                     'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
                 });
             }
@@ -478,15 +545,15 @@ export default {
                 return json({ prihlasen: false }, 200, { 'set-cookie': cookieHlavicka('', https, 0) });
             }
             if (cesta === '/api/me') {
-                return json({ prihlasen: await overSession(env, request.headers.get('cookie')) });
+                const s = await overSession(env, request.headers.get('cookie'));
+                return json({ prihlasen: !!s, jmeno: s?.jmeno ?? null, id: s?.id ?? null });
             }
 
             /* ---------- admin API ---------- */
             if (cesta.startsWith('/api/')) {
-                if (!await overSession(env, request.headers.get('cookie'))) {
-                    return chyba('Nepřihlášen.', 401);
-                }
-                return await admin(request, env, url);
+                const s = await overSession(env, request.headers.get('cookie'));
+                if (!s) return chyba('Nepřihlášen.', 401);
+                return await admin(request, env, url, s);
             }
 
             /* ---------- statické soubory ---------- */
@@ -600,24 +667,71 @@ async function posliMail(env: Env, komu: string, predmet: string, text: string):
 }
 
 /**
- * Žádost o obnovu. Odpověď je vždycky stejná, ať se nedá zjistit, které adresy
- * jsou nastavené. Neposílá se heslo, ale jednorázový odkaz s krátkou platností.
+ * Vytvoří jednorázový odkaz a pošle ho na kanály toho konkrétního člověka.
+ * Nikdy se neposílá heslo — heslo poslané zprávou zůstane ve schránce navždy.
+ * Vrací lidsky čitelné řádky (pro tlačítko „poslat pozvánku" v administraci).
+ */
+async function posliObnovu(env: Env, u: Ucet, zaklad: string, lang: string): Promise<string[]> {
+    const token = novyToken();
+    const platnyDo = new Date(Date.now() + OBNOVA_MINUT * 60_000).toISOString();
+    await env.DB.prepare(
+        'INSERT INTO obnova (token, email, platny_do, player_id) VALUES (?, ?, ?, ?)'
+    ).bind(token, u.email ?? '', platnyDo, u.id).run();
+
+    const odkaz = `${zaklad}/obnova/${token}`;
+    const en = lang === 'en';
+    const predmet = en ? 'Player evaluation — set your password' : 'Hodnocení hráčů — nastavení hesla';
+    const text = en
+        ? `Hi ${u.jmeno},\n\nSet your password here (valid ${OBNOVA_MINUT} minutes, single use):\n${odkaz}\n\nYour sign-in name is: ${u.login}\n\nIf you did not ask for this, ignore the message — nothing changed.`
+        : `Ahoj ${u.jmeno},\n\nHeslo si nastavíš tady (platí ${OBNOVA_MINUT} minut, jen jednou):\n${odkaz}\n\nPřihlašovací jméno máš: ${u.login}\n\nPokud jsi o to nežádal, zprávu ignoruj — nic se nezměnilo.`;
+
+    const zpravy: string[] = [];
+    if (u.telegram_chat_id) {
+        const r = await posliTelegram(env, u.telegram_chat_id, `${predmet}\n\n${text}`);
+        zpravy.push(`Telegram → ${u.jmeno}: ${r.ok ? 'odesláno' : 'selhalo — ' + r.popis}`);
+    }
+    if (u.email) {
+        const ok = await posliMail(env, u.email, predmet, text);
+        zpravy.push(`E-mail → ${u.jmeno} (${u.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
+    }
+    if (!zpravy.length) {
+        zpravy.push(`${u.jmeno} nemá vyplněný ani e-mail, ani Telegram — nemá kam odkaz poslat.`);
+    }
+    return zpravy;
+}
+
+/**
+ * Žádost o obnovu. Odpověď je vždycky stejná, ať se nedá zjišťovat,
+ * která přihlašovací jména existují.
  */
 async function zadostOObnovu(request: Request, env: Env, url: URL): Promise<Response> {
-    const { email, lang } = await request.json<{ email?: string; lang?: string }>();
+    const { login, email, lang } = await request.json<{ login?: string; email?: string; lang?: string }>();
     const neutralni = json({ odeslano: true });
 
-    const adresa = (email ?? '').trim().toLowerCase();
-    if (!adresa || !povoleneAdresy(env).includes(adresa)) return neutralni;
-
-    // Brzda na spamování schránky: pár žádostí za okno a dost.
+    // Brzda na spamování: pár žádostí za okno a dost.
     const nedavno = await env.DB.prepare(
         `SELECT COUNT(*) AS pocet FROM obnova WHERE created_at > datetime('now', ?)`
     ).bind(`-${OBNOVA_MINUT} minutes`).first<{ pocet: number }>();
     if ((nedavno?.pocet ?? 0) >= OBNOVA_MAX_ZA_OKNO) {
-        console.warn('Obnova hesla: překročen limit žádostí, mail se neodeslal.');
+        console.warn('Obnova hesla: překročen limit žádostí, nic se neodeslalo.');
         return neutralni;
     }
+
+    // 1) Účet po lidech — odkaz jde na kanály toho člověka.
+    if (login && login.trim()) {
+        const u = await najdiUcet(env, login);
+        if (u) {
+            const zpravy = await posliObnovu(env, u, url.origin, lang ?? 'cs');
+            for (const z of zpravy) console.log('Obnova:', z);
+            return neutralni;
+        }
+        // Nenašlo se přihlašovací jméno — zkusíme ještě, jestli to není adresa
+        // pro přechodné společné heslo (formulář má jen jedno políčko).
+    }
+
+    // 2) Přechodné společné heslo — odkaz jde na adresy ze secretu.
+    const adresa = (email ?? login ?? '').trim().toLowerCase();
+    if (!adresa || !povoleneAdresy(env).includes(adresa)) return neutralni;
 
     const token = novyToken();
     const platnyDo = new Date(Date.now() + OBNOVA_MINUT * 60_000).toISOString();
@@ -630,8 +744,8 @@ async function zadostOObnovu(request: Request, env: Env, url: URL): Promise<Resp
         env, adresa,
         en ? 'Player evaluation — password reset' : 'Hodnocení hráčů — obnova hesla',
         en
-            ? `Someone asked to reset the coach password.\n\nSet a new one here (valid ${OBNOVA_MINUT} minutes, single use):\n${odkaz}\n\nIf it wasn't you, ignore this e-mail — nothing has changed and the current password keeps working.`
-            : `Někdo požádal o obnovu hesla trenéra.\n\nNové heslo si nastavíš tady (platí ${OBNOVA_MINUT} minut, jen jednou):\n${odkaz}\n\nPokud to nebyl ty, e-mail ignoruj — nic se nezměnilo a stávající heslo platí dál.`
+            ? `Someone asked to reset the shared password.\n\nSet a new one here (valid ${OBNOVA_MINUT} minutes, single use):\n${odkaz}\n\nIf it wasn't you, ignore this e-mail — nothing has changed.`
+            : `Někdo požádal o obnovu společného hesla.\n\nNové heslo si nastavíš tady (platí ${OBNOVA_MINUT} minut, jen jednou):\n${odkaz}\n\nPokud to nebyl ty, e-mail ignoruj — nic se nezměnilo.`
     );
 
     return neutralni;
@@ -640,8 +754,8 @@ async function zadostOObnovu(request: Request, env: Env, url: URL): Promise<Resp
 /** GET = platí ještě odkaz?  POST = nastav nové heslo. */
 async function obnovaHesla(request: Request, env: Env, token: string): Promise<Response> {
     const t = token && token.length >= 20
-        ? await env.DB.prepare('SELECT token, pouzit, platny_do FROM obnova WHERE token = ?')
-            .bind(token).first<{ token: string; pouzit: number; platny_do: string }>()
+        ? await env.DB.prepare('SELECT token, pouzit, platny_do, player_id FROM obnova WHERE token = ?')
+            .bind(token).first<{ token: string; pouzit: number; platny_do: string; player_id: number | null }>()
         : null;
 
     const platny = !!t && !t.pouzit && new Date(t.platny_do) > new Date();
@@ -654,11 +768,18 @@ async function obnovaHesla(request: Request, env: Env, token: string): Promise<R
     const problem = zkontrolujNoveHeslo(heslo);
     if (problem) return chyba(problem, 400);
 
-    await nastavHeslo(env, heslo as string);
-    // Ostatní rozeslané odkazy tím padají — platí jen ten poslední použitý.
-    await env.DB.prepare('DELETE FROM obnova').run();
+    if (t!.player_id) {
+        // Heslo konkrétního trenéra. Padají jen jeho ostatní odkazy.
+        await nastavHesloUctu(env, t!.player_id, heslo as string);
+        await env.DB.prepare('DELETE FROM obnova WHERE player_id = ?').bind(t!.player_id).run();
+        const u = await env.DB.prepare('SELECT login FROM players WHERE id = ?')
+            .bind(t!.player_id).first<{ login: string }>();
+        return json({ nastaveno: true, login: u?.login ?? null });
+    }
 
-    return json({ nastaveno: true });
+    await nastavHeslo(env, heslo as string);
+    await env.DB.prepare('DELETE FROM obnova WHERE player_id IS NULL').run();
+    return json({ nastaveno: true, login: null });
 }
 
 /* ===================== Telegram ===================== */
@@ -698,23 +819,55 @@ async function posliTelegram(env: Env, chatId: string, text: string): Promise<{ 
 
 /* ===================== admin část (trenér) ===================== */
 
-async function admin(request: Request, env: Env, url: URL): Promise<Response> {
+async function admin(request: Request, env: Env, url: URL, kdo: Session): Promise<Response> {
     const cesta = url.pathname;
     const metoda = request.method;
     const q = url.searchParams;
 
-    /* ---------- změna hesla ---------- */
+    /* ---------- změna vlastního hesla ---------- */
     if (cesta === '/api/heslo' && metoda === 'POST') {
         const { stare, nove } = await request.json<{ stare?: string; nove?: string }>();
+        const problem = zkontrolujNoveHeslo(nove);
+
+        if (kdo.id) {
+            // Přihlášený člověk mění své vlastní heslo.
+            const u = await env.DB.prepare(
+                'SELECT login FROM players WHERE id = ?'
+            ).bind(kdo.id).first<{ login: string }>();
+            const v = u ? await overUcet(env, u.login, stare ?? '') : { stav: 'neznamy' as const };
+            if (v.stav !== 'ok') {
+                await new Promise(hotovo => setTimeout(hotovo, 700));
+                return chyba('Stávající heslo nesouhlasí.', 401);
+            }
+            if (problem) return chyba(problem, 400);
+            await nastavHesloUctu(env, kdo.id, nove as string);
+            await env.DB.prepare('DELETE FROM obnova WHERE player_id = ?').bind(kdo.id).run();
+            return json({ zmeneno: true, kdo: kdo.jmeno });
+        }
+
+        // Přechodné společné heslo.
         if (!stare || await overHeslo(env, stare) !== 'ok') {
             await new Promise(hotovo => setTimeout(hotovo, 700));
             return chyba('Stávající heslo nesouhlasí.', 401);
         }
-        const problem = zkontrolujNoveHeslo(nove);
         if (problem) return chyba(problem, 400);
         await nastavHeslo(env, nove as string);
-        await env.DB.prepare('DELETE FROM obnova').run();   // rozeslané odkazy padají
-        return json({ zmeneno: true });
+        await env.DB.prepare('DELETE FROM obnova WHERE player_id IS NULL').run();
+        return json({ zmeneno: true, kdo: null });
+    }
+
+    /* ---------- poslat trenérovi odkaz na nastavení hesla ---------- */
+    if (cesta.match(/^\/api\/players\/(\d+)\/pozvanka$/) && metoda === 'POST') {
+        const id = Number(cesta.match(/^\/api\/players\/(\d+)\/pozvanka$/)![1]);
+        const u = await env.DB.prepare(
+            `SELECT id, jmeno, login, email, telegram_chat_id FROM players
+              WHERE id = ? AND role = 'trener'`
+        ).bind(id).first<Ucet>();
+        if (!u) return chyba('Trenér nenalezen.', 404);
+        if (!u.login) return chyba('Trenér nemá přihlašovací jméno — nejdřív ho vyplň.', 400);
+
+        const zpravy = await posliObnovu(env, u, url.origin, 'cs');
+        return json({ zpravy });
     }
 
     /* ---------- ruční odeslání souhrnu (tlačítko „poslat teď") ---------- */
@@ -835,8 +988,12 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
     if (cesta === '/api/players') {
         if (metoda === 'GET') {
             const { results } = await env.DB.prepare(
-                'SELECT * FROM players ORDER BY role DESC, aktivni DESC, jmeno'
+                `SELECT id, jmeno, prezdivka, post, pozice, role, sablona, aktivni, created_at,
+                        email, telegram_chat_id, notif_email, notif_telegram, login,
+                        heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
+                   FROM players ORDER BY role DESC, aktivni DESC, jmeno`
             ).all();
+            // Hash ani sůl ven nikdy neposíláme, jen příznak „heslo nastavené".
             return json((results ?? []).map(osobaVen));
         }
         if (metoda === 'POST') {
@@ -845,13 +1002,16 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
             if (problem) return chyba(problem, 400);
             const r = await env.DB.prepare(
                 `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                                      email, telegram_chat_id, notif_email, notif_telegram)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?) RETURNING *`
+                                      email, telegram_chat_id, notif_email, notif_telegram, login)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+                 RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                           email, telegram_chat_id, notif_email, notif_telegram, login`
             ).bind(
                 p.jmeno.trim(), p.prezdivka || null, p.post || null,
                 JSON.stringify(p.pozice ?? []), p.role, p.sablona,
                 (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
-                p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0
+                p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
+                (p.login ?? '').trim().toLowerCase() || null
             ).first();
             return json(osobaVen(r), 201);
         }
@@ -865,13 +1025,17 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         const r = await env.DB.prepare(
             `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
                                 role = ?, sablona = ?, aktivni = ?,
-                                email = ?, telegram_chat_id = ?, notif_email = ?, notif_telegram = ?
-              WHERE id = ? RETURNING *`
+                                email = ?, telegram_chat_id = ?, notif_email = ?, notif_telegram = ?,
+                                login = ?
+              WHERE id = ?
+          RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                    email, telegram_chat_id, notif_email, notif_telegram, login`
         ).bind(
             p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
             p.role, p.sablona, p.aktivni ? 1 : 0,
             (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
             p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
+            (p.login ?? '').trim().toLowerCase() || null,
             Number(osobaId)
         ).first();
         if (!r) return chyba('Osoba nenalezena.', 404);

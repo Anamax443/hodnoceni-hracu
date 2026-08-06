@@ -74,7 +74,27 @@ Tiskové listy mají **vlastní stránku** (`listy.html`), protože `src/styl.cs
 
 ## 3. Autorizace
 
-Rozhodnuto: jedno společné heslo trenéra + podepsaná session cookie (zadání §14/1).
+**Účty po lidech** (od 2026-08-06). Každý trenér má vlastní přihlašovací jméno
+(`players.login`) a vlastní heslo (`heslo_hash`, `heslo_sul`, `heslo_iterace` u jeho řádku).
+Session nese jeho `id` a `jmeno`, takže aplikace ví, kdo je přihlášený — a obnova hesla
+může být pro každého zvlášť.
+
+**Obnova jde na kanál toho člověka**, ne na globální seznam adres: Telegram chat id nebo
+e-mail, které má u sebe vyplněné. Díky tomu nebylo potřeba čekat na ověřené e-maily
+v Cloudflare — Maxla dostává odkaz na Telegram. Kdo nemá ani jedno, nemá kam odkaz poslat
+a aplikace to řekne.
+
+Administrace umí poslat trenérovi **odkaz na nastavení hesla** (tlačítko v Lidech) — stejná
+jednorázová logika, jen ji spouští někdo jiný.
+
+**Přechod:** původní společné heslo (tabulka `auth`) zůstává funkční, dokud ho někdo
+nesmaže (`DELETE FROM auth`). Kdo nechá přihlašovací jméno prázdné, přihlásí se jím.
+Jinak by šlo vyzamknout celý tým. Až budou mít všichni svoje heslo, společné smazat.
+
+---
+
+Původní rozhodnutí (přechodné): jedno společné heslo trenéra + podepsaná session cookie
+(zadání §14/1).
 
 **Heslo žije v databázi, ne v secretu.** Ukládá se jako PBKDF2-SHA256 hash s náhodnou
 16bajtovou solí, 100 000 iterací (víc workerd nedovolí — „iteration counts above 100000 are

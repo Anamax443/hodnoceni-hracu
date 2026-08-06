@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hodnocení hráčů</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="app.css">
 <script>
     /* Vzhled se nastaví dřív, než se stránka vykreslí — jinak by při tmavém
@@ -19,7 +20,7 @@
 <body>
 
 <header class="topbar">
-    <span class="brand" id="hl-klub">⚽</span>
+    <a class="brand" id="hl-klub" href="/" title="Zpět na úvod">⚽</a>
     <span class="app" id="hl-app"></span>
     <span class="obdobi" id="hl-obdobi"></span>
     <span class="tools">
@@ -35,6 +36,11 @@
     <div class="karta login">
         <h2 id="login-nadpis"></h2>
         <p class="popis" id="login-popis"></p>
+        <div class="pole">
+            <label for="login-jmeno" id="login-kdo-label"></label>
+            <input type="text" id="login-jmeno" autocomplete="username">
+            <div class="popis" id="login-kdo-napoveda"></div>
+        </div>
         <div class="pole">
             <label for="heslo" id="login-heslo-label"></label>
             <input type="password" id="heslo" autocomplete="current-password">

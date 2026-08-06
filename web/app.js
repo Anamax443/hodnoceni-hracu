@@ -13,7 +13,7 @@ import { esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
 
 const $ = s => document.querySelector(s);
-const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false };
+const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null };
 
 /* ===================== komunikace ===================== */
 
@@ -77,6 +77,8 @@ function prekresliShell() {
     $('#hl-app').textContent = t('shell.app');
     $('#login-nadpis').textContent = t('shell.app');
     $('#login-popis').textContent = t('login.popis');
+    $('#login-kdo-label').textContent = t('login.kdo');
+    $('#login-kdo-napoveda').textContent = t('login.kdo.napoveda');
     $('#login-heslo-label').textContent = t('login.heslo');
     $('#prihlasit').textContent = t('login.prihlasit');
     $('#prihlasit').title = t('login.prihlasit.tip');
@@ -105,7 +107,8 @@ function prekresliShell() {
 
     if (stav.prihlasen) {
         $('#hl-klub').textContent = '⚽ ' + (stav.nastaveni.klub || '');
-        $('#hl-obdobi').textContent = `${t('shell.obdobi')}: ${stav.nastaveni.obdobi || ''}`;
+        $('#hl-obdobi').textContent = `${t('shell.obdobi')}: ${stav.nastaveni.obdobi || ''}`
+            + ' · ' + t('shell.prihlasen', stav.kdo || t('shell.spolecne'));
     }
 }
 
@@ -131,8 +134,9 @@ async function poslatObnovu() {
     const tlacitko = $('#obnova-poslat');
     tlacitko.disabled = true;
     try {
-        // Odpověď je vždycky stejná, ať se nedá zjišťovat, které adresy jsou povolené.
-        await api('/api/obnova', { telo: { email: $('#obnova-email').value, lang: jazyk() } });
+        // Odpověď je vždycky stejná, ať se nedá zjišťovat, kdo má účet.
+        const kdo = $('#obnova-email').value;
+        await api('/api/obnova', { telo: { login: kdo, email: kdo, lang: jazyk() } });
     } catch { /* i chybu bereme jako neutrální výsledek */ }
     $('#obnova-hlaska').innerHTML = `<div class="hlaska ok">${t('login.obnova.odeslano')}</div>`;
     tlacitko.disabled = false;
@@ -140,9 +144,12 @@ async function poslatObnovu() {
 
 async function prihlas() {
     const heslo = $('#heslo').value;
+    const login = $('#login-jmeno').value;
     $('#prihlaseni-chyba').innerHTML = '';
     try {
-        await api('/api/login', { telo: { heslo } });
+        const r = await api('/api/login', { telo: { login, heslo } });
+        stav.kdo = r.jmeno ?? null;
+        stav.kdoId = r.id ?? null;
         $('#heslo').value = '';
         await spust();
     } catch (e) {
@@ -233,6 +240,9 @@ async function lide(kam) {
                 <div class="popis">${t('lide.pozice.napoveda')}</div>
             </div>
             <div class="radek">
+                <div class="pole"><label for="o-login">${t('lide.login')}</label>
+                    <input type="text" id="o-login" autocomplete="off">
+                    <div class="popis">${t('lide.login.napoveda')}</div></div>
                 <div class="pole"><label for="o-post">${t('lide.post.label')}</label>
                     <input type="text" id="o-post">
                     <div class="popis">${t('lide.post.napoveda')}</div></div>
@@ -265,6 +275,7 @@ async function lide(kam) {
             <p>
                 <button class="vedlejsi" id="dotahnout-chat" title="${t('lide.dotahnout.tip')}">${t('lide.dotahnout')}</button>
                 <button class="vedlejsi" id="zkusebni-zprava" title="${t('lide.zkusebni.tip')}">${t('lide.zkusebni')}</button>
+                <button class="vedlejsi" id="poslat-pozvanku" title="${t('lide.pozvanka.tip')}">${t('lide.pozvanka')}</button>
             </p>
             <div id="chat-vysledek"></div>
 
@@ -280,6 +291,7 @@ async function lide(kam) {
         $('#o-sablona').value = 'pole';
         $('#o-aktivni').checked = true;
         kam.querySelectorAll('.o-pozice').forEach(c => { c.checked = false; });
+        $('#o-login').value = '';
         $('#o-email').value = '';
         $('#o-chatid').value = '';
         $('#o-notif-email').checked = false;
@@ -308,6 +320,19 @@ async function lide(kam) {
         }
     };
 
+    $('#poslat-pozvanku').onclick = async () => {
+        const cil = $('#chat-vysledek');
+        const id = $('#formular-osoby').dataset.id;
+        if (!id) { cil.innerHTML = `<div class="hlaska chyba">${t('lide.upravit')}?</div>`; return; }
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const r = await api(`/api/players/${id}/pozvanka`, { telo: {} });
+            cil.innerHTML = `<div class="hlaska info">${r.zpravy.map(esc).join('<br>')}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
     $('#zkusebni-zprava').onclick = async () => {
         const cil = $('#chat-vysledek');
         const chat = $('#o-chatid').value.trim();
@@ -331,6 +356,15 @@ async function lide(kam) {
         $('#o-sablona').value = o.sablona;
         $('#o-aktivni').checked = !!o.aktivni;
         kam.querySelectorAll('.o-pozice').forEach(c => { c.checked = (o.pozice ?? []).includes(c.value); });
+        $('#o-login').value = o.login || '';
+        $('#o-email').value = o.email || '';
+        $('#o-chatid').value = o.telegram_chat_id || '';
+        $('#o-notif-email').checked = !!o.notif_email;
+        $('#o-notif-telegram').checked = !!o.notif_telegram;
+        $('#chat-vysledek').innerHTML = o.role === 'trener'
+            ? `<div class="hlaska ${o.ma_heslo ? 'ok' : 'pozor'}">${o.ma_heslo ? t('lide.maHeslo') : t('lide.bezHesla')}</div>`
+            : '';
+        $('#formular-osoby').dataset.id = o.id;
         $('#formular-osoby').scrollIntoView({ behavior: 'smooth' });
     });
 
@@ -342,6 +376,11 @@ async function lide(kam) {
             jmeno: $('#o-jmeno').value,
             prezdivka: $('#o-prezdivka').value,
             post: $('#o-post').value,
+            login: $('#o-login').value,
+            email: $('#o-email').value,
+            telegram_chat_id: $('#o-chatid').value,
+            notif_email: $('#o-notif-email').checked,
+            notif_telegram: $('#o-notif-telegram').checked,
             pozice: [...kam.querySelectorAll('.o-pozice:checked')].map(c => c.value),
             role: $('#o-role').value,
             sablona: $('#o-sablona').value,
@@ -869,7 +908,9 @@ setInterval(hodiny, 1000);
 
 (async () => {
     prekresliShell();
-    const { prihlasen } = await api('/api/me');
-    if (prihlasen) await spust();
+    const ja = await api('/api/me');
+    stav.kdo = ja.jmeno ?? null;
+    stav.kdoId = ja.id ?? null;
+    if (ja.prihlasen) await spust();
     else ukazPrihlaseni();
 })();

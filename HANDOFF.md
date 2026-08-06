@@ -2,6 +2,29 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (8) — účty po lidech, přezdívky, favicon
+
+**Účty po lidech** (migrace `007_ucty.sql`): každý trenér má `login` a vlastní heslo
+(PBKDF2 u jeho řádku). Session nese `id` a `jmeno` → aplikace ví, kdo je přihlášený.
+**Obnova hesla je pro každého zvlášť** a chodí na jeho vlastní kanál (Telegram nebo e-mail),
+ne na globální seznam ze secretu. Administrace umí poslat trenérovi odkaz na nastavení hesla.
+
+Přechod: společné heslo v `auth` zůstává funkční (prázdné přihlašovací jméno), aby nešlo
+vyzamknout celý tým. Až budou mít všichni svoje, smazat `DELETE FROM auth`.
+
+**Ověřeno naživo:** pozvánka Maxlovi dorazila na Telegram, nastavení hesla odkazem,
+přihlášení `maxla` + heslo → session zná jméno, cizí účet stejné heslo nepustí (409/401),
+odkaz je jednorázový (410), společné heslo pořád funguje.
+
+**Stav hesel:** Maxla má vlastní heslo (stejný řetězec jako společné, ať si nepamatuje dvě).
+Julek a Maso zatím bez hesla — pošli jim pozvánku z Lidí, až budou mít Telegram nebo
+ověřený e-mail.
+
+**Drobnosti:** přezdívky se ukazují všude, kde se vypisují jména (v kádru jsou tři Trnkové);
+favicon (`web/favicon.svg`) místo globusu v záložce; klik na název klubu vede na úvod.
+
+---
+
 ## 2026-08-06 (7) — vlastní doména hodnoceni.maxferit.cz
 
 **Živě na https://hodnoceni.maxferit.cz.** Custom domain přímo ve `wrangler.jsonc`
