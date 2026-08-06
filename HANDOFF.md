@@ -2,6 +2,30 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (7) — vlastní doména hodnoceni.maxferit.cz
+
+**Živě na https://hodnoceni.maxferit.cz.** Custom domain přímo ve `wrangler.jsonc`
+(`routes` s `custom_domain: true`); zóna je na stejném účtu, takže si Cloudflare DNS
+i certifikát založil sám při deployi. `hodnoceni-hracu.bass443.workers.dev` zůstává
+funkční jako záloha.
+
+Ověřeno na nové adrese: `/health`, `/api/version`, přihlášení (cookie se `Secure`),
+načtení kádru (22 osob), stránky `/`, `/listy.html`, `/obnova/*`.
+
+Do `vars` přibylo `ZAKLADNI_URL` — odkazy v notifikacích vznikají v cronu, kde není
+request, ze kterého by šla adresa odvodit.
+
+**Cestou nastal blok:** wrangler se uprostřed práce odhlásil (`whoami` → not authenticated),
+credentials se navíc přesunuly z `AppData\Roaming\xdg.config\.wrangler` do
+`C:\Users\trnkam\.wrangler`. Vyřešeno tím, že se uživatel znovu přihlásil (`wrangler login`).
+
+**Zjištění k cronu:** `sk-ricmanice-taktika` **není Worker** (Cloudflare vrací
+„This Worker does not exist on your account", code 10007) — je to Pages projekt a `[triggers]`
+v jeho `wrangler.toml` je mrtvý zápis. Uvolněním nic nezískáme. Skutečné držitele slotů viz
+níž; rozhodnutí (Workers Paid vs. piggyback na job-watch) je na zadavateli.
+
+---
+
 ## 2026-08-06 (6) — souhrnné notifikace (Telegram ověřený, cron blokovaný limitem)
 
 **Hotové** (migrace `005_notifikace.sql`, `006_notif_intervaly.sql`, nasazeno):

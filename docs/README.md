@@ -44,7 +44,7 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 
 ## 3. Přihlášení
 
-Aplikace běží na **https://hodnoceni-hracu.bass443.workers.dev**. Zadáš heslo trenéra,
+Aplikace běží na **https://hodnoceni.maxferit.cz**. Zadáš heslo trenéra,
 přihlášení platí 12 hodin. Heslo je jedno společné — kdo ho má, vidí všechno.
 
 **Změna hesla:** Nastavení → Změna hesla (stávající + nové dvakrát, aspoň 10 znaků).

@@ -2,7 +2,8 @@
 
 Co se dělá pravidelně a co dělat, když něco nesedí.
 
-**Adresa:** https://hodnoceni-hracu.bass443.workers.dev
+**Adresa:** https://hodnoceni.maxferit.cz
+(záloha: `https://hodnoceni-hracu.bass443.workers.dev`)
 **Heslo trenéra:** v repozitáři není. Mění se v aplikaci — **Nastavení → Změna hesla**.
 
 **Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo* → zadat adresu →

@@ -3,7 +3,8 @@
 > Hodnotící listy mládežnických fotbalistů SK Říčmanice — radar graf, slovní komentář,
 > sebehodnocení hráče a překryv obou pohledů pro rozhovor.
 
-**Běží na:** https://hodnoceni-hracu.bass443.workers.dev
+**Běží na:** https://hodnoceni.maxferit.cz
+(záložní adresa `https://hodnoceni-hracu.bass443.workers.dev` zůstává funkční)
 
 ## Co to dělá
 

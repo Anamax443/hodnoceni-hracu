@@ -112,12 +112,19 @@ Automatizované ověření API včetně bezpečnostních pravidel je popsané v 
 
 ## 7. Doména
 
-Zatím `hodnoceni-hracu.bass443.workers.dev`. Cílově vlastní pod **maxferit.cz**
-(rozhodnuto 2026-08-06) — DNS je na Cloudflare u téhož účtu, takže se přidá custom domain
-k Workeru (dashboard → Workers → Settings → Domains & Routes) a CNAME vznikne sám.
+**`https://hodnoceni.maxferit.cz`** — custom domain nastavená přímo ve `wrangler.jsonc`:
 
-Náhledová URL jednotlivých verzí jsou schválně vypnutá (`preview_urls: false`), aby
-existovala jediná veřejná adresa.
+```jsonc
+"routes": [{ "pattern": "hodnoceni.maxferit.cz", "custom_domain": true }]
+```
+
+Zóna maxferit.cz je na stejném účtu, takže si Cloudflare DNS záznam i certifikát založil sám
+při `npm run deploy`. Změna adresy = přepsat vzorec a nasadit; k tomu ještě `ZAKLADNI_URL`
+ve `vars` (používá se v odkazech uvnitř notifikací, které vznikají v cronu bez requestu).
+
+Adresa `hodnoceni-hracu.bass443.workers.dev` zůstává funkční jako záloha (`workers_dev: true`).
+
+Náhledová URL jednotlivých verzí jsou schválně vypnutá (`preview_urls: false`).
 
 ## 8. Zálohy
 
