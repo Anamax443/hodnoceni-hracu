@@ -8,7 +8,7 @@
    po přepnutí jazyka jen překreslí, nic se znovu nenačítá z databáze.
    ===================================================================== */
 
-import { SABLONY, MAX } from './src/sablony.js';
+import { SABLONY, MAX, POZICE } from './src/sablony.js';
 import { esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
 
@@ -188,10 +188,12 @@ const hraciAktivni = () => stav.lide.filter(o => o.role === 'hrac' && o.aktivni)
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
+    const nazvyPozic = o => (o.pozice ?? []).map(p => t('pozice.' + p)).join(' · ');
+
     const radek = o => `
         <tr>
             <td>${esc(o.jmeno)}${o.prezdivka ? ` <span class="popis">„${esc(o.prezdivka)}"</span>` : ''}</td>
-            <td>${esc(o.post || '—')}</td>
+            <td>${esc(nazvyPozic(o) || t('lide.bezPozic'))}${o.post ? ` <span class="popis">${esc(o.post)}</span>` : ''}</td>
             <td><span class="znacka ${o.role}">${o.role === 'trener' ? t('lide.trener') : t('lide.hrac')}</span></td>
             <td>${o.role === 'hrac' ? t('sablona.' + o.sablona) : '—'}</td>
             <td>${o.aktivni ? '' : `<span class="znacka neaktivni">${t('lide.neaktivni')}</span>`}</td>
@@ -203,7 +205,7 @@ async function lide(kam) {
             <h2>${t('lide.nadpis')}</h2>
             <p class="popis">${t('lide.popis')}</p>
             <table>
-                <thead><tr><th>${t('lide.jmeno')}</th><th>${t('lide.post')}</th><th>${t('lide.role')}</th>
+                <thead><tr><th>${t('lide.jmeno')}</th><th>${t('lide.pozice')}</th><th>${t('lide.role')}</th>
                     <th>${t('lide.sablona')}</th><th></th><th></th></tr></thead>
                 <tbody>${stav.lide.map(radek).join('') || `<tr><td colspan="6">${t('lide.prazdno')}</td></tr>`}</tbody>
             </table>
@@ -218,9 +220,17 @@ async function lide(kam) {
                 <div class="pole"><label for="o-prezdivka">${t('lide.prezdivka')}</label>
                     <input type="text" id="o-prezdivka"></div>
             </div>
+            <div class="pole">
+                <label>${t('lide.pozice.label')}</label>
+                <div class="pozice-vyber">${POZICE.map(p => `
+                    <label class="volba"><input type="checkbox" class="o-pozice" value="${p}"> ${t('pozice.' + p)}</label>
+                `).join('')}</div>
+                <div class="popis">${t('lide.pozice.napoveda')}</div>
+            </div>
             <div class="radek">
                 <div class="pole"><label for="o-post">${t('lide.post.label')}</label>
-                    <input type="text" id="o-post"></div>
+                    <input type="text" id="o-post">
+                    <div class="popis">${t('lide.post.napoveda')}</div></div>
                 <div class="pole"><label for="o-role">${t('lide.role.label')}</label>
                     <select id="o-role">
                         <option value="hrac">${t('lide.hrac')}</option>
@@ -228,7 +238,8 @@ async function lide(kam) {
                     </select></div>
                 <div class="pole"><label for="o-sablona">${t('lide.sablona.label')}</label>
                     <select id="o-sablona">${Object.keys(SABLONY)
-                        .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select></div>
+                        .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select>
+                    <div class="popis">${t('lide.sablona.napoveda')}</div></div>
             </div>
             <div class="pole"><label><input type="checkbox" id="o-aktivni" checked style="width:auto"> ${t('lide.aktivni')}</label></div>
             <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
@@ -242,6 +253,7 @@ async function lide(kam) {
         $('#o-role').value = 'hrac';
         $('#o-sablona').value = 'pole';
         $('#o-aktivni').checked = true;
+        kam.querySelectorAll('.o-pozice').forEach(c => { c.checked = false; });
     };
 
     kam.querySelectorAll('[data-upravit]').forEach(b => b.onclick = () => {
@@ -254,6 +266,7 @@ async function lide(kam) {
         $('#o-role').value = o.role;
         $('#o-sablona').value = o.sablona;
         $('#o-aktivni').checked = !!o.aktivni;
+        kam.querySelectorAll('.o-pozice').forEach(c => { c.checked = (o.pozice ?? []).includes(c.value); });
         $('#formular-osoby').scrollIntoView({ behavior: 'smooth' });
     });
 
@@ -265,6 +278,7 @@ async function lide(kam) {
             jmeno: $('#o-jmeno').value,
             prezdivka: $('#o-prezdivka').value,
             post: $('#o-post').value,
+            pozice: [...kam.querySelectorAll('.o-pozice:checked')].map(c => c.value),
             role: $('#o-role').value,
             sablona: $('#o-sablona').value,
             aktivni: $('#o-aktivni').checked
@@ -320,15 +334,23 @@ async function hodnotit(kam) {
     $('#h-hrac').onchange = () => formularHodnoceni($('#formular'), Number($('#h-hrac').value));
 }
 
-function formularHodnoceni(kam, hracId) {
+function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {
     if (!hracId) { kam.innerHTML = ''; return; }
     const hrac = stav.lide.find(o => o.id === hracId);
-    const seznamOs = osy(hrac.sablona);
+    const vybranaSablona = sablona ?? hrac.sablona;
+    const seznamOs = osy(vybranaSablona);
+    const pozice = (hrac.pozice ?? []).map(p => t('pozice.' + p)).join(' · ');
 
     kam.innerHTML = `
         <div class="karta">
             <div class="hlaska pozor">${t('hodnotit.naslepo')}</div>
-            <h2>${esc(hrac.jmeno)} <span class="popis">— ${t('hodnotit.sablonaPopis', t('sablona.' + hrac.sablona))}</span></h2>
+            <h2>${esc(hrac.jmeno)}${pozice ? ` <span class="popis">— ${esc(pozice)}</span>` : ''}</h2>
+            <div class="pole" style="max-width:320px">
+                <label for="h-sablona">${t('hodnotit.sablona')}</label>
+                <select id="h-sablona">${Object.keys(SABLONY)
+                    .map(s => `<option value="${s}"${s === vybranaSablona ? ' selected' : ''}>${t('sablona.' + s)}</option>`).join('')}</select>
+                <div class="popis">${t('hodnotit.sablona.napoveda')}</div>
+            </div>
             ${kotvyHtml()}
             <div style="margin-top:10px">
                 ${seznamOs.map(o => `
@@ -356,6 +378,20 @@ function formularHodnoceni(kam, hracId) {
             <button class="hl" id="ulozit-hodnoceni" title="${t('hodnotit.ulozit.tip')}">${t('hodnotit.ulozit')}</button>
         </div>`;
 
+    // Slovní bloky a cíle přežijí přepnutí šablony — mění se osy, ne text.
+    const texty = () => ({
+        fyzicky: $('#h-fyzicky').value, hlavou: $('#h-hlavou').value, parta: $('#h-parta').value,
+        cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value]
+    });
+    if (predvyplneno) {
+        $('#h-fyzicky').value = predvyplneno.fyzicky;
+        $('#h-hlavou').value = predvyplneno.hlavou;
+        $('#h-parta').value = predvyplneno.parta;
+        predvyplneno.cile.forEach((c, i) => { $('#h-cil' + (i + 1)).value = c; });
+    }
+
+    $('#h-sablona').onchange = e => formularHodnoceni(kam, hracId, e.target.value, texty());
+
     $('#ulozit-hodnoceni').onclick = async () => {
         const hodnoty = {};
         const chybi = [];
@@ -369,7 +405,7 @@ function formularHodnoceni(kam, hracId) {
         const telo = {
             player_id: hracId,
             obdobi: stav.nastaveni.obdobi,
-            sablona: hrac.sablona,
+            sablona: vybranaSablona,
             autor_id: $('#h-autor').value || null,
             hodnoty,
             fyzicky: $('#h-fyzicky').value,
@@ -386,7 +422,7 @@ function formularHodnoceni(kam, hracId) {
                     <button class="vedlejsi" id="na-list" title="${t('hodnotit.naList.tip')}">${t('hodnotit.naList')}</button>
                     <button class="vedlejsi" id="dalsi" title="${t('hodnotit.dalsi.tip')}">${t('hodnotit.dalsi')}</button>
                 </div>`;
-            $('#na-list').onclick = () => otevriListy({ ids: String(hracId) });
+            $('#na-list').onclick = () => otevriListy({ ids: String(hracId), porovnani: 'zadne' });
             $('#dalsi').onclick = () => { stav.zalozka = 'hodnotit'; prekresli(); };
         } catch (e) {
             hlaska(kam, 'chyba', e.message);
@@ -484,13 +520,16 @@ async function porovnani(kam) {
 
 function tabulkaPorovnani(p) {
     if (!p.hotovo) {
+        if (p.jinaSablona) {
+            return `<div class="karta"><div class="hlaska pozor">${t('porovnani.jinaSablona')}</div></div>`;
+        }
         const co = [];
         if (!p.maTrener) co.push(t('porovnani.chybi.trener'));
         if (!p.maHrac) co.push(t('porovnani.chybi.hrac'));
         return `<div class="karta"><div class="hlaska info">${t('porovnani.chybi', esc(p.obdobi), co.join(t('porovnani.a')))}</div></div>`;
     }
 
-    const popisky = Object.fromEntries(osy(p.osy.length ? sablonaZOs(p.osy) : 'pole').map(o => [o.klic, o.popis]));
+    const popisky = Object.fromEntries(osy(p.sablona || sablonaZOs(p.osy)).map(o => [o.klic, o.popis]));
 
     const radky = p.osy.map(o => `
         <tr class="${o.resit ? 'resit' : ''}">
@@ -506,7 +545,8 @@ function tabulkaPorovnani(p) {
 
     return `
         <div class="karta">
-            <h2>${t('porovnani.rozdily', esc(p.obdobi))}</h2>
+            <h2>${t('porovnani.rozdily', esc(p.obdobi))}
+                ${p.sablona ? `<span class="popis">— ${t('porovnani.sablona', t('sablona.' + p.sablona))}</span>` : ''}</h2>
             ${p.pocetResit > 3 ? `<div class="hlaska pozor">${t('porovnani.upozorneni', p.pocetResit)}</div>` : ''}
             <table>
                 <thead><tr><th>${t('porovnani.osa')}</th><th class="cisla">${t('lide.trener')}</th>
@@ -566,11 +606,12 @@ async function odkazy(kam) {
         <div class="karta">
             <h2>${t('odkazy.obdobi', esc(stav.nastaveni.obdobi))}</h2>
             <table>
-                <thead><tr><th>${t('hodnotit.hrac')}</th><th>${t('odkazy.stav')}</th>
+                <thead><tr><th>${t('hodnotit.hrac')}</th><th>${t('odkazy.sablona')}</th><th>${t('odkazy.stav')}</th>
                     <th>${t('odkazy.platiDo')}</th><th>${t('odkazy.odkaz')}</th><th></th></tr></thead>
                 <tbody>${seznam.length ? seznam.map(x => `
                     <tr>
                         <td>${esc(x.jmeno)}</td>
+                        <td>${t('sablona.' + (x.sablona || 'pole'))}</td>
                         <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
                         <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
                         <td class="odkaz-pole">${esc(zaklad)}/h/${esc(x.token.slice(0, 8))}…</td>
@@ -578,7 +619,7 @@ async function odkazy(kam) {
                             <button class="vedlejsi" data-kopirovat="${esc(x.token)}" title="${t('odkazy.kopirovat.tip')}">${t('odkazy.kopirovat')}</button>
                             <button class="vedlejsi zrusit" data-zrusit="${esc(x.token)}" title="${t('odkazy.zneplatnit.tip')}">${t('odkazy.zneplatnit')}</button>
                         </td>
-                    </tr>`).join('') : `<tr><td colspan="5">${t('odkazy.prazdno')}</td></tr>`}</tbody>
+                    </tr>`).join('') : `<tr><td colspan="6">${t('odkazy.prazdno')}</td></tr>`}</tbody>
             </table>
         </div>`;
 

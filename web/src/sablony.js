@@ -24,6 +24,28 @@ export const SABLONY = {
    kategorie měří biologický věk, ne odvedenou práci. Patří do
    slovního bloku „Fyzicky". */
 
+/* Pozice, na kterých hráč může hrát. Klidně několik najednou — hráč
+   bývá použitelný na levém beku i na křídle. Je to popisné, tiskne se
+   to na list; se šablonou os to nesouvisí (tu vybírá trenér u hodnocení).
+   Zvláštní případ je brankář: kdo chytá, dává smysl hodnotit brankářskou
+   šablonou — ale i on může být oznámkovaný jako hráč v poli. */
+export const POZICE = [
+    'brankar',
+    'pravy_bek', 'stoper', 'levy_bek',
+    'defenzivni_zaloznik', 'stredni_zaloznik', 'ofenzivni_zaloznik',
+    'prave_kridlo', 'leve_kridlo',
+    'hrotovy_utocnik'
+];
+
+/** Ověří pole pozic. Prázdné je v pořádku — pozice nejsou povinné. */
+export function zkontrolujPozice(pozice) {
+    if (!Array.isArray(pozice)) return 'Pozice musí být seznam.';
+    if (pozice.length > POZICE.length) return 'Příliš mnoho pozic.';
+    const nezname = pozice.filter(p => !POZICE.includes(p));
+    if (nezname.length) return `Neznámé pozice: ${nezname.join(', ')}`;
+    return null;
+}
+
 /** Vrátí klíče os dané šablony, nebo prázdné pole u neznámé šablony. */
 export function klice(sablona) {
     return SABLONY[sablona] ?? [];

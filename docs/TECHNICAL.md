@@ -170,6 +170,35 @@ referenční.
 
 ---
 
+## 4b. Pozice a šablona — dvě různé věci
+
+Dřív se to pletlo do jedné kolonky `post`. Rozděleno:
+
+- **pozice** (`players.pozice`, JSON pole klíčů) — kde hráč může nastoupit. Klidně několik:
+  `["brankar","levy_bek","prave_kridlo"]`. Popisné, tiskne se na list, se známkováním nesouvisí.
+  Klíče v seznamu `POZICE` v `sablony.js`, názvy se překládají (`pozice.*` v i18n).
+- **`post`** zůstal jako volný text pro funkci nebo poznámku — „Kapitán", „Hlavní trenér".
+  Na listu se tiskne za pozicemi.
+- **šablona os** — kterých šest os se známkuje. Sedí na **hodnocení**, ne na osobě.
+
+**Proč je šablona na hodnocení:** hráč, který chytá i hraje v poli, potřebuje obojí. Ferda
+může mít v jednom období hodnocení brankářskou i polní šablonou a každá řada žije samostatně —
+brankářské a polní osy se do jednoho grafu míchat nedají. `players.sablona` je jen výchozí
+volba ve formuláři.
+
+Důsledky, které musí platit všude:
+
+- `POST /api/evaluations` bere `sablona` z formuláře a ukládá ji do řádku hodnocení
+- **token na sebehodnocení nese šablonu** (`tokens.sablona`) — hráč musí vyplnit tytéž osy,
+  které známkoval trenér. Při generování se bere šablona posledního hodnocení trenéra pro
+  dané období, jinak výchozí šablona osoby.
+- `/api/listy` vrací **jeden list na kombinaci hráč × šablona** — Ferda dostane dva
+- `/api/porovnani` a `/api/trend` pracují vždy v rámci jedné šablony; když hráč vyplnil
+  jinou, než jakou byl známkovaný, vrátí se `jinaSablona: true` a aplikace to řekne
+  (není to totéž jako „ještě nevyplnil")
+
+---
+
 ## 5. Šablony os
 
 Definované v `web/src/sablony.js`, sdílené frontendem i Workerem.

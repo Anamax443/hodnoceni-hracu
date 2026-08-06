@@ -2,6 +2,36 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (5) — N pozic u hráče + šablona os na hodnocení
+
+**Hotové** (migrace `004_pozice.sql`, nasazeno):
+
+- **Pozic může být N.** `players.pozice` je JSON pole klíčů (`["brankar","levy_bek",…]`),
+  vybírá se zaškrtávátky v záložce Lidé, tiskne se na list. `post` zůstal jako volný text
+  pro funkci („Kapitán").
+- **Šablona os se přesunula z osoby na hodnocení.** Vybírá se ve formuláři; hráč, který
+  chytá i hraje v poli, může mít v jednom období obojí a dostane dva listy. `players.sablona`
+  je už jen výchozí volba.
+- **Token na sebehodnocení nese šablonu** (`tokens.sablona`), aby hráč vyplňoval tytéž osy,
+  které známkoval trenér. Když se rozejdou, porovnání to pozná a řekne (`jinaSablona`),
+  místo aby tvrdilo „hráč ještě nevyplnil".
+- `/api/listy` vrací jeden list na kombinaci hráč × šablona; `/api/porovnani` i `/api/trend`
+  pracují v rámci jedné šablony.
+
+**Ověřeno naživo:** 25 testů proti nasazené aplikaci, 0 chyb — včetně dvou listů pro jednoho
+hráče, odmítnutí polních os v brankářské šabloně a rozpoznání nesouhlasné šablony.
+Testovací data smazána, kádr (22 osob) zůstal.
+
+**Opraveno mimochodem:** `/api/trend` neměl `.bind(player_id)` — endpoint padal při každém
+volání ze záložky Porovnání. Nebylo to vidět, protože testy trend nevolaly.
+
+**Rozpracované:** notifikace na e-mail a Telegram. Migrace `005_notifikace.sql` je napsaná
+(tabulka `udalosti`, kanály u osoby, čas souhrnu v nastavení), **zatím neaplikovaná**.
+Souhrn má chodit cronem podle času v Nastavení, ne po jedné zprávě za událost.
+Čeká se na token Telegram bota.
+
+---
+
 ## 2026-08-06 (4) — kádr v databázi + obnova zapomenutého hesla
 
 **Hotové:**

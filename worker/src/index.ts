@@ -11,7 +11,7 @@
 
 /* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
-import { SABLONY, klice, zkontrolujHodnoty } from '../../web/src/sablony.js';
+import { SABLONY, klice, zkontrolujHodnoty, zkontrolujPozice } from '../../web/src/sablony.js';
 
 interface EmailBinding {
     send(zprava: { to: string; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown>;
@@ -209,23 +209,40 @@ function rozbal(r: RadekHodnoceni) {
     };
 }
 
-/** Poslední hodnocení daného autora pro hráče a období. Append-only => bereme nejnovější. */
-async function posledni(env: Env, playerId: number, obdobi: string, autor: string) {
-    const r = await env.DB.prepare(
-        `SELECT * FROM evaluations
-          WHERE player_id = ? AND obdobi = ? AND autor = ?
-          ORDER BY id DESC LIMIT 1`
-    ).bind(playerId, obdobi, autor).first<RadekHodnoceni>();
+/**
+ * Poslední hodnocení daného autora pro hráče a období. Append-only => bereme nejnovější.
+ * `sablona` omezí výběr na jednu šestici os — hráč může mít v jednom období
+ * hodnocení jako brankář i jako hráč v poli a míchat je dohromady nedává smysl.
+ */
+async function posledni(env: Env, playerId: number, obdobi: string, autor: string, sablona?: string) {
+    const r = sablona
+        ? await env.DB.prepare(
+            `SELECT * FROM evaluations
+              WHERE player_id = ? AND obdobi = ? AND autor = ? AND sablona = ?
+              ORDER BY id DESC LIMIT 1`
+        ).bind(playerId, obdobi, autor, sablona).first<RadekHodnoceni>()
+        : await env.DB.prepare(
+            `SELECT * FROM evaluations
+              WHERE player_id = ? AND obdobi = ? AND autor = ?
+              ORDER BY id DESC LIMIT 1`
+        ).bind(playerId, obdobi, autor).first<RadekHodnoceni>();
     return r ? rozbal(r) : null;
 }
 
-/** Poslední trenérské hodnocení z JINÉHO (dřívějšího) období. */
-async function predchoziObdobi(env: Env, playerId: number, obdobi: string) {
+/** Řádek osoby z D1 → objekt pro API (pozice jako pole, ne JSON řetězec). */
+function osobaVen(r: any) {
+    let pozice: string[] = [];
+    try { pozice = JSON.parse(r.pozice ?? '[]'); } catch { pozice = []; }
+    return { ...r, pozice, aktivni: !!r.aktivni };
+}
+
+/** Poslední trenérské hodnocení z JINÉHO (dřívějšího) období, stejnou šablonou. */
+async function predchoziObdobi(env: Env, playerId: number, obdobi: string, sablona: string) {
     const r = await env.DB.prepare(
         `SELECT * FROM evaluations
-          WHERE player_id = ? AND obdobi <> ? AND autor = 'trener'
+          WHERE player_id = ? AND obdobi <> ? AND autor = 'trener' AND sablona = ?
           ORDER BY id DESC LIMIT 1`
-    ).bind(playerId, obdobi).first<RadekHodnoceni>();
+    ).bind(playerId, obdobi, sablona).first<RadekHodnoceni>();
     return r ? rozbal(r) : null;
 }
 
@@ -333,9 +350,11 @@ function soubor(env: Env, url: URL, cesta: string): Promise<Response> {
 async function self(request: Request, env: Env, token: string): Promise<Response> {
     if (!token || token.length < 20) return chyba('Neplatný odkaz.', 404);
 
+    // Šablona je na tokenu, ne na osobě: hráč musí vyplnit tytéž osy, které
+    // známkoval trenér, jinak by se porovnávaly dvě různé šestice.
     const t = await env.DB.prepare(
-        `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do,
-                p.jmeno, p.prezdivka, p.sablona
+        `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do, t.sablona,
+                p.jmeno, p.prezdivka
            FROM tokens t JOIN players p ON p.id = t.player_id
           WHERE t.token = ?`
     ).bind(token).first<{
@@ -526,17 +545,20 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
             const { results } = await env.DB.prepare(
                 'SELECT * FROM players ORDER BY role DESC, aktivni DESC, jmeno'
             ).all();
-            return json(results ?? []);
+            return json((results ?? []).map(osobaVen));
         }
         if (metoda === 'POST') {
             const p = await request.json<any>();
             const problem = zkontrolujOsobu(p);
             if (problem) return chyba(problem, 400);
             const r = await env.DB.prepare(
-                `INSERT INTO players (jmeno, prezdivka, post, role, sablona, aktivni)
-                 VALUES (?, ?, ?, ?, ?, 1) RETURNING *`
-            ).bind(p.jmeno.trim(), p.prezdivka || null, p.post || null, p.role, p.sablona).first();
-            return json(r, 201);
+                `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni)
+                 VALUES (?, ?, ?, ?, ?, ?, 1) RETURNING *`
+            ).bind(
+                p.jmeno.trim(), p.prezdivka || null, p.post || null,
+                JSON.stringify(p.pozice ?? []), p.role, p.sablona
+            ).first();
+            return json(osobaVen(r), 201);
         }
     }
 
@@ -546,14 +568,15 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         const problem = zkontrolujOsobu(p);
         if (problem) return chyba(problem, 400);
         const r = await env.DB.prepare(
-            `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, role = ?, sablona = ?, aktivni = ?
+            `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
+                                role = ?, sablona = ?, aktivni = ?
               WHERE id = ? RETURNING *`
         ).bind(
-            p.jmeno.trim(), p.prezdivka || null, p.post || null, p.role, p.sablona,
-            p.aktivni ? 1 : 0, Number(osobaId)
+            p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
+            p.role, p.sablona, p.aktivni ? 1 : 0, Number(osobaId)
         ).first();
         if (!r) return chyba('Osoba nenalezena.', 404);
-        return json(r);
+        return json(osobaVen(r));
     }
 
     /* ---------- přehled stavu za období ---------- */
@@ -637,41 +660,55 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
             : null;
 
         const { results: hraci } = await env.DB.prepare(
-            `SELECT id, jmeno, prezdivka, post, sablona FROM players
+            `SELECT id, jmeno, prezdivka, post, pozice, sablona FROM players
               WHERE role = 'hrac' AND aktivni = 1 ORDER BY jmeno`
-        ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null; sablona: string }>();
+        ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null; pozice: string; sablona: string }>();
 
         const vybrani = (hraci ?? []).filter(h => !filtr || filtr.includes(h.id));
         const listy = [];
 
         for (const h of vybrani) {
-            const trener = await posledni(env, h.id, obdobi, 'trener');
-            let porovnani: Record<string, number> | null = null;
-            let popisek = '';
+            // Hráč může mít v jednom období hodnocení víc šablonami (brankář
+            // i hráč v poli). Každá dostane vlastní list — do jednoho grafu
+            // se brankářské a polní osy míchat nedají.
+            const { results: sablony } = await env.DB.prepare(
+                `SELECT DISTINCT sablona FROM evaluations
+                  WHERE player_id = ? AND obdobi = ? AND autor = 'trener'`
+            ).bind(h.id, obdobi).all<{ sablona: string }>();
 
-            if (rezim === 'hrac') {
-                const hrac = await posledni(env, h.id, obdobi, 'hrac');
-                if (hrac) { porovnani = hrac.hodnoty; popisek = ''; }
-            } else if (rezim === 'minule') {
-                const driv = await predchoziObdobi(env, h.id, obdobi);
-                if (driv) { porovnani = driv.hodnoty; popisek = driv.obdobi; }
+            const kVykresleni = (sablony ?? []).map(s => s.sablona);
+            if (!kVykresleni.length) kVykresleni.push(h.sablona);   // prázdný list jako podklad
+
+            for (const sablona of kVykresleni) {
+                const trener = await posledni(env, h.id, obdobi, 'trener', sablona);
+                let porovnani: Record<string, number> | null = null;
+                let popisek = '';
+
+                if (rezim === 'hrac') {
+                    const hrac = await posledni(env, h.id, obdobi, 'hrac', sablona);
+                    if (hrac) { porovnani = hrac.hodnoty; popisek = ''; }
+                } else if (rezim === 'minule') {
+                    const driv = await predchoziObdobi(env, h.id, obdobi, sablona);
+                    if (driv) { porovnani = driv.hodnoty; popisek = driv.obdobi; }
+                }
+
+                listy.push({
+                    player_id: h.id,
+                    jmeno: h.jmeno,
+                    prezdivka: h.prezdivka,
+                    post: h.post,
+                    pozice: JSON.parse(h.pozice ?? '[]'),
+                    sablona,
+                    hodnoceni: trener?.hodnoty ?? null,
+                    porovnani,
+                    porovnaniRezim: porovnani ? rezim : null,
+                    porovnaniObdobi: popisek,
+                    fyzicky: trener?.fyzicky ?? '',
+                    hlavou: trener?.hlavou ?? '',
+                    parta: trener?.parta ?? '',
+                    cile: trener?.cile ?? []
+                });
             }
-
-            listy.push({
-                player_id: h.id,
-                jmeno: h.jmeno,
-                prezdivka: h.prezdivka,
-                post: h.post,
-                sablona: trener?.sablona || h.sablona,
-                hodnoceni: trener?.hodnoty ?? null,
-                porovnani,
-                porovnaniRezim: porovnani ? rezim : null,
-                porovnaniObdobi: popisek,
-                fyzicky: trener?.fyzicky ?? '',
-                hlavou: trener?.hlavou ?? '',
-                parta: trener?.parta ?? '',
-                cile: trener?.cile ?? []
-            });
         }
 
         return json({ nastaveni: { ...nas, obdobi }, listy });
@@ -686,10 +723,25 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         const obdobi = q.get('obdobi') || nas.obdobi;
         const tolerance = Number(nas.tolerance) || 0;
 
-        const trener = await posledni(env, playerId, obdobi, 'trener');
-        const hrac = await posledni(env, playerId, obdobi, 'hrac');
+        // Porovnává se v rámci jedné šablony. Když má hráč v období hodnocení
+        // brankářské i polní, řekne si volající které (?sablona=), jinak se bere
+        // to poslední, co trenér uložil.
+        const sablona = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : undefined;
+        const trener = await posledni(env, playerId, obdobi, 'trener', sablona);
+        const hrac = trener
+            ? await posledni(env, playerId, obdobi, 'hrac', trener.sablona)
+            : await posledni(env, playerId, obdobi, 'hrac', sablona);
+
         if (!trener || !hrac) {
-            return json({ obdobi, tolerance, hotovo: false, maTrener: !!trener, maHrac: !!hrac, osy: [] });
+            // Hráč mohl vyplnit jinou šesticí os, než jakou ho trenér známkoval —
+            // to je jiná situace než „ještě nevyplnil" a musí to být poznat.
+            const jinouSablonou = !hrac && !!trener
+                && !!(await posledni(env, playerId, obdobi, 'hrac'));
+            return json({
+                obdobi, tolerance, hotovo: false,
+                maTrener: !!trener, maHrac: !!hrac, jinaSablona: jinouSablonou,
+                sablona: trener?.sablona ?? sablona ?? null, osy: []
+            });
         }
 
         const osy = klice(trener.sablona).map(klic => {
@@ -705,7 +757,8 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         });
 
         return json({
-            obdobi, tolerance, hotovo: true, maTrener: true, maHrac: true, osy,
+            obdobi, tolerance, hotovo: true, maTrener: true, maHrac: true,
+            sablona: trener.sablona, osy,
             pocetResit: osy.filter(o => o.resit).length,
             poznamkaHrace: hrac.poznamka
         });
@@ -716,13 +769,26 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         const playerId = Number(q.get('player_id'));
         if (!playerId) return chyba('Chybí player_id.', 400);
 
-        const { results } = await env.DB.prepare(
-            `SELECT * FROM evaluations
-              WHERE player_id = ? AND autor = 'trener'
-              ORDER BY id ASC`
-        ).all<RadekHodnoceni>();
+        // Trend má smysl jen v rámci jedné šablony — jiných šest os = jiná řada.
+        const sablonaTrend = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : null;
+        const { results } = sablonaTrend
+            ? await env.DB.prepare(
+                `SELECT * FROM evaluations
+                  WHERE player_id = ? AND autor = 'trener' AND sablona = ?
+                  ORDER BY id ASC`
+            ).bind(playerId, sablonaTrend).all<RadekHodnoceni>()
+            : await env.DB.prepare(
+                `SELECT * FROM evaluations
+                  WHERE player_id = ? AND autor = 'trener'
+                  ORDER BY id ASC`
+            ).bind(playerId).all<RadekHodnoceni>();
 
-        const historie = (results ?? []).map(rozbal);
+        let historie = (results ?? []).map(rozbal);
+        // Bez upřesnění bereme řadu té šablony, kterou trenér použil naposledy.
+        if (!sablonaTrend && historie.length) {
+            const posledniSablona = historie[historie.length - 1].sablona;
+            historie = historie.filter(h => h.sablona === posledniSablona);
+        }
         if (historie.length < 2) return json({ historie, osy: [], maTrend: false });
 
         const ted = historie[historie.length - 1];
@@ -757,24 +823,34 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         }
 
         if (metoda === 'POST') {
-            const telo = await request.json<{ player_id?: number; obdobi?: string; dni?: number }>();
+            const telo = await request.json<{ player_id?: number; obdobi?: string; dni?: number; sablona?: string }>();
             const nas = await nastaveni(env);
             const obdobi = (telo.obdobi || nas.obdobi).trim();
             const dni = Number(telo.dni) > 0 ? Number(telo.dni) : 30;
             const platnyDo = new Date(Date.now() + dni * 86400_000).toISOString();
 
             const cile = telo.player_id
-                ? [{ id: Number(telo.player_id) }]
+                ? ((await env.DB.prepare('SELECT id, sablona FROM players WHERE id = ?')
+                    .bind(Number(telo.player_id)).all<{ id: number; sablona: string }>()).results ?? [])
                 : ((await env.DB.prepare(
-                      `SELECT id FROM players WHERE role = 'hrac' AND aktivni = 1`
-                  ).all<{ id: number }>()).results ?? []);
+                      `SELECT id, sablona FROM players WHERE role = 'hrac' AND aktivni = 1`
+                  ).all<{ id: number; sablona: string }>()).results ?? []);
 
-            const nove = cile.map(c => ({ player_id: c.id, token: novyToken(), obdobi, platny_do: platnyDo }));
+            const nove = [];
+            for (const c of cile) {
+                // Přednost má šablona, kterou trenér pro tohle období použil.
+                // Až pak výchozí šablona osoby (nebo to, co si vyžádal volající).
+                const hodnoceni = await posledni(env, c.id, obdobi, 'trener');
+                const sablona = (telo.sablona && telo.sablona in SABLONY)
+                    ? telo.sablona
+                    : (hodnoceni?.sablona ?? c.sablona);
+                nove.push({ player_id: c.id, token: novyToken(), obdobi, platny_do: platnyDo, sablona });
+            }
             if (!nove.length) return chyba('Není komu odkaz vygenerovat.', 400);
 
             await env.DB.batch(nove.map(n => env.DB.prepare(
-                'INSERT INTO tokens (token, player_id, obdobi, platny_do) VALUES (?, ?, ?, ?)'
-            ).bind(n.token, n.player_id, n.obdobi, n.platny_do)));
+                'INSERT INTO tokens (token, player_id, obdobi, platny_do, sablona) VALUES (?, ?, ?, ?, ?)'
+            ).bind(n.token, n.player_id, n.obdobi, n.platny_do, n.sablona)));
 
             return json({ vytvoreno: nove.length, tokeny: nove }, 201);
         }
@@ -796,7 +872,7 @@ function zkontrolujOsobu(p: any): string | null {
     if (p.jmeno.length > 80) return 'Jméno je moc dlouhé.';
     if (p.role !== 'hrac' && p.role !== 'trener') return "Role musí být 'hrac' nebo 'trener'.";
     if (!(p.sablona in SABLONY)) return `Neznámá šablona: ${p.sablona}`;
-    return null;
+    return zkontrolujPozice(p.pozice ?? []);
 }
 
 /** Kryptograficky náhodný token, 43 znaků. Nikdy ne pořadové ID hráče. */

@@ -22,6 +22,12 @@ export function esc(hodnota) {
     })[z]);
 }
 
+/** Pozice hráče (klidně několik) plus volná poznámka, např. „Kapitán". */
+function popisPostu(h) {
+    const pozice = (h.pozice ?? []).map(p => t('pozice.' + p)).join(' · ');
+    return [pozice, h.post].filter(Boolean).join(' — ');
+}
+
 /** Popisek druhého polygonu podle režimu, který vrátil server. */
 function popisekPorovnani(h) {
     if (h.porovnaniRezim === 'hrac') return t('list.hracSeVidi');
@@ -57,7 +63,7 @@ export function list(h, nas) {
 
         <div class="playerbar">
             <span class="name">${esc(h.jmeno)}${h.prezdivka ? ' &bdquo;' + esc(h.prezdivka) + '&ldquo;' : ''}</span>
-            <span class="role">${esc(h.post)}</span>
+            <span class="role">${esc(popisPostu(h))}</span>
         </div>
 
         ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}

@@ -73,8 +73,15 @@ Tištěný list je vždy světlý, i když máš aplikaci tmavou — je to papí
 
 ### Lidé
 
-Kdo je v týmu. Na začátku je seznam prázdný — vyplň formulář dole a ulož, a tak postupně
-celý kádr. U každého jméno, přezdívka, post, role a šablona os.
+Kdo je v týmu. U každého jméno, přezdívka, pozice, role a výchozí šablona os.
+
+**Pozic může být několik.** Hráč použitelný na levém beku, pravém křídle i v bráně má
+zaškrtnuté všechny tři. Je to popis toho, kde nastupuje — se známkováním to nesouvisí.
+
+**Funkce / poznámka** je volný text vedle pozic, třeba „Kapitán". Tiskne se na list.
+
+**Šablona os** je jen výchozí volba do formuláře. Kterou šesticí os hráče oznámkuješ,
+vybíráš až u konkrétního hodnocení.
 
 - **role hráč** — hodnotí se, tiskne se mu list
 - **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil
@@ -86,6 +93,15 @@ celý kádr. U každého jméno, přezdívka, post, role a šablona os.
 Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tři slovní bloky a cíle.
 
 Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
+
+**Šestice os** se vybírá nahoře ve formuláři. Kdo chytá i hraje v poli, může mít v jednom
+období obojí — vyplníš ho dvakrát, jednou brankářskou a jednou polní šablonou. Dostane pak
+dva listy a každá řada v čase žije samostatně; brankářské a polní osy se do jednoho grafu
+míchat nedají. Přepnutí šablony ti nesmaže slovní bloky ani cíle, jen vymění osy.
+
+Pozor při rozesílání odkazů: **odkaz na sebehodnocení nese tu šablonu**, kterou jsi hráče
+známkoval. Když ho oznámkuješ jinou šesticí až po odeslání odkazu, vygeneruj mu nový —
+jinak vyplní jiné osy a porovnat to nepůjde (aplikace to pozná a řekne).
 
 **Cíle:** dva až tři, konkrétní a ověřitelné. Ne „zlepšit levou nohu", ale „levá noha: každý
 trénink 5 minut navíc, přihrávka do 10 metrů". Hráč musí poznat, jestli to splnil.
