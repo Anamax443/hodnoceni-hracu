@@ -1191,6 +1191,34 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json(results ?? []);
     }
 
+    /* ---------- kontrola přihlašovacích údajů Twilia (nic neodesílá) ---------- */
+    if (cesta === '/api/sms/ucet' && metoda === 'GET') {
+        if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) {
+            return json({ ok: false, popis: 'Chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.' });
+        }
+        try {
+            const r = await fetch(
+                `https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}.json`,
+                { headers: { authorization: 'Basic ' + btoa(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`) } });
+            const d = await r.json<any>();
+            if (!r.ok) {
+                // 20003 = špatný token nebo SID; 20404 = SID neexistuje.
+                return json({
+                    ok: false, kod: String(d?.code ?? r.status), popis: d?.message ?? 'Twilio odmítlo přihlášení.',
+                    sidKoncovka: env.TWILIO_ACCOUNT_SID.slice(-6),
+                    delkaTokenu: env.TWILIO_AUTH_TOKEN.length,
+                    tokenMaBileZnaky: env.TWILIO_AUTH_TOKEN !== env.TWILIO_AUTH_TOKEN.trim()
+                });
+            }
+            return json({
+                ok: true, ucet: d?.friendly_name ?? null, stav: d?.status ?? null,
+                sidKoncovka: env.TWILIO_ACCOUNT_SID.slice(-6)
+            });
+        } catch (e) {
+            return json({ ok: false, popis: e instanceof Error ? e.message : String(e) });
+        }
+    }
+
     /* ---------- zkušební SMS ---------- */
     if (cesta === '/api/sms/test' && metoda === 'POST') {
         const { telefon } = await request.json<{ telefon?: string }>();
