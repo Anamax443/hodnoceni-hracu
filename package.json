@@ -1,0 +1,19 @@
+{
+    "name": "hodnoceni-hracu",
+    "version": "0.2.0",
+    "private": true,
+    "description": "Hodnotící listy mládežnických fotbalistů SK Říčmanice",
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "db:init:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/001_init.sql",
+        "db:seed:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/002_seed.sql",
+        "db:init": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/001_init.sql",
+        "db:seed": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/002_seed.sql",
+        "db:export": "wrangler d1 export hodnoceni-hracu --remote --output=zaloha.sql"
+    },
+    "devDependencies": {
+        "wrangler": "^4.119.0"
+    }
+}

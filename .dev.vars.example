@@ -1,0 +1,8 @@
+# Lokální secrety pro `npm run dev`. Zkopíruj na .dev.vars a vyplň.
+# .dev.vars je v .gitignore a nikdy nesmí do repozitáře.
+#
+# SESSION_KEY vygeneruješ takhle:
+#   [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 }))
+
+ADMIN_HESLO="sem-heslo-trenera"
+SESSION_KEY="sem-nahodny-klic-32-bajtu-v-base64"

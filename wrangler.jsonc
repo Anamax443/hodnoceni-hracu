@@ -1,0 +1,35 @@
+{
+    // Worker obsluhuje API i statické soubory z ./web — jeden deploy, žádné CORS.
+    // Odchylka od zadání §3 (Pages + Worker zvlášť); důvod v docs/TECHNICAL.md.
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "hodnoceni-hracu",
+    "main": "worker/src/index.ts",
+    "compatibility_date": "2026-08-01",
+
+    "assets": {
+        "directory": "./web",
+        "binding": "ASSETS",
+        // Bez tohohle asset server přesměrovává /h.html na /h a z URL zmizí
+        // token sebehodnocení. Cesty si proto mapuje Worker sám.
+        "html_handling": "none",
+        "not_found_handling": "none"
+    },
+
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "hodnoceni-hracu",
+            // Nahradit skutečným id z `npx wrangler d1 create hodnoceni-hracu`.
+            // Pro lokální běh (`npm run dev`) na hodnotě nezáleží.
+            "database_id": "00000000-0000-0000-0000-000000000000"
+        }
+    ],
+
+    "observability": { "enabled": true },
+
+    // ADMIN_HESLO a SESSION_KEY jsou secrety, ne proměnné:
+    //   npx wrangler secret put ADMIN_HESLO
+    //   npx wrangler secret put SESSION_KEY
+    // Lokálně se berou z .dev.vars (v .gitignore).
+    "vars": {}
+}

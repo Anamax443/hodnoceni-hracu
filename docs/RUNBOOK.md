@@ -6,98 +6,87 @@ Co se dělá pravidelně a co dělat, když něco nesedí.
 
 ## 1. Půlroční rutina (2× za sezónu)
 
-1. V `frontend/data/kadr.js` přepiš `NASTAVENI.obdobi` a `NASTAVENI.cileNadpis`
-   (např. „zimní hodnocení" / „Na čem makáme do jara").
-2. U každého hráče přesuň staré `hodnoceni` do `predchozi` a nové `hodnoceni` **nech
-   prázdné**, dokud neoznámkuješ.
-3. Oznámkuj naslepo — bez koukání na `predchozi`. To je celý smysl.
-4. Dopiš tři slovní bloky a 2–3 cíle.
-5. Vytiskni (`frontend/tisk.html` → tlačítko nahoře).
-6. `git commit` + `git push`. Tím vzniká historie — jiná záloha není potřeba.
-7. Rozdej listy jednotlivě, ne v šatně na hromadě.
+1. **Záloha** — `npm run db:export`.
+2. **Nastavení** → přepiš `období` (např. „2025/2026 jaro") a nadpis nad cíli.
+3. **Odkazy** → vygenerovat pro všechny hráče, rozeslat jednotlivě.
+4. **Hodnotit** → projít kádr. Naslepo, bez koukání na minulé kolo.
+5. Počkat, až hráči vyplní (stav vidíš v Odkazech i v Listech).
+6. **Porovnání** → u každého vybrat 2–3 témata k rozhovoru.
+7. **Listy** → druhý polygon „sebehodnocení hráče" → tisk → rozhovory.
 
 ---
 
-## 2. Když se listy nevykreslí
+## 2. Aplikace neodpovídá
 
-Nahoře na stránce je červený rámeček s hláškou. Podle ní:
+```
+GET https://<adresa>/health
+```
 
-| Hláška obsahuje | Příčina | Oprava |
+Když nevrátí `{"status":"ok"}`:
+
+```powershell
+npx wrangler tail              # zive logy Workeru
+```
+
+Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.jsonc` zapnutá.
+
+---
+
+## 3. Časté situace
+
+| Co se děje | Příčina | Co s tím |
 |---|---|---|
-| `HRACI is not defined` | syntaktická chyba v `kadr.js` — soubor se vůbec nenačetl | nejčastěji chybějící nebo přebývající čárka mezi bloky hráčů |
-| `neznámou šablonu` | překlep v `sablona` | povoleno jen `'pole'` nebo `'brankar'` |
-| `Cannot read properties of undefined` | chybí `NASTAVENI` | zkontroluj začátek `kadr.js` |
-
-Stránka je prázdná a nic nehlásí → soubor `kadr.js` je prázdný nebo je `HRACI` prázdné pole.
-
-Osa je vykreslená na nule, ačkoliv jsi ji známkoval → překlep v názvu klíče osy. Seznam
-platných klíčů je v `frontend/src/sablony.js`.
+| „Nepřihlášen" hned po přihlášení | session cookie se neuloží | přes HTTP se `Secure` cookie neposílá — v produkci musí být HTTPS |
+| trenér se nemůže přihlásit | špatné nebo nenastavené `ADMIN_HESLO` | `npx wrangler secret put ADMIN_HESLO`, pak `npm run deploy` |
+| „Na serveru není nastaveno ADMIN_HESLO" | secret chybí úplně | totéž |
+| všichni se odhlásili najednou | změnil se `SESSION_KEY` | staré cookies přestanou platit, stačí se přihlásit znovu |
+| hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
+| hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
+| Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
 
 ---
 
-## 3. Tisk vypadá špatně
+## 4. Tisk vypadá špatně
 
 | Problém | Příčina | Oprava |
 |---|---|---|
 | bílý list bez modrého pruhu a barevných bloků | vypnutá grafika na pozadí | v dialogu tisku zapnout **Grafika na pozadí / Background graphics** |
 | hráč se přelil na dvě stránky | dlouhý slovní blok | zkrátit text, nebo ubrat cíl |
 | useknuté okraje | vlastní okraje v dialogu | nastavit okraje na **Výchozí** — stránka si je řídí sama (A4, 12 mm) |
-| graf je rozmazaný | tisk do PDF v nízkém rozlišení | SVG je vektorové, zkontroluj nastavení PDF tiskárny |
+| „Nejsi přihlášený" místo listů | vypršela session | přihlásit se v aplikaci a otevřít listy znovu |
 
 ---
 
-## 4. Změna os
+## 5. Změna os
 
 **Nedělat uprostřed sezóny.** Jiný počet vrcholů = jiný tvar polygonu, hodnocení už nejde
 porovnat s předchozím obdobím.
 
-Když je změna nutná, tak mezi sezónami: upravit `frontend/src/sablony.js` a v `kadr.js`
-u všech hráčů odpovídajícím způsobem přejmenovat klíče. Ve fázi 2+ se stará hodnocení
-vykreslují šablonou, se kterou byla pořízena (sloupec `evaluations.sablona`), takže se
+Když je změna nutná, tak mezi sezónami: upravit `web/src/sablony.js` a nasadit. Stará
+hodnocení se vykreslují šablonou, se kterou byla pořízena (`evaluations.sablona`), takže se
 historie nerozbije — ale porovnávat napříč šablonami stejně nejde.
 
 ---
 
-## 5. Nový hráč / odchod hráče
+## 6. Nový hráč / odchod hráče
 
-- **Přišel:** zkopíruj blok hráče v `kadr.js`, přepiš, `predchozi: null`.
-- **Odešel:** `aktivni: false`. Nemazat — historie hodnocení má zůstat.
-
----
-
-## 6. Fáze 2+ (až bude nasazeno)
-
-### Aplikace neodpovídá
-
-```
-GET https://<worker>/health
-```
-
-Když nevrátí `{status:"ok"}`, podívej se na `npx wrangler tail` a do Cloudflare dashboardu
-(Workers → Logs).
-
-### Generování odkazů pro sebehodnocení
-
-Admin `/tokeny` → tlačítko u hráče → zkopírovat odkaz → poslat hráči. Odkazy se rozesílají
-ručně, e-mail aplikace neumí a nebude.
-
-Token je jednorázový. Druhé odeslání se odmítne. Když hráč odkaz ztratí, starý zneplatnit
-a vygenerovat nový.
-
-### Záloha databáze
-
-```powershell
-npx wrangler d1 export hodnoceni-hracu --remote --output=zaloha-RRRR-MM-DD.sql
-```
-
-Před každým půlročním kolem. Obsahuje osobní údaje nezletilých — neukládat na sdílené disky.
+- **Přišel:** Lidé → vyplnit formulář → Uložit.
+- **Odešel:** Lidé → Upravit → odškrtnout *aktivní*. Nemazat, historie má zůstat.
 
 ---
 
-## 7. Bezpečnostní minimum
+## 7. Oprava překlepu v hodnocení
 
-- Repozitář **private**. Obsahuje jména, známky a slovní posudky nezletilých.
+Ulož hodnocení znovu se správnými hodnotami. Databáze je append-only — vznikne nový záznam
+a aplikace pracuje s tím posledním. Původní zůstane v historii, což je záměr.
+
+---
+
+## 8. Bezpečnostní minimum
+
+- Repozitář i databáze **private**. Jde o jména, známky a slovní posudky nezletilých.
 - Vytištěné listy jsou hráčova věc. Ne na nástěnku, ne do skupinového chatu.
-- Odkaz na sebehodnocení posílat jen konkrétnímu hráči, ne do týmové skupiny — kdo odkaz
-  má, může vyplnit sebehodnocení za něj.
+- Odkaz na sebehodnocení posílat jen konkrétnímu hráči — kdo odkaz má, může vyplnit za něj.
 - Hodnocení jednoho hráče se nikdy neukazuje jinému.
+- Zálohy (`zaloha*.sql`) neukládat na sdílené disky.
+- Admin heslo je jedno společné. Když se změní tým trenérů, změň heslo.

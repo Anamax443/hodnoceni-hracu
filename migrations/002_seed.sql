@@ -1,13 +1,12 @@
 -- 002_seed.sql — kádr SK Říčmanice, starší žáci
 --
 -- STAV: čeká na reálný soupis (19 hráčů). Zatím vzorová data, aby šlo
--- schéma vyzkoušet. Až přijde soupis, nahradí se řádky níž — jménem,
--- přezdívkou, postem a šablonou ('pole' / 'brankar').
+-- aplikaci vyzkoušet. Až přijde soupis, nahradí se řádky níž.
 --
--- Zdroj pravdy pro fázi 1 je frontend/data/kadr.js. Tenhle soubor se
--- z něj vyplní až při přechodu na fázi 2, aby data nežila na dvou
--- místech současně.
+-- Hráče jde přidávat i v aplikaci (záložka Lidé). Tenhle soubor slouží
+-- k prvnímu naplnění prázdné databáze.
 
-INSERT INTO players (jmeno, prezdivka, post, sablona) VALUES
-  ('Vzorový Jan',  'Vzorek', 'Střední záložník', 'pole'),
-  ('Vzorový Petr', 'Vzorák', 'Brankář',          'brankar');
+INSERT INTO players (jmeno, prezdivka, post, role, sablona) VALUES
+  ('Vzorový Jan',   'Vzorek', 'Střední záložník', 'hrac',   'pole'),
+  ('Vzorový Petr',  'Vzorák', 'Brankář',          'hrac',   'brankar'),
+  ('Trenér Karel',  NULL,     'Hlavní trenér',    'trener', 'pole');

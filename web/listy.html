@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hodnotící listy — tisk</title>
+<!-- Vlastní stránka schválně: tiskový styl si nemá lézt do zelí s aplikací. -->
+<link rel="stylesheet" href="src/styl.css">
+</head>
+<body>
+
+<div class="toolbar noprint">
+    <span class="stav" id="stav">Načítám…</span>
+    <button onclick="window.print()" title="Otevře dialog tisku. Jeden hráč = jedna stránka A4. Zapni „Grafika na pozadí".">🖨️ Vytisknout</button>
+</div>
+
+<div id="chyba"></div>
+<div id="output"></div>
+
+<script type="module" src="listy.js"></script>
+</body>
+</html>

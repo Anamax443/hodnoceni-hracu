@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hodnocení hráčů — trenér</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div id="prihlaseni" hidden>
+    <div class="karta login">
+        <h2>Hodnocení hráčů</h2>
+        <p class="popis">Přístup pro trenéra.</p>
+        <div class="pole">
+            <label for="heslo">Heslo</label>
+            <input type="password" id="heslo" autocomplete="current-password">
+        </div>
+        <button class="hl" id="prihlasit" title="Přihlásí trenéra na 12 hodin">Přihlásit</button>
+        <div id="prihlaseni-chyba"></div>
+    </div>
+</div>
+
+<div id="aplikace" hidden>
+    <header>
+        <span class="klub" id="hl-klub">SK ŘÍČMANICE</span>
+        <span>Hodnocení hráčů</span>
+        <span class="obdobi" id="hl-obdobi"></span>
+        <button id="odhlasit" title="Ukončí přihlášení trenéra">Odhlásit</button>
+    </header>
+
+    <nav id="zalozky">
+        <button data-z="lide"      class="aktivni" title="Kdo je v týmu — hráči a trenéři">Lidé</button>
+        <button data-z="hodnotit"  title="Zadání hodnocení hráče trenérem">Hodnotit</button>
+        <button data-z="listy"     title="Tiskové listy A4 sestavené z databáze">Listy</button>
+        <button data-z="porovnani" title="Kde se rozchází pohled trenéra a hráče">Porovnání</button>
+        <button data-z="odkazy"    title="Odkazy na sebehodnocení pro hráče">Odkazy</button>
+        <button data-z="nastaveni" title="Tolerance, období, hlavička listu">Nastavení</button>
+    </nav>
+
+    <main id="obsah"></main>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

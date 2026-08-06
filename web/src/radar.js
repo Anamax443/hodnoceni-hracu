@@ -8,22 +8,24 @@
    Na jednom listu jsou maximálně DVA polygony. Tři jsou nečitelné.
    ===================================================================== */
 
-/* Souřadnice bodu na ose i (osa 0 = nahoře, dál po směru hodin) */
-function bod(cx, cy, r, i, n) {
+import { MAX, KRUHY } from './sablony.js';
+
+/** Souřadnice bodu na ose i (osa 0 = nahoře, dál po směru hodin) */
+export function bod(cx, cy, r, i, n) {
     const uhel = (Math.PI * 2 * i / n) - Math.PI / 2;
     return { x: cx + r * Math.cos(uhel), y: cy + r * Math.sin(uhel) };
 }
 
-/* Sestaví "x,y x,y ..." pro <polygon> z pole hodnot */
-function polygon(cx, cy, R, hodnoty, n) {
+/** Sestaví "x,y x,y ..." pro <polygon> z pole hodnot */
+export function polygon(cx, cy, R, hodnoty, n) {
     return hodnoty.map((h, i) => {
         const p = bod(cx, cy, R * h / MAX, i, n);
         return p.x.toFixed(1) + ',' + p.y.toFixed(1);
     }).join(' ');
 }
 
-/* Zalomí dlouhý popisek osy na dva řádky */
-function zalom(text) {
+/** Zalomí dlouhý popisek osy na dva řádky */
+export function zalom(text) {
     if (text.length <= 17) return [text];
     const slova = text.split(' ');
     let a = '', b = '';
@@ -41,7 +43,7 @@ function zalom(text) {
  * @param {Object} porovnani {klic: 1..10} — šedý čárkovaný obrys pod ním; null = nekreslí se
  * @returns {string} SVG
  */
-function radar(osy, hodnoceni, porovnani) {
+export function radar(osy, hodnoceni, porovnani) {
     const n = osy.length;
     const W = 470, H = 300, cx = 235, cy = 148, R = 100;
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Hodnocení hráče">`;

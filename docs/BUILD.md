@@ -5,124 +5,126 @@
 
 ---
 
-## A. Fáze 1 — tiskové listy (aktuální stav)
+## 1. Závislosti
 
-### 1. Závislosti
+- **Node.js 22+** (ověřeno na v24.13.1)
+- `npm install` stáhne jedinou závislost: **wrangler** (ověřeno na 4.119.0)
+- pro nasazení účet **Cloudflare** (bass443 — stejný jako maxferit.cz, jobwatch, domlov)
+- žádný framework, žádný bundler, žádný build krok
 
-Žádné. Ani Node, ani server, ani build. Stačí prohlížeč (Edge, Chrome, Firefox).
+## 2. Získání kódu
 
-### 2. Získání kódu
-
-```
+```powershell
 git clone https://github.com/Anamax443/hodnoceni-hracu.git
 cd hodnoceni-hracu
+npm install
 ```
 
-Repozitář je **private** a obsahuje osobní údaje nezletilých. Klonovat jen na zařízení,
+Repozitář je **private** a data obsahují osobní údaje nezletilých. Klonovat jen na zařízení,
 které je pod kontrolou.
 
-### 3. Konfigurace
+## 3. Secrety
 
-Žádné secrety. Jediný editovaný soubor je `frontend/data/kadr.js`
-(kádr, hodnocení, název období) — popis v [README.md](README.md).
+Dva, oba povinné:
 
-### 4. Spuštění
+| Secret | K čemu |
+|---|---|
+| `ADMIN_HESLO` | přihlášení trenéra do aplikace |
+| `SESSION_KEY` | podpis session cookie; 32+ náhodných bajtů |
 
-```
-frontend\tisk.html
-```
-
-Otevřít dvojklikem. Hotovo — v prohlížeči jsou listy A4, tlačítkem nahoře jdou na tiskárnu.
-
-### 5. Ověření, že to funguje
-
-Bez prohlížeče (nebo v CI) headless přes Edge:
-
-```powershell
-$edge = (Get-Command msedge.exe).Source
-& $edge --headless --disable-gpu --virtual-time-budget=3000 --dump-dom `
-    "file:///D:/git/hodnoceni-hracu/frontend/tisk.html" > dump.html
-```
-
-V `dump.html` musí sedět:
-
-- `id="stav"` obsahuje `Listů k tisku: N` (ne `Chyba v datech`)
-- počet `class="page"` = počet aktivních hráčů
-- počet `<polygon` = počet listů × (5 mřížka + 1 za každý vykreslený polygon)
-
----
-
-## B. Fáze 2+ — Cloudflare (plán, zatím nepostaveno)
-
-Postavit **až po tom**, co je jednou ručně odhodnocen celý kádr. Do té doby se osy ještě
-mohou změnit a měnit je v databázi s historickými záznamy je nepříjemné.
-
-### 1. Závislosti
-
-- Node.js 22 LTS
-- `npm i -D wrangler`
-- účet Cloudflare **bass443** (stejný jako maxferit.cz, jobwatch, domlov)
-
-### 2. Databáze
-
-```powershell
-npx wrangler d1 create hodnoceni-hracu
-# vraceny database_id zapsat do worker/wrangler.toml
-npx wrangler d1 execute hodnoceni-hracu --remote --file=migrations/001_init.sql
-npx wrangler d1 execute hodnoceni-hracu --remote --file=migrations/002_seed.sql
-```
-
-Lokální vývoj: totéž bez `--remote`.
-
-### 3. Secrety
-
-```powershell
-npx wrangler secret put ADMIN_HESLO      # prihlasovaci heslo trenera
-npx wrangler secret put SESSION_KEY      # nahodny klic pro podpis session cookie (32+ bajtu)
-```
-
-Nikdy do gitu. `.dev.vars` pro lokální běh je v `.gitignore`.
-
-Generování `SESSION_KEY`:
+Vygenerování `SESSION_KEY`:
 
 ```powershell
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 }))
 ```
 
-### 4. Nasazení
+**Lokálně** — zkopíruj `.dev.vars.example` na `.dev.vars` a vyplň. `.dev.vars` je
+v `.gitignore` a nikdy nesmí do repozitáře.
+
+**V produkci:**
 
 ```powershell
-npx wrangler deploy                      # Worker (API)
-npx wrangler pages deploy frontend       # Pages (frontend)
+npx wrangler secret put ADMIN_HESLO
+npx wrangler secret put SESSION_KEY
 ```
 
-### 5. Doména
-
-Zatím `*.pages.dev`. Cílově vlastní pod **maxferit.cz** (rozhodnuto 2026-08-06) — DNS
-je na Cloudflare u účtu bass443, takže se přidá jen custom domain u Pages projektu
-a CNAME záznam vznikne sám.
-
-### 6. Ověření, že běží
-
-```
-GET https://<worker>/health   ->  {"status":"ok","module":"hodnoceni-hracu","timestamp":"…"}
-```
-
-Plus commit hash zabudovaný do buildu — na nasazené aplikaci musí být vidět běžící verze.
-
-### 7. Zálohy
+## 4. Lokální běh
 
 ```powershell
-npx wrangler d1 export hodnoceni-hracu --remote --output=zaloha.sql
+npm run db:init:local     # schema do lokalni D1
+npm run db:seed:local     # kadr
+npm run dev               # http://127.0.0.1:8787
 ```
 
-Databáze obsahuje osobní údaje nezletilých. Zálohu neukládat na sdílené disky ani
-do veřejného repa.
+Lokální databáze žije v `.wrangler/` (v `.gitignore`). Smazáním složky se resetuje.
 
----
+## 5. Ověření, že to funguje
 
-## C. Certifikáty / přístupy / práva
+```powershell
+curl http://127.0.0.1:8787/health
+# {"status":"ok","module":"hodnoceni-hracu","timestamp":"…"}
+```
 
-- GitHub: účet **Anamax443**, repo private
+Dál: přihlásit se, přidat hráče, zadat hodnocení, vygenerovat odkaz, otevřít ho v jiném
+prohlížeči (jinak sdílíš session), vyplnit sebehodnocení, podívat se na Porovnání a vytisknout
+list. Tím je projetá celá cesta.
+
+Automatizované ověření API včetně bezpečnostních pravidel je popsané v `known_good.md`.
+
+## 6. Nasazení do produkce
+
+### 6.1 Databáze
+
+```powershell
+npx wrangler d1 create hodnoceni-hracu
+```
+
+Vrácené `database_id` zapiš do `wrangler.jsonc` (nahradí nulový placeholder). Pak:
+
+```powershell
+npm run db:init
+npm run db:seed     # jen poprve, do prazdne databaze
+```
+
+### 6.2 Secrety
+
+Viz bod 3 (`wrangler secret put`).
+
+### 6.3 Deploy
+
+```powershell
+npm run deploy
+```
+
+Nasadí Worker i statické soubory z `web/` najednou. Adresa bude
+`https://hodnoceni-hracu.<účet>.workers.dev`.
+
+### 6.4 Doména
+
+Cílově vlastní pod **maxferit.cz** (rozhodnuto 2026-08-06). DNS je na Cloudflare u účtu
+bass443, takže stačí přidat custom domain k Workeru — CNAME vznikne sám. Do té doby
+`*.workers.dev`.
+
+### 6.5 Ověření nasazení
+
+```
+GET https://<adresa>/health   ->  {"status":"ok","module":"hodnoceni-hracu","timestamp":"…"}
+```
+
+Pak se přihlásit a zkontrolovat, že jsou vidět data. Po každém nasazení si poznamenej
+commit hash, ať je jasné, co běží.
+
+## 7. Zálohy
+
+```powershell
+npm run db:export     # zaloha.sql z produkcni databaze
+```
+
+Před každým půlročním kolem. Záloha obsahuje osobní údaje nezletilých — neukládat na sdílené
+disky ani do repozitáře (`zaloha*.sql` je v `.gitignore`).
+
+## 8. Přístupy
+
+- GitHub: účet **Anamax443**, repo **private**
 - Cloudflare: účet **bass443**
 - žádné podpisové certifikáty, žádné servisní účty

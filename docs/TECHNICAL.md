@@ -7,29 +7,30 @@ Uživatelská část je v [README.md](README.md), postup od nuly v [BUILD.md](BU
 
 ## 1. Přehled
 
-| | Fáze 1 (hotovo) | Fáze 2+ (plán) |
-|---|---|---|
-| Běh | soubor na disku, `file://` | Cloudflare Pages |
-| Logika | prohlížeč | Cloudflare Worker |
-| Data | `frontend/data/kadr.js` | Cloudflare D1 (SQLite) |
-| Autorizace | žádná (lokální soubor) | session cookie ve Workeru |
-
-Cílový tvar:
-
 ```
-Cloudflare Pages (frontend, statický build)
-      |
-      v
-Cloudflare Worker (API, veškerá logika a autorizace)
-      |
-      v
+prohlížeč
+   |
+   v
+Cloudflare Worker  ──  statické soubory z ./web (binding ASSETS)
+   |                   API /api/*, autorizace, validace
+   v
 Cloudflare D1 (SQLite)
 ```
 
-Dvě pravidla, která platí od začátku:
+Dvě pravidla, která platí bez výjimky:
 
 - frontend **nikdy** nesahá do D1 přímo, jen přes Worker
 - veškerá autorizace se děje ve Workeru, ne v prohlížeči
+
+### Odchylka od zadání §3
+
+Zadání počítalo s Cloudflare Pages pro frontend a Workerem zvlášť. Místo toho obsluhuje
+statické soubory přímo Worker přes `assets` binding: jeden deploy, jedna doména, žádné CORS
+a žádná druhá konfigurace. Funkčně je to totéž, provozně o krok míň.
+
+Důsledek, na který se dá naletět: asset server standardně přesměrovává `/h.html` na `/h`,
+čímž by z adresy zmizel token sebehodnocení. Proto je v `wrangler.jsonc`
+`html_handling: "none"` a cesty mapuje Worker sám (`/` → `index.html`, `/h/<token>` → `h.html`).
 
 ---
 
@@ -37,59 +38,47 @@ Dvě pravidla, která platí od začátku:
 
 ```
 hodnoceni-hracu/
-├── frontend/
-│   ├── tisk.html          vstupní bod fáze 1
-│   ├── src/
-│   │   ├── sablony.js     definice os + kotvy škály (sdílené s Workerem ve fázi 2)
-│   │   ├── radar.js       vykreslení SVG (převzato z docs/vzor-list.html)
-│   │   ├── list.js        sestavení A4 listu
-│   │   └── styl.css       styly včetně @page/@media print
-│   └── data/
-│       └── kadr.js        JEDINÝ ručně editovaný soubor — kádr + hodnocení
+├── wrangler.jsonc         konfigurace Workeru, assets a D1
+├── package.json           skripty: dev, deploy, db:init, db:seed, db:export
+├── worker/src/index.ts    API, autorizace, přístup k D1 — veškerá logika serveru
+├── web/                   statické soubory (obsluhuje je Worker)
+│   ├── index.html         aplikace trenéra (záložky)
+│   ├── app.js             logika aplikace
+│   ├── app.css            styl aplikace
+│   ├── listy.html/.js     tiskové listy A4 z databáze (vlastní stránka)
+│   ├── h.html/.js         sebehodnocení hráče za tokenem
+│   └── src/
+│       ├── sablony.js     osy, kotvy škály, formulace v 1. osobě, validace  ← sdílí Worker
+│       ├── radar.js       vykreslení SVG (převzato z docs/vzor-list.html)
+│       ├── list.js        sestavení A4 listu
+│       └── styl.css       styl listu včetně @page / @media print
 ├── migrations/
-│   ├── 001_init.sql       schéma D1 (aplikuje se až ve fázi 2)
+│   ├── 001_init.sql       schéma D1
 │   └── 002_seed.sql       kádr
-├── docs/
-│   ├── README.md          uživatelská (trenér)
-│   ├── TECHNICAL.md       tenhle soubor
-│   ├── BUILD.md           výrobní — jak postavit od nuly
-│   ├── RUNBOOK.md         provoz
-│   ├── ZADANI.md          původní zadání
-│   └── vzor-list.html     referenční tiskový výstup (zmrazený)
-├── known_good.md          ověřené funkční stavy
-└── HANDOFF.md             deník
+└── docs/                  README (trenér), TECHNICAL, BUILD, RUNBOOK, ZADANI, vzor-list.html
 ```
 
-`worker/` vznikne až ve fázi 2. Prázdná složka do gitu nepatří.
+`web/src/sablony.js` importuje frontend i Worker — definice os je na jednom místě. Ostatní
+soubory ve `web/src/` používá jen prohlížeč.
+
+Tiskové listy mají **vlastní stránku** (`listy.html`), protože `src/styl.css` nastavuje
+`body` pro A4. V aplikaci by si styly lezly do zelí.
 
 ---
 
-## 3. Fáze 1 — jak to funguje
+## 3. Autorizace
 
-`tisk.html` načte v pevném pořadí čtyři skripty a zavolá `vykresli()`:
+Rozhodnuto: jedno admin heslo jako Worker secret + podepsaná session cookie (zadání §14/1).
 
-```
-src/sablony.js   ->  SABLONY, KOTVY, MAX, KRUHY
-src/radar.js     ->  bod(), polygon(), zalom(), radar()
-src/list.js      ->  esc(), list(), vykresli()
-data/kadr.js     ->  NASTAVENI, HRACI
-```
+- `POST /api/login` porovná heslo s `ADMIN_HESLO` a nastaví cookie
+  `sess=<payload>.<HMAC-SHA256>`; payload nese jen čas vypršení
+- cookie je `HttpOnly; SameSite=Lax; Path=/`, `Secure` se přidává jen přes HTTPS
+  (jinak by ji lokální vývoj na `http://127.0.0.1` neuložil)
+- platnost 12 hodin, podpis se ověřuje časově konstantním porovnáním
+- **každý** endpoint pod `/api/` kromě `/api/login`, `/api/logout`, `/api/me`
+  a `/api/self/*` vyžaduje platnou session; při 401 se aplikace vrátí na přihlášení
 
-**Proč klasické `<script>` a ne ES moduly:** stránka se musí otevřít dvojklikem z disku.
-Moduly přes `file://` blokuje CORS, JSON přes `fetch()` taky. Klasické skripty fungují a data
-jsou proto v `.js` souboru, ne v `.json`. `const` na nejvyšší úrovni klasického skriptu je
-viditelný z ostatních klasických skriptů, takže žádné globální přiřazování není potřeba.
-
-**Převod na fázi 2:** k deklaracím v `sablony.js` a `radar.js` se doplní `export`, nic jiného
-se nemění. Tyhle dva soubory pak sdílí frontend i Worker.
-
-Chyby v datech (chybějící čárka, neznámá šablona) chytá `try/catch` v `tisk.html` a vypíše je
-červeně nahoře na stránce. Trenér musí poznat, co má opravit, aniž by otevíral konzoli.
-
-### Escapování
-
-`list.js` prohání všechny hodnoty z dat přes `esc()`. Data píše sám trenér, ale `&` nebo `<`
-v komentáři by rozbily HTML. Jediná odchylka od `docs/vzor-list.html`, kde escapování není.
+Hráč se nepřihlašuje vůbec — jeho přístup je jednorázový token v odkazu.
 
 ---
 
@@ -105,8 +94,8 @@ Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.htm
 - aktuální hodnocení: modrý výplňový polygon `#2196F3` @ 40 % + body
 - porovnávací hodnocení: šedý čárkovaný obrys pod ním
 
-**Na jednom listu jsou maximálně dva polygony.** Buď trenér + hráč (hlavní sdělení fáze 3),
-nebo trenér nyní + trenér minule. Tři jsou nečitelné.
+**Na jednom listu jsou maximálně dva polygony.** Buď trenér + hráč (rozhovor), nebo trenér
+nyní + trenér minule (vývoj). Vybírá se v záložce Listy. Tři polygony jsou nečitelné.
 
 Když se geometrie změní tady, musí se změnit i v `docs/vzor-list.html` — jinak přestane být
 referenční.
@@ -115,7 +104,7 @@ referenční.
 
 ## 5. Šablony os
 
-Definované v `frontend/src/sablony.js`, sdílené frontendem i (ve fázi 2) Workerem.
+Definované v `web/src/sablony.js`, sdílené frontendem i Workerem.
 
 **`pole`** — hráč v poli, 6 os:
 `prava` Technika pravá noha · `leva` Technika levá noha · `hlavicky` Hlavičkování ·
@@ -125,11 +114,16 @@ Definované v `frontend/src/sablony.js`, sdílené frontendem i (ve fázi 2) Wor
 `chytani` Chytání a zákroky · `misto` Výběr místa a postavení · `nohama` Hra nohama (rozehrávka) ·
 `vykopy` Výkopy a dlouhá rozehrávka · `mimo` Hra mimo bránu a centry · `organizace` Organizace a komunikace
 
-Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list a ve fázi 3 se zobrazí i ve formuláři
-hráče. Kondice a rychlost mezi osami schválně nejsou — u téhle kategorie měří biologický věk.
+Ke každé ose je i **formulace v první osobě** (`JA`) pro formulář hráče — stejná osa, jiná
+věta: „Levou nohou přihraju na deset metrů tak, jak chci." Hráč odpovídá na „umím to",
+neznámkuje sám sebe.
+
+Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích. Kondice
+a rychlost mezi osami schválně nejsou — u téhle kategorie měří biologický věk.
 
 **Šablonu neměnit uprostřed sezóny.** Jiný počet vrcholů = jiný tvar polygonu a hodnocení už
-nejde porovnat s předchozím obdobím.
+nejde porovnat s předchozím obdobím. Stará hodnocení se vykreslují šablonou, se kterou byla
+pořízena (sloupec `evaluations.sablona`).
 
 ---
 
@@ -139,82 +133,113 @@ Viz `migrations/001_init.sql`. Tabulky: `players`, `evaluations`, `tokens`, `set
 
 ### Append-only
 
-Hodnocení se **nikdy nepřepisuje**. Každé uložení je nový řádek s datem. Historie vzniká sama,
-zvláštní tabulka pro verzování není potřeba.
+Hodnocení se **nikdy nepřepisuje**. Každé uložení je nový řádek s datem; aplikace pracuje
+vždy s nejnovějším záznamem daného autora a období (`ORDER BY id DESC LIMIT 1`). Historie
+vzniká sama, zvláštní tabulka pro verzování není potřeba.
+
+### players drží hráče i trenéry
+
+Sloupec `role` (`hrac` / `trener`). Trenér se nehodnotí a netiskne se mu list — je v seznamu
+proto, aby šlo zaznamenat, kdo hodnocení pořídil (`evaluations.autor_id`). Pokus uložit
+hodnocení osobě s rolí `trener` server odmítne.
 
 ### Proč `hodnoty` jako JSON, ne sloupce
 
 Přidání sedmé osy pak znamená přidání klíče, ne migraci schématu. Stará hodnocení zůstanou
-platná a vykreslí se šablonou, se kterou byla pořízena — proto je `sablona` kopírovaná do řádku
-hodnocení.
+platná a vykreslí se svou šablonou.
+
+### settings
+
+Klíč–hodnota: `tolerance`, `obdobi`, `sezona`, `klub`, `kategorie`, `latka`, `cileNadpis`.
+Server přijme jen tyhle známé klíče; `tolerance` navíc musí být celé číslo 0–9.
 
 ---
 
 ## 7. Funkční pravidla
 
-Podstata nástroje, ne detail UI. Ve fázi 2/3 implementovat přesně.
+Podstata nástroje, ne detail UI.
 
-**7.1 Zaměněné pořadí.** Hráč nesmí vidět hodnocení trenéra dřív, než odešle své sebehodnocení.
-Kontrola musí být ve Workeru, ne skrytím v UI.
+**7.1 Zaměněné pořadí.** Hráč nesmí vidět hodnocení trenéra dřív, než odešle své
+sebehodnocení. `GET /api/self/:token` vrací jen jméno, období, šablonu, osy a kotvy —
+nic z hodnocení trenéra a nic o jiných hráčích. Hlídá to Worker, ne skrytí v UI.
 
-**7.2 Zadávání naslepo.** Při vyplňování formuláře (trenér i hráč) se nezobrazují předchozí
-hodnoty. Porovnání se odhalí až po uložení. Viditelná loňská hodnota přitáhne novou k sobě
-a datová řada ztratí vypovídací hodnotu.
+**7.2 Zadávání naslepo.** Formuláře trenéra i hráče nezobrazují předchozí hodnoty a známky
+nemají žádnou přednastavenou hodnotu — nic k sobě nepřitahuje novou známku. Porovnání se
+odhalí až po uložení. Ve formuláři trenéra na to upozorňuje žlutý rámeček.
 
-**7.3 Tolerance.** Nastavitelná v `settings.tolerance`, výchozí `2`.
-Rozdíl ≤ tolerance → osa se neřeší. Rozdíl > tolerance → osa se označí k osobnímu rozhovoru.
-Ukládat a zobrazovat **znaménko** rozdílu, ne absolutní hodnotu:
+**7.3 Tolerance.** V `settings.tolerance`, výchozí `2`, měnitelná v Nastavení.
+Rozdíl ≤ tolerance → osa se neřeší. Rozdíl > tolerance → osa se označí k rozhovoru.
+Ukládá a zobrazuje se **znaménko** rozdílu, ne absolutní hodnota:
 
 - hráč si dal víc než trenér (+) = slepé místo, chybí zpětná vazba
 - hráč si dal míň než trenér (−) = sebedůvěra, může jít o něco mimo fotbal
 
-Když toleranci překročí víc než 3 osy, zobrazit upozornění a doporučit vybrat maximálně
-2–3 témata k rozhovoru.
+Když toleranci překročí víc než 3 osy, aplikace to napíše a doporučí vybrat 2–3 témata.
 
-**7.4 Trend.** Nepočítat souhrnné číslo ani průměr os. Šipka u každé osy (↑ ↓ →) plus souhrn
-typu „4 osy nahoru, 1 dolů, 1 beze změny". Pásmo šumu: za změnu se považuje až rozdíl 2 body.
+**7.4 Trend.** Žádné souhrnné číslo ani průměr os. Šipka u každé osy (↑ ↓ →) plus souhrn
+typu „4 osy nahoru, 1 dolů, 1 beze změny". Pásmo šumu: za změnu se považuje až rozdíl
+2 body (`PASMO_SUMU` ve Workeru).
 
 **7.5 Rozdělení pohledů.** Stejná data, dva výstupy:
 
-| | Trenér (admin) | Hráč (tištěný list / odkaz) |
+| | Trenér (`/`) | Hráč (list / odkaz) |
 |---|---|---|
-| šipky trendu, „zhoršuje se" | ano | **ne** |
-| historie všech období | ano | jen aktuální + předchozí polygon |
-| rozdíl trenér vs. hráč | ano, číselně | ano, jako druhý polygon bez hodnocení rozdílu |
+| šipky trendu, „zhoršuje se" | ano (záložka Porovnání) | **ne** |
+| historie všech období | ano | jen aktuální + druhý polygon |
+| rozdíl trenér vs. hráč | ano, číselně | jen jako druhý polygon, bez hodnocení rozdílu |
 | data jiných hráčů | ano | nikdy |
 
 Věta „zhoršil ses" nepatří na papír, který si čtrnáctiletý odnese domů.
 
 ---
 
-## 8. API (Worker) — fáze 2/3
+## 8. API
 
 ```
-GET    /health                               {status, module, timestamp}
+GET    /health                                    {status, module, timestamp}
 
-GET    /api/players                          admin
-POST   /api/players                          admin
-PATCH  /api/players/:id                      admin
+POST   /api/login          {heslo}                nastaví session cookie
+POST   /api/logout
+GET    /api/me                                    {prihlasen}
 
-GET    /api/evaluations?player_id=&obdobi=   admin
-POST   /api/evaluations                      admin   (autor='trener')
+GET    /api/settings                              admin
+PUT    /api/settings       {klic: hodnota, …}     admin
 
-POST   /api/tokens                           admin   (vygeneruje pro obdobi)
-DELETE /api/tokens/:token                    admin
+GET    /api/players                               admin
+POST   /api/players                               admin
+PATCH  /api/players/:id                           admin
 
-GET    /api/self/:token                      verejne (vrati jmeno + sablonu, NIC z hodnoceni trenera)
-POST   /api/self/:token                      verejne (ulozi autor='hrac', oznaci token pouzit)
+GET    /api/prehled?obdobi=                       admin — kdo má hodnocení a kdo odkaz
+GET    /api/evaluations?player_id=&obdobi=        admin
+POST   /api/evaluations                           admin  (autor='trener')
+
+GET    /api/listy?obdobi=&porovnani=&ids=         admin — podklady pro tiskové listy
+GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč
+GET    /api/trend?player_id=                      admin — vývoj v čase
+
+GET    /api/tokens?obdobi=                        admin
+POST   /api/tokens         {player_id?, obdobi, dni}   admin
+DELETE /api/tokens/:token                         admin
+
+GET    /api/self/:token                           veřejné — jméno + osy, NIC od trenéra
+POST   /api/self/:token    {hodnoty, poznamka}    veřejné — uloží autor='hrac', token zneplatní
 ```
 
-Bezpečnostní pravidla:
+`porovnani` = `minule` | `hrac` | `zadne`, `ids` = `vse` nebo seznam id oddělený čárkami.
 
-- token generovat kryptograficky (`crypto.getRandomValues`), min. 32 znaků, nikdy ne pořadové
-  ID hráče
-- `GET /api/self/:token` nesmí za žádných okolností vrátit hodnocení trenéra ani jiného hráče
-- admin endpointy odmítnout bez platné session, ne jen skrýt v UI
-- validovat rozsah hodnot 1–10 na serveru
-- token v odkazu = kdo odkaz získá, může vyplnit sebehodnocení za hráče. Známá a přijatá
-  limitace pro 19 hráčů 2× ročně.
+### Bezpečnostní pravidla
+
+- token je 32 náhodných bajtů z `crypto.getRandomValues` (43 znaků base64url), nikdy ne
+  pořadové ID hráče
+- `GET /api/self/:token` nevrací hodnocení trenéra ani jiného hráče
+- admin endpointy odmítnou požadavek bez platné session (401), ne jen skryjí v UI
+- rozsah hodnot 1–10 a shodu klíčů se šablonou validuje server
+  (`zkontrolujHodnoty` v `sablony.js`) — stejný kód na obou stranách
+- druhé odeslání sebehodnocení skončí 409; token má omezenou platnost (výchozí 30 dní)
+- vše, co jde z databáze do HTML listu, prochází přes `esc()`
+
+Známá a přijatá limitace: kdo odkaz získá, může sebehodnocení vyplnit za hráče.
+Pro 19 hráčů 2× ročně je to přijatelné.
 
 ---
 
@@ -247,34 +272,36 @@ Důvod: nesvazuje projekt s CF uctem, funguje i z ciziho zarizeni, staci pro jed
 Potvrzeno: 2026-08-06 (zadani §14/1)
 Platí pro fázi: 2-4
 Exit criteria:
-- vic nez jeden clovek s admin pristupem
+- vic nez jeden clovek s admin pristupem, kazdy svym heslem
 - pozadavek na MFA nebo audit log prihlaseni
-Následující krok: Cloudflare Access pred /admin cestami
+Následující krok: Cloudflare Access pred admin cestami
 ```
 
 ```
-Rozhodnutí: data fáze 1 v .js souboru, ne .json
-Důvod: stranka se musi otevrit dvojklikem z disku; fetch a moduly pres file:// blokuje CORS
-Platí pro fázi: 1
+Rozhodnutí: staticke soubory obsluhuje Worker (assets binding), ne Pages
+Důvod: jeden deploy, jedna domena, zadne CORS
+Platí pro fázi: 2-4
 Exit criteria:
-- prechod na fazi 2 (data jdou z D1)
-Následující krok: bez nahrady, soubor zanikne
+- potreba nezavisleho nasazovani frontendu a API
+- build krok u frontendu (framework, bundler)
+Následující krok: rozdelit na Pages + Worker podle puvodniho zadani §3
 ```
 
 ---
 
 ## 10. Otevřené otázky
 
-Zbývají z §14 zadání, řešit před fází 3:
+Zbývají z §14 zadání:
 
 1. Mají mít k listu přístup rodiče, nebo jen hráči?
-2. Sebehodnocení: jen 6 os, nebo i krátká otevřená otázka („na čem chceš pracovat")?
 
 Rozhodnuto 2026-08-06:
 
 - admin auth = heslo v secretu + podepsaná session cookie (§14/1)
-- doména = nakonec vlastní pod `maxferit.cz`, do té doby `*.pages.dev` (§14/2)
-- osobní data (jména i posudky) zůstávají v repu → **repozitář musí zůstat private**
+- doména = nakonec vlastní pod `maxferit.cz`, do té doby `*.workers.dev` (§14/2)
+- sebehodnocení má **6 os + jednu nepovinnou otevřenou otázku** „Na čem chceš pracovat?"
+  (§14/4) — odpověď vidí trenér v Porovnání, na tištěný list se nedostane
+- osobní data (jména i posudky) zůstávají v repu a v databázi → **repozitář musí zůstat private**
 
 ---
 
@@ -284,4 +311,4 @@ Statistiky ze zápasů, docházka a MVP hlasování řeší jiná aplikace
 (`sk-ricmanice-taktika`). Tenhle projekt s ní **nesdílí kód ani databázi**.
 
 Dál mimo scope: účty a hesla pro hráče, nativní mobilní aplikace, víceklubovost,
-e-mailové rozesílání odkazů.
+e-mailové rozesílání odkazů (odkazy se kopírují ručně).

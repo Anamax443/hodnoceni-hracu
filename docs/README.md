@@ -1,27 +1,29 @@
 # Uživatelská příručka — pro trenéra
 
-Jak oznámkovat kádr a vytisknout listy. Programátorská část je v [TECHNICAL.md](TECHNICAL.md).
+Jak aplikaci používat. Programátorská část je v [TECHNICAL.md](TECHNICAL.md).
 
 ---
 
-## 1. K čemu list slouží
+## 1. K čemu to je
 
 Hráč dostane jednu stránku A4: graf šesti dovedností, tři slovní bloky (Fyzicky / Hlavou /
 V partě) a dva až tři cíle na další půlrok. Nic víc se na papír nevejde a nic víc tam ani
 nepatří.
+
+Navíc si hráč sám vyplní stejných šest os přes soukromý odkaz. Tam, kde se váš pohled rozchází
+víc, než je nastavená tolerance, aplikace osu označí — a to jsou témata k rozhovoru. Tohle je
+na celém nástroji to nejcennější.
 
 Hodnotí se proti **absolutní laťce kategorie** — „co má umět starší žák" — ne proti kádru.
 Dva hráči vedle sebe můžou mít oba sedmičku a být jinak dobří. To je v pořádku.
 
 ---
 
-## 2. Než začneš známkovat
+## 2. Tři pravidla, na kterých to stojí
 
-Tři pravidla, na kterých celý nástroj stojí:
-
-1. **Nekoukej na loňské hodnoty.** Ani na svoje, ani na hráčova. Viditelné loňské číslo
-   přitáhne nové k sobě a datová řada přestane cokoliv říkat. Nejdřív oznámkuj naslepo,
-   teprve pak dopisuj `predchozi`.
+1. **Známkuje se naslepo.** Aplikace schválně neukazuje loňské hodnoty ani hodnocení hráče,
+   dokud neuložíš svoje. Viditelné loňské číslo přitáhne nové k sobě a datová řada přestane
+   cokoliv říkat.
 2. **Kondice a rychlost se neznámkují.** U téhle věkové kategorie měří biologický věk, ne
    odvedenou práci. Patří do slovního bloku *Fyzicky*.
 3. **Povaha se neznámkuje nikdy.** Spolehlivost, snaha, parta — jen slovy.
@@ -40,75 +42,98 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 
 ---
 
-## 3. Vyplnění dat
+## 3. Přihlášení
 
-Všechno se píše do jediného souboru: `frontend/data/kadr.js`. Otevři ho v poznámkovém bloku
-nebo v editoru kódu.
+Otevřeš adresu aplikace a zadáš heslo trenéra. Přihlášení platí 12 hodin. Heslo je jedno
+společné — kdo ho má, vidí všechno.
 
-Nahoře je blok `NASTAVENI` — klub, kategorie, sezóna, název období a nadpis nad cíli
-(„Na čem makáme do zimy"). Ten se mění dvakrát ročně.
+---
 
-Pod ním je seznam hráčů. Jeden hráč = jeden blok ve složených závorkách:
+## 4. Záložky
 
-```js
-{
-    jmeno: 'Novák Jan',
-    prezdivka: 'Nováček',
-    post: 'Střední záložník',
-    sablona: 'pole',                    // 'pole' nebo 'brankar'
-    hodnoceni: { prava: 7, leva: 4, hlavicky: 5, prihravka: 7, braneni: 5, skenovani: 4 },
-    predchozi: { prava: 6, leva: 3, hlavicky: 4, prihravka: 5, braneni: 5, skenovani: 3 },
-    fyzicky: 'Vytrvalost dobrá, ve druhém poločase neodpadá…',
-    hlavou: 'Po chybě se rychle vrátí do hry…',
-    parta: 'V kabině tahoun…',
-    cile: [
-        'Rozhlédnout se DŘÍV, než ke mně míč dorazí.',
-        'Levá noha: každý trénink 5 minut navíc.'
-    ]
-}
-```
+### Lidé
 
-Na co si dát pozor:
+Kdo je v týmu. U každého jméno, přezdívka, post, role a šablona os.
 
-- **Čárky mezi bloky hráčů.** Chybějící čárka je nejčastější chyba. Stránka to pozná a napíše
-  nahoře červenou hlášku.
-- **Apostrof v textu.** Text je v jednoduchých uvozovkách, takže `'Nedaří se mu'` je v pořádku,
-  ale `'Hráčův styl'` taky — problém dělá jen apostrof uvnitř, např. `'don't'`. V češtině
-  nevzniká.
-- **Názvy os musí sedět.** Pro hráče v poli: `prava`, `leva`, `hlavicky`, `prihravka`,
-  `braneni`, `skenovani`. Pro brankáře: `chytani`, `misto`, `nohama`, `vykopy`, `mimo`,
-  `organizace`. Překlep = osa se vykreslí na nule.
-- `hodnoceni: null` — list se vytiskne prázdný s červenou poznámkou. Hodí se jako podklad,
-  když chceš známkovat tužkou u hřiště.
-- `predchozi: null` — šedý obrys se nevykreslí. Tak to bude u prvního období.
-- `aktivni: false` — hráč se vůbec nevytiskne (odešel, dlouhodobé zranění).
+- **role hráč** — hodnotí se, tiskne se mu list
+- **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil
+- **šablona** — `pole` pro hráče v poli, `brankar` pro brankáře (jiných šest os)
+- **aktivní** — vypni místo mazání, když hráč odejde. Historie hodnocení má zůstat.
 
-### Cíle
+### Hodnotit
 
-Dva až tři, ne víc. Konkrétní a ověřitelné. Ne „zlepšit levou nohu", ale „levá noha: každý
+Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tři slovní bloky a cíle.
+
+Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
+
+**Cíle:** dva až tři, konkrétní a ověřitelné. Ne „zlepšit levou nohu", ale „levá noha: každý
 trénink 5 minut navíc, přihrávka do 10 metrů". Hráč musí poznat, jestli to splnil.
 
+Uložením vzniká nový záznam. Starší hodnocení se nikdy nepřepisuje, takže když se překlepneš,
+prostě ulož znovu — platí to poslední.
+
+### Listy
+
+Tiskové listy A4. Vybereš období, co má být druhý polygon v grafu, a koho tisknout.
+
+Druhý polygon:
+
+- **trenér minule** — vývoj proti předchozímu období
+- **sebehodnocení hráče** — pro rozhovor; tohle je ta zajímavá varianta
+- **žádný** — jen aktuální hodnocení
+
+Listy se otevřou v nové záložce, odtud jdou na tiskárnu. **V dialogu tisku zapni „Grafika na
+pozadí" / „Background graphics"** — jinak se vytiskne bílý list bez modrého pruhu se jménem
+a bez barevných bloků. Okraje nech na „Výchozí", stránka si je řídí sama (A4, 12 mm).
+
+Kontrola před tiskem: počet stránek v náhledu musí odpovídat počtu hráčů. Když je vyšší,
+někomu se text přelil — zkrať slovní blok.
+
+### Porovnání
+
+Vybereš hráče a uvidíš tabulku: tvoje známka, jeho známka, rozdíl a jestli se osa má řešit.
+
+- **+** hráč si dal víc než ty = slepé místo, chybí mu zpětná vazba
+- **−** hráč si dal míň než ty = sebedůvěra, může jít o něco mimo fotbal
+
+Řeší se jen osy, kde je rozdíl **větší než tolerance** (výchozí 2, mění se v Nastavení).
+Když se rozejde víc než tři osy, aplikace to napíše a doporučí vybrat 2–3 témata. Víc se
+do jednoho rozhovoru stejně nevejde.
+
+Pod tabulkou je vývoj v čase se šipkami. **Tenhle pohled je jen pro tebe** — na papír, který
+si hráč nese domů, se nedostane.
+
+### Odkazy
+
+Vygenerují se odkazy na sebehodnocení pro všechny aktivní hráče na dané období. U každého
+tlačítko *Kopírovat* a *Zneplatnit*, plus stav (čeká / vyplněno).
+
+Odkaz je jednorázový — po odeslání už podruhé nejde. Posílej ho **konkrétnímu hráči**, ne do
+týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.
+
+Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
+
+### Nastavení
+
+- **Tolerance** — o kolik se smí lišit tvoje známka a hráčova, aniž by se osa řešila
+- **Období** — například „2025/2026 zima". Podle něj se páruje tvoje hodnocení
+  se sebehodnocením hráče. Před novým kolem ho přepiš.
+- **Sezóna, klub, kategorie, laťka, nadpis nad cíli** — text do hlavičky a patičky listu
+
 ---
 
-## 4. Tisk
+## 5. Půlroční rutina
 
-1. Otevři `frontend/tisk.html` (dvojklik).
-2. Nahoře je vidět, kolik listů se vytiskne a kolik z nich je nevyplněných.
-3. Tlačítko **Vytisknout všechny listy**.
-
-**V dialogu tisku zapni „Grafika na pozadí" / „Background graphics".** Bez toho se vytiskne
-bílý list bez modrého pruhu se jménem a bez barevných bloků. Okraje nech na „Výchozí" —
-stránka si je nastavuje sama (A4, 12 mm).
-
-Jeden hráč = jedna stránka. Když chceš vytisknout jen některé, dej ostatním dočasně
-`aktivni: false`.
-
-Kontrola před tiskem: v náhledu musí být počet stránek stejný jako počet hráčů. Když je vyšší,
-někomu se text přelil na druhou stránku — zkrať slovní blok.
+1. V Nastavení přepiš **období** a nadpis nad cíli.
+2. V Odkazech vygeneruj odkazy a rozešli je hráčům.
+3. Odhodnoť kádr v záložce Hodnotit — naslepo.
+4. Až budou obě strany, projdi Porovnání a vyber si u každého 2–3 témata.
+5. V Listech vytiskni (druhý polygon = sebehodnocení hráče).
+6. Rozdej listy jednotlivě a projděte si je.
 
 ---
 
-## 5. Rozhovor s hráčem
+## 6. Rozhovor s hráčem
 
 List se nepředává v šatně mezi ostatními. Papír s posudkem je hráčova věc.
 
@@ -118,12 +143,3 @@ a s důvodem.
 
 Graf se **neporovnává mezi hráči**. Levák a pravák mají zub na opačné straně, tvary si nejsou
 podobné a nic to neznamená. Je to napsané i v patičce listu.
-
----
-
-## 6. Co bude dál
-
-Zatím je hotová fáze 1 — tisk z lokálního souboru. Až bude jednou celý kádr odhodnocený ručně,
-přijde na řadu aplikace: zadávání ve webovém formuláři, sebehodnocení hráče přes odkaz
-a porovnání „jak se vidím já vs. jak tě vidí trenér". Rozdíl mezi tím dvojím je vlastně to
-nejzajímavější, co tenhle nástroj umí ukázat.
