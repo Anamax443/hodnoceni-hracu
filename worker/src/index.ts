@@ -299,6 +299,83 @@ async function predchoziObdobi(env: Env, playerId: number, obdobi: string, sablo
     return r ? rozbal(r) : null;
 }
 
+/* ===================== shoda mezi trenéry ===================== */
+
+/**
+ * Porovná hodnocení povinných trenérů pro jednoho hráče, období a šablonu.
+ *
+ * Naslepo platí i mezi trenéry: kdo je povinný a ještě neodevzdal, cizí čísla
+ * nevidí. Jinak by se k nim přisunul a shoda by byla falešná (§7.2 o úroveň výš).
+ */
+async function shoda(env: Env, playerId: number, obdobi: string, sablona: string, kdo: Session) {
+    const nas = await nastaveni(env);
+    const tolerance = Number(nas.tolerance) || 0;
+
+    const { results: povinni } = await env.DB.prepare(
+        `SELECT id, jmeno FROM players
+          WHERE role = 'trener' AND aktivni = 1 AND hodnoceni_povinne = 1 ORDER BY jmeno`
+    ).all<{ id: number; jmeno: string }>();
+
+    // Poslední hodnocení každého trenéra (i nepovinného — ať je vidět, kdo se vyjádřil).
+    const { results: vsechna } = await env.DB.prepare(
+        `SELECT e.autor_id, e.hodnoty, e.fyzicky, e.hlavou, e.parta, e.cile, p.jmeno,
+                MAX(e.id) AS posledni_id
+           FROM evaluations e JOIN players p ON p.id = e.autor_id
+          WHERE e.player_id = ? AND e.obdobi = ? AND e.sablona = ? AND e.autor = 'trener'
+          GROUP BY e.autor_id`
+    ).bind(playerId, obdobi, sablona).all<any>();
+
+    const odevzdali = (vsechna ?? []).map(r => ({
+        id: r.autor_id as number, jmeno: r.jmeno as string,
+        hodnoty: JSON.parse(r.hodnoty) as Record<string, number>,
+        fyzicky: r.fyzicky as string | null, hlavou: r.hlavou as string | null,
+        parta: r.parta as string | null,
+        cile: r.cile ? (JSON.parse(r.cile) as string[]) : []
+    }));
+
+    const chybi = (povinni ?? []).filter(p => !odevzdali.some(o => o.id === p.id));
+
+    // Blind guard: povinný trenér, který ještě neodevzdal, nevidí nic cizího.
+    if (kdo.id && (povinni ?? []).some(p => p.id === kdo.id)
+        && !odevzdali.some(o => o.id === kdo.id)) {
+        return {
+            obdobi, sablona, tolerance, cekaNaTebe: true,
+            chybi: chybi.map(c => c.jmeno), osy: [], odevzdali: [], hotovo: false
+        };
+    }
+
+    const osy = klice(sablona).map(klic => {
+        const hodnoty = odevzdali
+            .filter(o => (povinni ?? []).some(p => p.id === o.id))     // shoda se počítá z povinných
+            .map(o => ({ trener: o.jmeno, hodnota: o.hodnoty[klic] ?? null }))
+            .filter(h => h.hodnota !== null) as { trener: string; hodnota: number }[];
+
+        if (!hodnoty.length) return { klic, hodnoty, rozptyl: null, souhlasi: false, navrh: null };
+
+        const cisla = hodnoty.map(h => h.hodnota);
+        const rozptyl = Math.max(...cisla) - Math.min(...cisla);
+        const souhlasi = rozptyl <= tolerance;
+        // Návrh jen tam, kde se shodli — jinak by to bylo číslo, kterému nevěří ani jeden.
+        const navrh = souhlasi ? Math.round(cisla.reduce((s, c) => s + c, 0) / cisla.length) : null;
+        return { klic, hodnoty, rozptyl, souhlasi, navrh };
+    });
+
+    const uzavrena = await posledni(env, playerId, obdobi, 'shoda', sablona);
+
+    return {
+        obdobi, sablona, tolerance, cekaNaTebe: false,
+        chybi: chybi.map(c => c.jmeno),
+        odevzdali: odevzdali.map(o => ({
+            id: o.id, jmeno: o.jmeno, povinny: (povinni ?? []).some(p => p.id === o.id),
+            fyzicky: o.fyzicky, hlavou: o.hlavou, parta: o.parta, cile: o.cile
+        })),
+        osy,
+        nesoulad: osy.filter(o => o.hodnoty.length > 1 && !o.souhlasi).length,
+        hotovo: !chybi.length && osy.every(o => o.souhlasi),
+        uzavrena: uzavrena ? { hodnoty: uzavrena.hodnoty, datum: uzavrena.datum } : null
+    };
+}
+
 /* ===================== souhrnné notifikace ===================== */
 
 /** Zapíše, že se něco stalo. Rozesílá se až souhrnně (cron), ne hned. */
@@ -990,7 +1067,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             const { results } = await env.DB.prepare(
                 `SELECT id, jmeno, prezdivka, post, pozice, role, sablona, aktivni, created_at,
                         email, telegram_chat_id, notif_email, notif_telegram, login,
-                        heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
+                        hodnoceni_povinne, heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
                    FROM players ORDER BY role DESC, aktivni DESC, jmeno`
             ).all();
             // Hash ani sůl ven nikdy neposíláme, jen příznak „heslo nastavené".
@@ -1002,16 +1079,19 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             if (problem) return chyba(problem, 400);
             const r = await env.DB.prepare(
                 `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                                      email, telegram_chat_id, notif_email, notif_telegram, login)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+                                      email, telegram_chat_id, notif_email, notif_telegram, login,
+                                      hodnoceni_povinne)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
                  RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                           email, telegram_chat_id, notif_email, notif_telegram, login`
+                           email, telegram_chat_id, notif_email, notif_telegram, login,
+                           hodnoceni_povinne`
             ).bind(
                 p.jmeno.trim(), p.prezdivka || null, p.post || null,
                 JSON.stringify(p.pozice ?? []), p.role, p.sablona,
                 (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
                 p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
-                (p.login ?? '').trim().toLowerCase() || null
+                (p.login ?? '').trim().toLowerCase() || null,
+                p.hodnoceni_povinne ? 1 : 0
             ).first();
             return json(osobaVen(r), 201);
         }
@@ -1026,16 +1106,18 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
                                 role = ?, sablona = ?, aktivni = ?,
                                 email = ?, telegram_chat_id = ?, notif_email = ?, notif_telegram = ?,
-                                login = ?
+                                login = ?, hodnoceni_povinne = ?
               WHERE id = ?
           RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                    email, telegram_chat_id, notif_email, notif_telegram, login`
+                    email, telegram_chat_id, notif_email, notif_telegram, login,
+                    hodnoceni_povinne`
         ).bind(
             p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
             p.role, p.sablona, p.aktivni ? 1 : 0,
             (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
             p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
             (p.login ?? '').trim().toLowerCase() || null,
+            p.hodnoceni_povinne ? 1 : 0,
             Number(osobaId)
         ).first();
         if (!r) return chyba('Osoba nenalezena.', 404);
@@ -1113,12 +1195,104 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
     }
 
+    /* ---------- shoda mezi trenéry ---------- */
+    if (cesta === '/api/shoda' && metoda === 'GET') {
+        const playerId = Number(q.get('player_id'));
+        if (!playerId) return chyba('Chybí player_id.', 400);
+        const nas = await nastaveni(env);
+        const obdobi = q.get('obdobi') || nas.obdobi;
+        const sablona = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : 'pole';
+        return json(await shoda(env, playerId, obdobi, sablona, kdo));
+    }
+
+    /* ---------- uzavření shody = další verze hodnocení ---------- */
+    if (cesta === '/api/shoda' && metoda === 'POST') {
+        const h = await request.json<any>();
+        const playerId = Number(h.player_id);
+        if (!playerId) return chyba('Chybí player_id.', 400);
+
+        const nas = await nastaveni(env);
+        const obdobi = (h.obdobi || nas.obdobi).trim();
+        const sablona = h.sablona in SABLONY ? h.sablona : 'pole';
+
+        const problem = zkontrolujHodnoty(sablona, h.hodnoty);
+        if (problem) return chyba(problem, 400);
+
+        const cile = Array.isArray(h.cile)
+            ? h.cile.map((c: unknown) => String(c).trim()).filter(Boolean).slice(0, 5)
+            : [];
+
+        // Původní hodnocení trenérů zůstávají. Tohle je další verze, ne přepis.
+        const r = await env.DB.prepare(
+            `INSERT INTO evaluations
+                (player_id, obdobi, autor, autor_id, sablona, hodnoty,
+                 fyzicky, hlavou, parta, cile, poznamka_shody)
+             VALUES (?, ?, 'shoda', ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, datum`
+        ).bind(
+            playerId, obdobi, kdo.id ?? null, sablona, JSON.stringify(h.hodnoty),
+            (h.fyzicky ?? '').trim() || null,
+            (h.hlavou ?? '').trim() || null,
+            (h.parta ?? '').trim() || null,
+            JSON.stringify(cile),
+            (h.poznamka_shody ?? '').trim() || null
+        ).first();
+
+        await zapisUdalost(env, 'hodnoceni', playerId, obdobi, kdo.id ?? null);
+        return json({ ulozeno: true, ...r }, 201);
+    }
+
+    /* ---------- historie: všechny verze, nic se nemaže ---------- */
+    if (cesta === '/api/historie' && metoda === 'GET') {
+        const playerId = Number(q.get('player_id'));
+        if (!playerId) return chyba('Chybí player_id.', 400);
+        const { results } = await env.DB.prepare(
+            `SELECT e.id, e.datum, e.obdobi, e.autor, e.sablona, e.hodnoty,
+                    e.fyzicky, e.hlavou, e.parta, e.cile, e.poznamka, e.poznamka_shody,
+                    a.jmeno AS autor_jmeno
+               FROM evaluations e LEFT JOIN players a ON a.id = e.autor_id
+              WHERE e.player_id = ?
+              ORDER BY e.id DESC`
+        ).bind(playerId).all<any>();
+        return json((results ?? []).map(r => ({
+            id: r.id, datum: r.datum, obdobi: r.obdobi, autor: r.autor,
+            autorJmeno: r.autor_jmeno, sablona: r.sablona,
+            hodnoty: JSON.parse(r.hodnoty),
+            fyzicky: r.fyzicky, hlavou: r.hlavou, parta: r.parta,
+            cile: r.cile ? JSON.parse(r.cile) : [],
+            poznamka: r.poznamka, poznamkaShody: r.poznamka_shody
+        })));
+    }
+
     /* ---------- podklady pro tiskové listy ---------- */
     if (cesta === '/api/listy' && metoda === 'GET') {
         const nas = await nastaveni(env);
         const obdobi = q.get('obdobi') || nas.obdobi;
         const rezim = q.get('porovnani') || 'minule';   // 'minule' | 'hrac' | 'zadne'
         const ids = q.get('ids');
+
+        // Tisk konkrétní starší verze — nic se nepřepisuje, takže se dá vrátit
+        // k čemukoli, co kdy vzniklo.
+        const verze = Number(q.get('verze'));
+        if (verze) {
+            const r = await env.DB.prepare(
+                `SELECT e.*, p.jmeno, p.prezdivka, p.post, p.pozice
+                   FROM evaluations e JOIN players p ON p.id = e.player_id
+                  WHERE e.id = ?`
+            ).bind(verze).first<any>();
+            if (!r) return chyba('Taková verze hodnocení neexistuje.', 404);
+            const v = rozbal(r);
+            return json({
+                nastaveni: { ...nas, obdobi: v.obdobi },
+                listy: [{
+                    player_id: r.player_id, jmeno: r.jmeno, prezdivka: r.prezdivka,
+                    post: r.post, pozice: JSON.parse(r.pozice ?? '[]'),
+                    sablona: v.sablona, hodnoceni: v.hodnoty,
+                    porovnani: null, porovnaniRezim: null, porovnaniObdobi: '',
+                    fyzicky: v.fyzicky ?? '', hlavou: v.hlavou ?? '', parta: v.parta ?? '',
+                    cile: v.cile ?? []
+                }]
+            });
+        }
 
         const filtr = ids && ids !== 'vse'
             ? ids.split(',').map(Number).filter(Boolean)
@@ -1145,7 +1319,11 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             if (!kVykresleni.length) kVykresleni.push(h.sablona);   // prázdný list jako podklad
 
             for (const sablona of kVykresleni) {
-                const trener = await posledni(env, h.id, obdobi, 'trener', sablona);
+                // Na list jde uzavřená shoda trenérů, když existuje. Teprve když
+                // není, bere se poslední hodnocení trenéra — jinak by při dvou
+                // trenérech tiše vyhrál ten, kdo uložil později.
+                const trener = await posledni(env, h.id, obdobi, 'shoda', sablona)
+                    ?? await posledni(env, h.id, obdobi, 'trener', sablona);
                 let porovnani: Record<string, number> | null = null;
                 let popisek = '';
 

@@ -503,6 +503,20 @@ Poznámky k rozhodnutí, až na to dojde:
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
+**MikroTik jako SMS provider** (LTE router s SIM, `/tool sms send`): zvažováno a odloženo.
+Router je za LTE pravděpodobně pod CGNAT, takže z Workeru nedosažitelný; WireGuard to neřeší
+(Worker se do tunelu nepřipojí) a musela by vzniknout další věčně běžící komponenta, která
+frontu tahá. SMS je u LTE modemů vedlejší funkce bez doručenek a rozbíjí se s firmwarem.
+Hlavně ale: notifikační kanál má fungovat, když je něco jinak špatně — stavět ho na zařízení
+v neobsluhované garáži je obrácené. Přidat `mikrotik` providera později je otázka jedné
+funkce, takže se nic nezavírá. Pro *garáže* samotné naopak dává smysl jako lokální poplach,
+protože funguje i při výpadku uplinku.
+
+**Hromadné rozesílání (pozvánky na zápasy) do téhle aplikace nepatří** — zadání §2 má
+rozesílání mimo scope. Navíc je to jiný právní režim: obchodní sdělení podle zákona 480/2004 §7
+vyžaduje souhlas, identifikovatelného odesílatele a funkční odhlášení v každé zprávě. To řeší
+SMS brána se sender ID, ne modem v routeru. Kdyby to bylo potřeba, samostatný nástroj.
+
 ---
 
 ## 10. Otevřené otázky
