@@ -521,8 +521,9 @@ async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise
             const r = await posliTelegram(env, p.telegram_chat_id, text);
             zpravy.push(`Telegram → ${p.jmeno}: ${r.ok ? 'odesláno' : 'selhalo — ' + r.popis}`);
             await zalogujKomunikaci(env, {
-                kanal: 'telegram', playerId: p.id, adresa: p.telegram_chat_id, typ: 'souhrn',
-                vysledek: r.ok ? 'ok' : 'chyba', poznamka: r.ok ? null : r.popis
+                kanal: 'telegram', platforma: 'telegram-bot', playerId: p.id,
+                adresa: p.telegram_chat_id, typ: 'souhrn',
+                vysledek: r.ok ? 'ok' : 'chyba', podrobnosti: r.ok ? null : r.popis
             });
             if (r.ok) uspech++;
         }
@@ -530,8 +531,8 @@ async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise
             const ok = await posliMail(env, p.email, `${nas.klub} — hodnocení hráčů, souhrn`, text);
             zpravy.push(`E-mail → ${p.jmeno} (${p.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
             await zalogujKomunikaci(env, {
-                kanal: 'email', playerId: p.id, adresa: p.email, typ: 'souhrn',
-                vysledek: ok ? 'ok' : 'chyba'
+                kanal: 'email', platforma: 'cloudflare-email', playerId: p.id,
+                adresa: p.email, typ: 'souhrn', vysledek: ok ? 'ok' : 'chyba'
             });
             if (ok) uspech++;
         }
@@ -795,16 +796,18 @@ async function posliObnovu(env: Env, u: Ucet, zaklad: string, lang: string): Pro
         // Do logu jde jen metadata — odkaz s tokenem tam nesmí, byl by to
         // reset hesla čekající na zneužití.
         await zalogujKomunikaci(env, {
-            kanal: 'telegram', playerId: u.id, adresa: u.telegram_chat_id, typ: 'obnova',
-            vysledek: r.ok ? 'ok' : 'chyba', kod: r.ok ? null : 'SEND', poznamka: r.ok ? null : r.popis
+            kanal: 'telegram', platforma: 'telegram-bot', playerId: u.id,
+            adresa: u.telegram_chat_id, typ: 'obnova',
+            vysledek: r.ok ? 'ok' : 'chyba', kod: r.ok ? null : 'SEND',
+            podrobnosti: r.ok ? null : r.popis
         });
     }
     if (u.email) {
         const ok = await posliMail(env, u.email, predmet, text);
         zpravy.push(`E-mail → ${u.jmeno} (${u.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
         await zalogujKomunikaci(env, {
-            kanal: 'email', playerId: u.id, adresa: u.email, typ: 'obnova',
-            vysledek: ok ? 'ok' : 'chyba'
+            kanal: 'email', platforma: 'cloudflare-email', playerId: u.id,
+            adresa: u.email, typ: 'obnova', vysledek: ok ? 'ok' : 'chyba'
         });
     }
     if (u.telefon) {
@@ -908,15 +911,17 @@ async function obnovaHesla(request: Request, env: Env, token: string): Promise<R
  * ukládá kvůli počtu segmentů. Tokeny se sem nesmí dostat nikdy.
  */
 async function zalogujKomunikaci(env: Env, z: {
-    kanal: string; playerId?: number | null; adresa?: string | null;
+    kanal: string; platforma?: string | null; playerId?: number | null; adresa?: string | null;
     typ: string; vysledek: string; kod?: string | null; poznamka?: string | null;
+    podrobnosti?: string | null;
 }) {
     try {
         await env.DB.prepare(
-            `INSERT INTO komunikace (kanal, player_id, adresa, typ, vysledek, kod, poznamka)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`
-        ).bind(z.kanal, z.playerId ?? null, z.adresa ?? null, z.typ,
-               z.vysledek, z.kod ?? null, z.poznamka ?? null).run();
+            `INSERT INTO komunikace (kanal, platforma, player_id, adresa, typ, vysledek, kod, poznamka, podrobnosti)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(z.kanal, z.platforma ?? null, z.playerId ?? null, z.adresa ?? null, z.typ,
+               z.vysledek, z.kod ?? null, z.poznamka ?? null,
+               z.podrobnosti ? z.podrobnosti.slice(0, 500) : null).run();
     } catch (e) {
         console.warn('Log komunikace selhal:', e instanceof Error ? e.message : String(e));
     }
@@ -1142,12 +1147,14 @@ async function posliSmsHlidane(env: Env, cislo: string, text: string,
     const nas = await nastaveni(env);
     const strop = Number(nas.smsDenniStrop) || 50;
 
+    const platforma = (env.SMS_PROVIDER || 'console').toLowerCase();
+
     // SMS je mimořádný nástroj — dokud ji trenér v Nastavení nezapne, neodejde
     // nic, ani když má osoba přepínač u sebe. Zkouška nanečisto smí vždy:
     // nic neodesílá, nic nestojí a slouží právě k ověření, že by to fungovalo.
     if (!nanecisto && nas.smsAktivni !== '1') {
         await zalogujKomunikaci(env, {
-            kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',
+            kanal: 'sms', platforma, playerId, adresa: cislo, typ, vysledek: 'preskoceno',
             kod: 'VYPNUTO', poznamka: 'SMS kanál je v Nastavení vypnutý.'
         });
         return {
@@ -1158,7 +1165,7 @@ async function posliSmsHlidane(env: Env, cislo: string, text: string,
 
     if (!nanecisto && await smsZaDen(env) >= strop) {
         await zalogujKomunikaci(env, {
-            kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',
+            kanal: 'sms', platforma, playerId, adresa: cislo, typ, vysledek: 'preskoceno',
             kod: 'STROP', poznamka: `Denní strop ${strop} SMS vyčerpán.`
         });
         return { ok: false, popis: `Denní strop ${strop} SMS je vyčerpaný, zpráva se neodeslala.` };
@@ -1166,9 +1173,11 @@ async function posliSmsHlidane(env: Env, cislo: string, text: string,
 
     const r = await posliSms(env, cislo, text);
     await zalogujKomunikaci(env, {
-        kanal: 'sms', playerId, adresa: cislo, typ,
+        kanal: 'sms', platforma: nanecisto ? `${platforma} (nanečisto)` : platforma,
+        playerId, adresa: cislo, typ,
         vysledek: r.ok ? 'ok' : 'chyba', kod: r.kod ?? null,
-        poznamka: bezDiakritiky(text).slice(0, 300)   // text kvůli segmentům; hodnocení v něm není
+        poznamka: bezDiakritiky(text).slice(0, 300),  // text kvůli segmentům; hodnocení v něm není
+        podrobnosti: r.ok ? null : (r.popis ?? null)  // proč to brána odmítla, ať se to nedohledává jinde
     });
     return { ok: r.ok, popis: r.ok ? (r.popis ?? 'Odesláno.') : `${r.kod ?? 'chyba'} — ${r.popis ?? ''}` };
 }
@@ -1341,7 +1350,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     /* ---------- log odeslané komunikace ---------- */
     if (cesta === '/api/komunikace' && metoda === 'GET') {
         const { results } = await env.DB.prepare(
-            `SELECT k.id, k.cas, k.kanal, k.adresa, k.typ, k.vysledek, k.kod, k.poznamka, p.jmeno
+            `SELECT k.id, k.cas, k.kanal, k.platforma, k.adresa, k.typ, k.vysledek, k.kod,
+                    k.poznamka, k.podrobnosti, p.jmeno
                FROM komunikace k LEFT JOIN players p ON p.id = k.player_id
               ORDER BY k.id DESC LIMIT 100`
         ).all();

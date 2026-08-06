@@ -1101,17 +1101,21 @@ async function nastaveni(kam) {
                 <p class="popis">${t('komunikace.popis')}</p>
                 <table>
                     <thead><tr><th>${t('komunikace.cas')}</th><th>${t('komunikace.kanal')}</th>
+                        <th>${t('komunikace.platforma')}</th>
                         <th>${t('komunikace.komu')}</th><th>${t('komunikace.typ')}</th>
                         <th>${t('komunikace.vysledek')}</th></tr></thead>
                     <tbody>${zaznamy.length ? zaznamy.map(z => `
                         <tr>
                             <td>${esc(new Date(z.cas + 'Z').toLocaleString(locale()))}</td>
                             <td>${esc(z.kanal)}</td>
+                            <td>${esc(z.platforma || '—')}</td>
                             <td>${esc(z.jmeno || z.adresa || '—')}</td>
                             <td>${t('komunikace.typ.' + z.typ)}</td>
                             <td><span class="${stav[z.vysledek] ?? ''}">${t('komunikace.' + z.vysledek)}</span>${
-                                z.kod ? ` <span class="popis">${esc(z.kod)}</span>` : ''}</td>
-                        </tr>`).join('') : `<tr><td colspan="5">${t('komunikace.prazdno')}</td></tr>`}</tbody>
+                                z.kod ? ` <span class="popis">${esc(z.kod)}</span>` : ''}${
+                                // Důvod patří rovnou do tabulky — „chyba 400" sama o sobě nic neřekne.
+                                z.podrobnosti ? `<br><span class="popis" title="${esc(z.podrobnosti)}">${esc(z.podrobnosti.slice(0, 120))}</span>` : ''}</td>
+                        </tr>`).join('') : `<tr><td colspan="6">${t('komunikace.prazdno')}</td></tr>`}</tbody>
                 </table>
             </div>`);
     }).catch(() => { /* informativní */ });
