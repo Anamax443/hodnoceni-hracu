@@ -44,8 +44,21 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 
 ## 3. Přihlášení
 
-Otevřeš adresu aplikace a zadáš heslo trenéra. Přihlášení platí 12 hodin. Heslo je jedno
-společné — kdo ho má, vidí všechno.
+Aplikace běží na **https://hodnoceni-hracu.bass443.workers.dev**. Zadáš heslo trenéra,
+přihlášení platí 12 hodin. Heslo je jedno společné — kdo ho má, vidí všechno.
+
+### Horní lišta
+
+Vpravo nahoře je na každé stránce:
+
+- **čas** — aktuální datum a čas
+- **verze** — commit, ze kterého je běžící aplikace sestavená; po najetí myší celý hash
+  a čas nasazení. Když nahlásíš, že něco nefunguje, tohle číslo řekni s sebou.
+- **🌙 Tmavé / ☀️ Světlé** — přepínač vzhledu, volba se pamatuje
+- **English / Čeština** — přepínač jazyka; přeloží se celá aplikace včetně tištěného
+  listu. Jde vynutit i odkazem: `…/?lang=en`
+
+Tištěný list je vždy světlý, i když máš aplikaci tmavou — je to papír.
 
 ---
 
@@ -53,7 +66,8 @@ společné — kdo ho má, vidí všechno.
 
 ### Lidé
 
-Kdo je v týmu. U každého jméno, přezdívka, post, role a šablona os.
+Kdo je v týmu. Na začátku je seznam prázdný — vyplň formulář dole a ulož, a tak postupně
+celý kádr. U každého jméno, přezdívka, post, role a šablona os.
 
 - **role hráč** — hodnotí se, tiskne se mu list
 - **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil

@@ -3,6 +3,8 @@
 > Hodnotící listy mládežnických fotbalistů SK Říčmanice — radar graf, slovní komentář,
 > sebehodnocení hráče a překryv obou pohledů pro rozhovor.
 
+**Běží na:** https://hodnoceni-hracu.bass443.workers.dev
+
 ## Co to dělá
 
 Trenér hodnotí každého hráče 2× za sezónu na pevné škále 1–10. Hráč vyplní **sebehodnocení**
@@ -21,13 +23,12 @@ se nikdy neznámkují.
 
 | Fáze | Obsah | Stav |
 |------|-------|------|
-| 1 | Statický tiskový generátor | hotovo, nahrazeno aplikací |
-| 2 | D1 + Worker + správa lidí + zadávání hodnocení + tisk z databáze | **hotovo, ověřeno lokálně** |
-| 3 | Odkazy + sebehodnocení + porovnání s tolerancí | **hotovo, ověřeno lokálně** |
-| 4 | Historie a trendy | základ hotový (šipky u os), plný pohled až s druhým obdobím |
+| 1 | Statický tiskový generátor | nahrazeno aplikací |
+| 2 | D1 + Worker + správa lidí + zadávání hodnocení + tisk z databáze | **nasazeno** |
+| 3 | Odkazy + sebehodnocení + porovnání s tolerancí | **nasazeno** |
+| 4 | Historie a trendy | šipky u os hotové, plný pohled až s druhým obdobím |
 
-**Nenasazeno.** Zatím běží jen lokálně (`npm run dev`). K nasazení chybí založit D1 databázi
-a secrety — postup v [docs/BUILD.md](docs/BUILD.md).
+Databáze je prázdná a čeká na kádr. Lidé se zadávají v aplikaci v záložce **Lidé**.
 
 ## Stack
 
@@ -38,23 +39,7 @@ prohlížeč  ->  Cloudflare Worker (API + statické soubory)  ->  Cloudflare D1
 ```
 
 Frontend nikdy nesahá do D1 přímo a veškerá autorizace je ve Workeru. Žádný framework,
-žádný build krok — čisté ES moduly, radar je inline SVG.
-
-## Požadavky
-
-Node.js 22+ a účet Cloudflare (pro nasazení). Pro lokální běh stačí Node.
-
-## Spuštění lokálně
-
-```powershell
-npm install
-Copy-Item .dev.vars.example .dev.vars    # a vyplň ADMIN_HESLO + SESSION_KEY
-npm run db:init:local
-npm run db:seed:local
-npm run dev
-```
-
-Aplikace pak běží na `http://127.0.0.1:8787`.
+žádný bundler, žádný build krok — čisté ES moduly, radar je inline SVG.
 
 ## Obrazovky
 
@@ -64,16 +49,24 @@ Aplikace pak běží na `http://127.0.0.1:8787`.
 | `/listy.html` | trenér | tiskové listy A4 sestavené z databáze |
 | `/h/<token>` | hráč | sebehodnocení přes jednorázový odkaz |
 | `/health` | kdokoliv | `{status, module, timestamp}` |
+| `/api/version` | kdokoliv | commit a čas sestavení běžící verze |
 
-## Konfigurace
+V horní liště je čas, commit běžící verze, přepínač **tmavého/světlého** vzhledu a přepínač
+**CS/EN**. Volba se pamatuje; jazyk jde vynutit i odkazem: `?lang=en`.
 
-Secrety nikdy do gitu. Lokálně `.dev.vars` (je v `.gitignore`), v produkci
-`wrangler secret put`:
+Tištěný list je vždy světlý, i když má aplikace tmavý vzhled — je to papír, ne obrazovka.
 
-| Secret | K čemu |
-|---|---|
-| `ADMIN_HESLO` | přihlášení trenéra |
-| `SESSION_KEY` | podpis session cookie (32+ náhodných bajtů) |
+## Nasazení a provoz
+
+```powershell
+npm install
+npm run deploy      # predeploy zapíše commit hash do web/version.json
+```
+
+Secrety (`ADMIN_HESLO`, `SESSION_KEY`) jsou uložené jako Worker secrets, ne v repozitáři.
+Postup od nuly a změna hesla viz [docs/BUILD.md](docs/BUILD.md) a [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
+Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 
 ## Dokumentace
 
@@ -89,6 +82,7 @@ Secrety nikdy do gitu. Lokálně `.dev.vars` (je v `.gitignore`), v produkci
 ## Osobní údaje
 
 **Repozitář je private a musí takový zůstat.** Databáze i zálohy obsahují jména nezletilých
-hráčů, známky a slovní posudky. V repu samotném jsou osobní data jen v `migrations/002_seed.sql`.
+hráčů, známky a slovní posudky. V repozitáři samotném žádná osobní data nejsou — kádr se
+zadává až v běžící aplikaci.
 
 Vytištěné listy patří hráči. Do rukou jiných hráčů nebo na nástěnku ne.

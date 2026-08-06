@@ -9,7 +9,9 @@
    - hodnocení se nikdy nepřepisuje, každé uložení je nový řádek
    ===================================================================== */
 
-import { SABLONY, KOTVY, JA, zkontrolujHodnoty } from '../../web/src/sablony.js';
+/* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
+   a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
+import { SABLONY, klice, zkontrolujHodnoty } from '../../web/src/sablony.js';
 
 export interface Env {
     DB: D1Database;
@@ -163,9 +165,12 @@ export default {
         const https = url.protocol === 'https:';
 
         try {
-            /* ---------- health ---------- */
+            /* ---------- health a verze ---------- */
             if (cesta === '/health') {
                 return json({ status: 'ok', module: MODUL, timestamp: new Date().toISOString() });
+            }
+            if (cesta === '/api/version') {
+                return soubor(env, url, '/version.json');
             }
 
             /* ---------- stránka sebehodnocení ----------
@@ -185,7 +190,12 @@ export default {
             if (cesta === '/api/login' && request.method === 'POST') {
                 const { heslo } = await request.json<{ heslo?: string }>();
                 if (!env.ADMIN_HESLO) return chyba('Na serveru není nastaveno ADMIN_HESLO.', 500);
-                if (!heslo || heslo !== env.ADMIN_HESLO) return chyba('Špatné heslo.', 401);
+                if (!heslo || heslo !== env.ADMIN_HESLO) {
+                    // Aplikace je na veřejné adrese a chrání data nezletilých.
+                    // Prodleva u špatného hesla dělá hádání hesla ve smyčce nepraktickým.
+                    await new Promise(hotovo => setTimeout(hotovo, 700));
+                    return chyba('Špatné heslo.', 401);
+                }
                 return json({ prihlasen: true }, 200, {
                     'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
                 });
@@ -249,9 +259,7 @@ async function self(request: Request, env: Env, token: string): Promise<Response
             prezdivka: t.prezdivka,
             obdobi: t.obdobi,
             sablona: t.sablona,
-            osy: (SABLONY as Record<string, { klic: string; popis: string }[]>)[t.sablona]
-                .map(o => ({ klic: o.klic, popis: o.popis, ja: (JA as Record<string, string>)[o.klic] ?? o.popis })),
-            kotvy: KOTVY,
+            osy: klice(t.sablona),      // jen klíče, popisy si přeloží prohlížeč
             pouzit: !!t.pouzit
         });
     }
@@ -436,7 +444,7 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
 
             if (rezim === 'hrac') {
                 const hrac = await posledni(env, h.id, obdobi, 'hrac');
-                if (hrac) { porovnani = hrac.hodnoty; popisek = 'jak se vidí hráč'; }
+                if (hrac) { porovnani = hrac.hodnoty; popisek = ''; }
             } else if (rezim === 'minule') {
                 const driv = await predchoziObdobi(env, h.id, obdobi);
                 if (driv) { porovnani = driv.hodnoty; popisek = driv.obdobi; }
@@ -449,9 +457,9 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
                 post: h.post,
                 sablona: trener?.sablona || h.sablona,
                 hodnoceni: trener?.hodnoty ?? null,
-                hodnoceniPopisek: 'trenér',
                 porovnani,
-                porovnaniPopisek: popisek,
+                porovnaniRezim: porovnani ? rezim : null,
+                porovnaniObdobi: popisek,
                 fyzicky: trener?.fyzicky ?? '',
                 hlavou: trener?.hlavou ?? '',
                 parta: trener?.parta ?? '',
@@ -477,29 +485,21 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
             return json({ obdobi, tolerance, hotovo: false, maTrener: !!trener, maHrac: !!hrac, osy: [] });
         }
 
-        const osy = (SABLONY as Record<string, { klic: string; popis: string }[]>)[trener.sablona].map(o => {
+        const osy = klice(trener.sablona).map(klic => {
             // znaménko, ne absolutní hodnota: + = hráč si dal víc než trenér
-            const rozdil = (hrac.hodnoty[o.klic] ?? 0) - (trener.hodnoty[o.klic] ?? 0);
+            const rozdil = (hrac.hodnoty[klic] ?? 0) - (trener.hodnoty[klic] ?? 0);
             return {
-                klic: o.klic,
-                popis: o.popis,
-                trener: trener.hodnoty[o.klic] ?? null,
-                hrac: hrac.hodnoty[o.klic] ?? null,
+                klic,
+                trener: trener.hodnoty[klic] ?? null,
+                hrac: hrac.hodnoty[klic] ?? null,
                 rozdil,
-                resit: Math.abs(rozdil) > tolerance,
-                vyklad: rozdil > 0 ? 'slepé místo — chybí zpětná vazba'
-                      : rozdil < 0 ? 'sebedůvěra — může jít o něco mimo fotbal'
-                      : ''
+                resit: Math.abs(rozdil) > tolerance
             };
         });
 
-        const kReseni = osy.filter(o => o.resit);
         return json({
             obdobi, tolerance, hotovo: true, maTrener: true, maHrac: true, osy,
-            pocetResit: kReseni.length,
-            upozorneni: kReseni.length > 3
-                ? `Toleranci překračuje ${kReseni.length} os. Na jeden rozhovor je to moc — vyber 2 až 3 témata.`
-                : '',
+            pocetResit: osy.filter(o => o.resit).length,
             poznamkaHrace: hrac.poznamka
         });
     }
@@ -516,28 +516,24 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         ).all<RadekHodnoceni>();
 
         const historie = (results ?? []).map(rozbal);
-        if (historie.length < 2) {
-            return json({ historie, osy: [], souhrn: 'Na trend je potřeba aspoň druhé období.' });
-        }
+        if (historie.length < 2) return json({ historie, osy: [], maTrend: false });
 
         const ted = historie[historie.length - 1];
         const driv = historie[historie.length - 2];
-        const osy = (SABLONY as Record<string, { klic: string; popis: string }[]>)[ted.sablona].map(o => {
-            const zmena = (ted.hodnoty[o.klic] ?? 0) - (driv.hodnoty[o.klic] ?? 0);
+        const osy = klice(ted.sablona).map(klic => {
+            const zmena = (ted.hodnoty[klic] ?? 0) - (driv.hodnoty[klic] ?? 0);
             // pásmo šumu: za změnu se považuje až rozdíl 2 body
             const smer = Math.abs(zmena) >= PASMO_SUMU ? (zmena > 0 ? '↑' : '↓') : '→';
-            return { klic: o.klic, popis: o.popis, driv: driv.hodnoty[o.klic], ted: ted.hodnoty[o.klic], zmena, smer };
+            return { klic, driv: driv.hodnoty[klic], ted: ted.hodnoty[klic], zmena, smer };
         });
-
-        const nahoru = osy.filter(o => o.smer === '↑').length;
-        const dolu = osy.filter(o => o.smer === '↓').length;
-        const stejne = osy.length - nahoru - dolu;
 
         // Žádné souhrnné číslo ani průměr os — jen kolik os kam (§7.4).
         return json({
-            historie, osy,
+            historie, osy, maTrend: true,
             odkud: driv.obdobi, kam: ted.obdobi,
-            souhrn: `${nahoru} os nahoru, ${dolu} dolů, ${stejne} beze změny`
+            nahoru: osy.filter(o => o.smer === '↑').length,
+            dolu: osy.filter(o => o.smer === '↓').length,
+            stejne: osy.filter(o => o.smer === '→').length
         });
     }
 

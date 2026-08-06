@@ -1,5 +1,6 @@
-/* Aplikace pro trenéra. Tiskový list má vlastní styl (src/styl.css)
-   a vlastní stránku (listy.html), aby si styly nelezly do zelí. */
+/* Aplikace pro trenéra — světlý i tmavý vzhled.
+   Tiskový list má vlastní styl (src/styl.css) a vlastní stránku (listy.html);
+   papír je vždy světlý, i když je aplikace tmavá. */
 
 :root {
     --modra: #2196F3;
@@ -8,9 +9,37 @@
     --seda: #607D8B;
     --linka: #dfe6ea;
     --pozadi: #eceff1;
+    --karta: #ffffff;
+    --vstup: #ffffff;
+    --vstup-linka: #cfd8dc;
     --zelena: #2E7D32;
     --cervena: #c62828;
     --oranzova: #EF6C00;
+
+    --info-poz: #e3f2fd;   --info-linka: #90caf9;   --info-text: #263238;
+    --pozor-poz: #fff8e1;  --pozor-linka: #ffca28;  --pozor-text: #263238;
+    --chyba-poz: #ffebee;  --chyba-linka: #ef9a9a;  --chyba-text: #b71c1c;
+    --ok-poz: #e8f5e9;     --ok-linka: #a5d6a7;     --ok-text: #1b5e20;
+}
+
+:root[data-theme="dark"] {
+    --modra: #42A5F5;
+    --modra-tmava: #90CAF9;
+    --text: #e3e8ea;
+    --seda: #90a4ae;
+    --linka: #2b3a42;
+    --pozadi: #11181c;
+    --karta: #17222a;
+    --vstup: #101a20;
+    --vstup-linka: #37474F;
+    --zelena: #81C784;
+    --cervena: #EF9A9A;
+    --oranzova: #FFB74D;
+
+    --info-poz: #12283a;   --info-linka: #1e4b6b;   --info-text: #cfe3f5;
+    --pozor-poz: #33280d;  --pozor-linka: #6d5514;  --pozor-text: #f2e2b4;
+    --chyba-poz: #3a1618;  --chyba-linka: #7a2c30;  --chyba-text: #f5c6c8;
+    --ok-poz: #14301b;     --ok-linka: #2a5c34;     --ok-text: #c3e6c9;
 }
 
 * { box-sizing: border-box; }
@@ -24,23 +53,35 @@ body {
     background: var(--pozadi);
 }
 
-header {
-    background: var(--modra);
+/* ===== horní lišta ===== */
+.topbar {
+    background: var(--modra-tmava);
     color: #fff;
-    padding: 10px 18px;
+    padding: 8px 16px;
     display: flex;
-    align-items: baseline;
-    gap: 14px;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
-header .klub { font-weight: bold; letter-spacing: .5px; }
-header .obdobi { margin-left: auto; font-size: 13px; opacity: .9; }
-header button {
-    background: rgba(255,255,255,.18); color: #fff; border: 0;
+:root[data-theme="dark"] .topbar { background: #0d1b24; border-bottom: 1px solid var(--linka); color: var(--text); }
+
+.topbar .brand { font-weight: bold; letter-spacing: .5px; }
+.topbar .app { opacity: .9; }
+.topbar .obdobi { opacity: .85; font-size: 13px; }
+.topbar .tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.topbar .hodiny { font-variant-numeric: tabular-nums; font-size: 13px; opacity: .9; }
+.topbar .verze { font-family: Consolas, monospace; font-size: 12px; opacity: .75; }
+.topbar button {
+    background: rgba(255,255,255,.16); color: inherit; border: 0;
     padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px;
 }
+.topbar button:hover { background: rgba(255,255,255,.28); }
+:root[data-theme="dark"] .topbar button { background: #1d2f3a; }
+:root[data-theme="dark"] .topbar button:hover { background: #294252; }
 
+/* ===== záložky ===== */
 nav {
-    display: flex; gap: 2px; background: #fff;
+    display: flex; gap: 2px; background: var(--karta);
     border-bottom: 1px solid var(--linka); padding: 0 12px; flex-wrap: wrap;
 }
 nav button {
@@ -48,12 +89,12 @@ nav button {
     padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--seda);
 }
 nav button.aktivni { color: var(--modra-tmava); border-bottom-color: var(--modra); font-weight: bold; }
-nav button:hover { background: #f5f8fa; }
+nav button:hover { background: var(--pozadi); }
 
 main { max-width: 980px; margin: 18px auto; padding: 0 14px 60px; }
 
 .karta {
-    background: #fff; border: 1px solid var(--linka); border-radius: 6px;
+    background: var(--karta); border: 1px solid var(--linka); border-radius: 6px;
     padding: 16px 18px; margin-bottom: 16px;
 }
 .karta h2 { margin: 0 0 4px; font-size: 17px; }
@@ -65,21 +106,22 @@ th { color: var(--seda); font-weight: normal; font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
 td.cisla, th.cisla { text-align: center; width: 70px; }
 
-button.hl, .hl {
+button.hl {
     background: var(--modra); color: #fff; border: 0; padding: 8px 14px;
     border-radius: 4px; cursor: pointer; font-size: 14px;
 }
-button.hl:hover { background: var(--modra-tmava); }
+button.hl:hover { filter: brightness(1.1); }
 button.hl:disabled { background: #b0bec5; cursor: default; }
 button.vedlejsi {
-    background: #fff; color: var(--modra-tmava); border: 1px solid var(--modra);
+    background: var(--karta); color: var(--modra-tmava); border: 1px solid var(--modra);
     padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px;
 }
-button.zrusit { background: #fff; color: var(--cervena); border: 1px solid #ef9a9a; }
+button.vedlejsi:hover { background: var(--pozadi); }
+button.zrusit { color: var(--cervena); border-color: var(--cervena); }
 
 input[type=text], input[type=password], input[type=number], select, textarea {
-    font: inherit; padding: 7px 9px; border: 1px solid #cfd8dc; border-radius: 4px;
-    background: #fff; color: var(--text); width: 100%;
+    font: inherit; padding: 7px 9px; border: 1px solid var(--vstup-linka); border-radius: 4px;
+    background: var(--vstup); color: var(--text); width: 100%;
 }
 textarea { min-height: 66px; resize: vertical; }
 label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px; }
@@ -87,7 +129,7 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 .radek { display: flex; gap: 12px; flex-wrap: wrap; }
 .radek > * { flex: 1; min-width: 150px; }
 
-/* --- známkovací pásy 1..10 --- */
+/* ===== známkovací pásy 1..10 ===== */
 .osa { padding: 9px 0; border-bottom: 1px dashed var(--linka); }
 .osa:last-child { border-bottom: 0; }
 .osa .nazev { font-weight: bold; margin-bottom: 5px; }
@@ -96,35 +138,35 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 .stupnice input { position: absolute; opacity: 0; width: 0; height: 0; }
 .stupnice label {
     margin: 0; width: 34px; height: 34px; line-height: 32px; text-align: center;
-    border: 1px solid #cfd8dc; border-radius: 4px; cursor: pointer;
-    background: #fff; color: var(--text); font-size: 14px;
+    border: 1px solid var(--vstup-linka); border-radius: 4px; cursor: pointer;
+    background: var(--vstup); color: var(--text); font-size: 14px;
 }
+.stupnice label:hover { border-color: var(--modra); }
 .stupnice input:checked + label {
-    background: var(--modra); border-color: var(--modra-tmava); color: #fff; font-weight: bold;
+    background: var(--modra); border-color: var(--modra); color: #fff; font-weight: bold;
 }
-.stupnice input:focus-visible + label { outline: 2px solid var(--modra-tmava); outline-offset: 1px; }
+.stupnice input:focus-visible + label { outline: 2px solid var(--modra); outline-offset: 1px; }
 
 .kotvy { color: var(--seda); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 3px 14px; margin-top: 6px; }
 
-/* --- hlášky --- */
-.hlaska { padding: 9px 12px; border-radius: 4px; margin-bottom: 14px; }
-.hlaska.info { background: #e3f2fd; border: 1px solid #90caf9; }
-.hlaska.pozor { background: #fff8e1; border: 1px solid #ffca28; }
-.hlaska.chyba { background: #ffebee; border: 1px solid #ef9a9a; color: #b71c1c; }
-.hlaska.ok { background: #e8f5e9; border: 1px solid #a5d6a7; }
+/* ===== hlášky ===== */
+.hlaska { padding: 9px 12px; border-radius: 4px; margin-bottom: 14px; border: 1px solid; }
+.hlaska.info  { background: var(--info-poz);  border-color: var(--info-linka);  color: var(--info-text); }
+.hlaska.pozor { background: var(--pozor-poz); border-color: var(--pozor-linka); color: var(--pozor-text); }
+.hlaska.chyba { background: var(--chyba-poz); border-color: var(--chyba-linka); color: var(--chyba-text); }
+.hlaska.ok    { background: var(--ok-poz);    border-color: var(--ok-linka);    color: var(--ok-text); }
 
 .znacka { font-size: 12px; padding: 1px 7px; border-radius: 10px; border: 1px solid; }
-.znacka.hrac { color: var(--modra-tmava); border-color: #90caf9; background: #e3f2fd; }
-.znacka.trener { color: var(--oranzova); border-color: #ffcc80; background: #fff3e0; }
-.znacka.neaktivni { color: var(--seda); border-color: #cfd8dc; background: #eceff1; }
+.znacka.hrac { color: var(--modra-tmava); border-color: var(--modra); background: var(--info-poz); }
+.znacka.trener { color: var(--oranzova); border-color: var(--oranzova); background: var(--pozor-poz); }
+.znacka.neaktivni { color: var(--seda); border-color: var(--linka); background: var(--pozadi); }
 
 .ano { color: var(--zelena); font-weight: bold; }
-.ne { color: #b0bec5; }
-.resit { background: #fff8e1; }
+.ne { color: var(--seda); opacity: .6; }
+.resit td { background: var(--pozor-poz); }
 .rozdil-plus { color: var(--cervena); font-weight: bold; }
 .rozdil-minus { color: var(--modra-tmava); font-weight: bold; }
 
 .odkaz-pole { font-family: Consolas, monospace; font-size: 12px; }
 
-/* --- přihlášení --- */
 .login { max-width: 340px; margin: 80px auto; }

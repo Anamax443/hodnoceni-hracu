@@ -37,3 +37,7 @@ Thumbs.db
 zaloha*.sql
 *.sqlite
 
+
+# generuje se pred kazdym deployem (scripts/gen-version.mjs)
+web/version.json
+

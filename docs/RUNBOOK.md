@@ -2,6 +2,10 @@
 
 Co se dělá pravidelně a co dělat, když něco nesedí.
 
+**Adresa:** https://hodnoceni-hracu.bass443.workers.dev
+**Heslo trenéra:** uložené jako Worker secret `ADMIN_HESLO`, v repozitáři není.
+Změna: `npx wrangler secret put ADMIN_HESLO` (projeví se hned, deploy není potřeba).
+
 ---
 
 ## 1. Půlroční rutina (2× za sezónu)
@@ -16,10 +20,16 @@ Co se dělá pravidelně a co dělat, když něco nesedí.
 
 ---
 
+## 1b. Kdo je v týmu
+
+Databáze začíná prázdná. Lidé se zadávají v aplikaci v záložce **Lidé** — hráči
+(hodnotí se, tisknou se jim listy) i trenéři (nehodnotí se, jen se u hodnocení
+zaznamená, kdo ho pořídil).
+
 ## 2. Aplikace neodpovídá
 
 ```
-GET https://<adresa>/health
+GET https://hodnoceni-hracu.bass443.workers.dev/health
 ```
 
 Když nevrátí `{"status":"ok"}`:
@@ -40,6 +50,9 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | trenér se nemůže přihlásit | špatné nebo nenastavené `ADMIN_HESLO` | `npx wrangler secret put ADMIN_HESLO`, pak `npm run deploy` |
 | „Na serveru není nastaveno ADMIN_HESLO" | secret chybí úplně | totéž |
 | všichni se odhlásili najednou | změnil se `SESSION_KEY` | staré cookies přestanou platit, stačí se přihlásit znovu |
+| commit v liště nesedí s gitem | nasazovalo se s necommitnutými změnami | `/api/version` má `cisto: false`; commitnout a nasadit znovu |
+| aplikace je celá anglicky | jazyk prohlížeče nebo dřívější volba | tlačítko **Čeština** v horní liště, nebo adresa s `?lang=cs` |
+| po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
 | hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
@@ -89,4 +102,7 @@ a aplikace pracuje s tím posledním. Původní zůstane v historii, což je zá
 - Odkaz na sebehodnocení posílat jen konkrétnímu hráči — kdo odkaz má, může vyplnit za něj.
 - Hodnocení jednoho hráče se nikdy neukazuje jinému.
 - Zálohy (`zaloha*.sql`) neukládat na sdílené disky.
-- Admin heslo je jedno společné. Když se změní tým trenérů, změň heslo.
+- Admin heslo je jedno společné. Když se změní tým trenérů, změň heslo
+  (`npx wrangler secret put ADMIN_HESLO`).
+- Aplikace je na veřejné adrese. Špatné heslo má 700ms prodlevu, aby hádání ve smyčce
+  nebylo praktické; náhledová URL jednotlivých verzí jsou vypnutá.

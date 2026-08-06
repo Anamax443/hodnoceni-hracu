@@ -124,9 +124,14 @@ body {
     display: flex; justify-content: space-between; align-items: center;
 }
 .toolbar .stav { color: #555; font-size: 12px; }
+.toolbar .nastroje { display: flex; align-items: center; gap: 8px; }
+.toolbar .verze { font-family: Consolas, monospace; font-size: 11px; color: #90a4ae; }
 .toolbar button {
     background: #2196F3; color: #fff; border: 0; padding: 8px 16px;
     border-radius: 4px; font-size: 13px; cursor: pointer;
+}
+.toolbar button.vedlejsi {
+    background: #fff; color: #1565C0; border: 1px solid #2196F3; padding: 6px 12px;
 }
 .chyba {
     max-width: 820px; margin: 0 auto 14px; padding: 10px 14px;

@@ -1,17 +1,19 @@
 {
     "name": "hodnoceni-hracu",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "private": true,
     "description": "Hodnotící listy mládežnických fotbalistů SK Říčmanice",
     "type": "module",
     "scripts": {
-        "dev": "wrangler dev",
+        "version:gen": "node scripts/gen-version.mjs",
+        "dev": "npm run version:gen && wrangler dev",
+        "predeploy": "npm run version:gen",
         "deploy": "wrangler deploy",
-        "db:init:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/001_init.sql",
-        "db:seed:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/002_seed.sql",
         "db:init": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/001_init.sql",
         "db:seed": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/002_seed.sql",
-        "db:export": "wrangler d1 export hodnoceni-hracu --remote --output=zaloha.sql"
+        "db:export": "wrangler d1 export hodnoceni-hracu --remote --output=zaloha.sql",
+        "db:init:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/001_init.sql",
+        "db:seed:local": "wrangler d1 execute hodnoceni-hracu --local --file=migrations/002_seed.sql"
     },
     "devDependencies": {
         "wrangler": "^4.119.0"

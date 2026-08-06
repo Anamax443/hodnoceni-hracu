@@ -1,12 +1,15 @@
--- 002_seed.sql — kádr SK Říčmanice, starší žáci
+-- 002_seed.sql — první naplnění kádru
 --
--- STAV: čeká na reálný soupis (19 hráčů). Zatím vzorová data, aby šlo
--- aplikaci vyzkoušet. Až přijde soupis, nahradí se řádky níž.
+-- Schválně tu nejsou žádná vzorová jména: nasazená aplikace by pak měla
+-- v seznamu smyšlené lidi, které přes UI nejde smazat (jen deaktivovat).
 --
--- Hráče jde přidávat i v aplikaci (záložka Lidé). Tenhle soubor slouží
--- k prvnímu naplnění prázdné databáze.
+-- Kdo je v týmu, se běžně zadává v aplikaci v záložce Lidé. Tenhle soubor
+-- je pro případ, že je jednodušší nahrát celý kádr najednou — odkomentuj
+-- a přepiš. Role: 'hrac' nebo 'trener'. Šablona: 'pole' nebo 'brankar'.
 
-INSERT INTO players (jmeno, prezdivka, post, role, sablona) VALUES
-  ('Vzorový Jan',   'Vzorek', 'Střední záložník', 'hrac',   'pole'),
-  ('Vzorový Petr',  'Vzorák', 'Brankář',          'hrac',   'brankar'),
-  ('Trenér Karel',  NULL,     'Hlavní trenér',    'trener', 'pole');
+-- INSERT INTO players (jmeno, prezdivka, post, role, sablona) VALUES
+--   ('Příjmení Jméno', 'Přezdívka', 'Střední záložník', 'hrac',   'pole'),
+--   ('Příjmení Jméno', NULL,        'Brankář',          'hrac',   'brankar'),
+--   ('Příjmení Jméno', NULL,        'Hlavní trenér',    'trener', 'pole');
+
+SELECT 'Seed je prázdný — kádr se zadává v aplikaci (záložka Lidé).' AS poznamka;

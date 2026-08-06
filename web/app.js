@@ -3,13 +3,17 @@
 
    Autorizace je ve Workeru, ne tady. Tenhle kód jen kreslí; když se
    session rozpadne, API vrátí 401 a aplikace se vrátí na přihlášení.
+
+   Server vrací klíče (os, režimů), texty se překládají tady — proto se
+   po přepnutí jazyka jen překreslí, nic se znovu nenačítá z databáze.
    ===================================================================== */
 
-import { SABLONY, KOTVY, MAX } from './src/sablony.js';
+import { SABLONY, MAX } from './src/sablony.js';
 import { esc } from './src/list.js';
+import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
 
 const $ = s => document.querySelector(s);
-const stav = { nastaveni: {}, lide: [], zalozka: 'lide' };
+const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false };
 
 /* ===================== komunikace ===================== */
 
@@ -26,16 +30,85 @@ async function api(cesta, volby = {}) {
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { /* ne-JSON necháme null */ }
 
-    if (odpoved.status === 401) { ukazPrihlaseni(); throw new Error('Odhlášeno — přihlas se znovu.'); }
-    if (!odpoved.ok) throw new Error(data?.chyba || `Server odpověděl ${odpoved.status}.`);
+    if (odpoved.status === 401) { ukazPrihlaseni(); throw new Error(t('chyba.odhlasen')); }
+    if (!odpoved.ok) throw new Error(data?.chyba || t('chyba.server', odpoved.status));
     return data;
+}
+
+/* ===================== vzhled, jazyk, hodiny, verze ===================== */
+
+const ULOZ_THEME = 'hodnoceni.theme';
+
+function vzhled() {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+function nastavVzhled(novy) {
+    document.documentElement.setAttribute('data-theme', novy);
+    try { localStorage.setItem(ULOZ_THEME, novy); } catch { /* nevadí */ }
+    $('#themeBtn').textContent = novy === 'dark' ? t('shell.vzhled.svetly') : t('shell.vzhled.tmavy');
+    $('#themeBtn').title = t('shell.vzhled.tip');
+}
+
+function hodiny() {
+    const ted = new Date();
+    const prvek = $('#hodiny');
+    prvek.textContent = ted.toLocaleDateString(locale(), { day: 'numeric', month: 'numeric' })
+        + ' ' + ted.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    prvek.title = t('shell.hodiny.tip');
+}
+
+async function verze() {
+    const prvek = $('#verze');
+    try {
+        const v = await (await fetch('/api/version')).json();
+        const sestaveno = new Date(v.builtAt).toLocaleString(locale());
+        prvek.textContent = `${t('shell.verze')} ${v.commit}`;
+        prvek.title = `${v.commitFull}\n${v.branch}\n${t('shell.sestaveno')}: ${sestaveno}`;
+    } catch {
+        prvek.textContent = `${t('shell.verze')} ?`;
+        prvek.title = '';
+    }
+}
+
+/** Texty v hlavičce a záložkách — volá se i po přepnutí jazyka. */
+function prekresliShell() {
+    document.documentElement.lang = jazyk();
+    $('#hl-app').textContent = t('shell.app');
+    $('#login-nadpis').textContent = t('shell.app');
+    $('#login-popis').textContent = t('login.popis');
+    $('#login-heslo-label').textContent = t('login.heslo');
+    $('#prihlasit').textContent = t('login.prihlasit');
+    $('#prihlasit').title = t('login.prihlasit.tip');
+    $('#odhlasit').textContent = t('shell.odhlasit');
+    $('#odhlasit').title = t('shell.odhlasit.tip');
+    $('#jazykBtn').textContent = t('jazyk.dalsi');
+    $('#jazykBtn').title = t('shell.jazyk.tip');
+    $('#verze').title = t('shell.verze.tip');
+
+    document.querySelectorAll('#zalozky button').forEach(b => {
+        b.textContent = t('nav.' + b.dataset.z);
+        b.title = t('nav.' + b.dataset.z + '.tip');
+    });
+
+    nastavVzhled(vzhled());
+    hodiny();
+    verze();
+
+    if (stav.prihlasen) {
+        $('#hl-klub').textContent = '⚽ ' + (stav.nastaveni.klub || '');
+        $('#hl-obdobi').textContent = `${t('shell.obdobi')}: ${stav.nastaveni.obdobi || ''}`;
+    }
 }
 
 /* ===================== přihlášení ===================== */
 
 function ukazPrihlaseni() {
+    stav.prihlasen = false;
     $('#prihlaseni').hidden = false;
     $('#aplikace').hidden = true;
+    $('#odhlasit').hidden = true;
+    $('#hl-obdobi').textContent = '';
 }
 
 async function prihlas() {
@@ -55,12 +128,13 @@ async function prihlas() {
 async function spust() {
     stav.nastaveni = await api('/api/settings');
     stav.lide = await api('/api/players');
+    stav.prihlasen = true;
 
     $('#prihlaseni').hidden = true;
     $('#aplikace').hidden = false;
-    $('#hl-klub').textContent = stav.nastaveni.klub;
-    $('#hl-obdobi').textContent = `období: ${stav.nastaveni.obdobi}`;
+    $('#odhlasit').hidden = false;
 
+    prekresliShell();
     await prekresli();
 }
 
@@ -69,7 +143,7 @@ async function prekresli() {
         .forEach(b => b.classList.toggle('aktivni', b.dataset.z === stav.zalozka));
 
     const obsah = $('#obsah');
-    obsah.innerHTML = '<p class="popis">Načítám…</p>';
+    obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
         const kresli = { lide, hodnotit, listy, porovnani, odkazy, nastaveni }[stav.zalozka];
         await kresli(obsah);
@@ -91,48 +165,52 @@ async function lide(kam) {
         <tr>
             <td>${esc(o.jmeno)}${o.prezdivka ? ` <span class="popis">„${esc(o.prezdivka)}"</span>` : ''}</td>
             <td>${esc(o.post || '—')}</td>
-            <td><span class="znacka ${o.role}">${o.role === 'trener' ? 'trenér' : 'hráč'}</span></td>
-            <td>${o.role === 'hrac' ? esc(o.sablona) : '—'}</td>
-            <td>${o.aktivni ? '' : '<span class="znacka neaktivni">neaktivní</span>'}</td>
-            <td><button class="vedlejsi" data-upravit="${o.id}" title="Upravit údaje této osoby">Upravit</button></td>
+            <td><span class="znacka ${o.role}">${o.role === 'trener' ? t('lide.trener') : t('lide.hrac')}</span></td>
+            <td>${o.role === 'hrac' ? t('sablona.' + o.sablona) : '—'}</td>
+            <td>${o.aktivni ? '' : `<span class="znacka neaktivni">${t('lide.neaktivni')}</span>`}</td>
+            <td><button class="vedlejsi" data-upravit="${o.id}" title="${t('lide.upravit.tip')}">${t('lide.upravit')}</button></td>
         </tr>`;
 
     kam.innerHTML = `
         <div class="karta">
-            <h2>Lidé v týmu</h2>
-            <p class="popis">Hráči se hodnotí a tisknou se jim listy. Trenéři se nehodnotí — jsou tu proto,
-               aby šlo zaznamenat, kdo hodnocení pořídil.</p>
+            <h2>${t('lide.nadpis')}</h2>
+            <p class="popis">${t('lide.popis')}</p>
             <table>
-                <thead><tr><th>Jméno</th><th>Post</th><th>Role</th><th>Šablona</th><th></th><th></th></tr></thead>
-                <tbody>${stav.lide.map(radek).join('') || '<tr><td colspan="6">Zatím tu nikdo není.</td></tr>'}</tbody>
+                <thead><tr><th>${t('lide.jmeno')}</th><th>${t('lide.post')}</th><th>${t('lide.role')}</th>
+                    <th>${t('lide.sablona')}</th><th></th><th></th></tr></thead>
+                <tbody>${stav.lide.map(radek).join('') || `<tr><td colspan="6">${t('lide.prazdno')}</td></tr>`}</tbody>
             </table>
         </div>
 
         <div class="karta" id="formular-osoby">
-            <h2 id="nadpis-osoby">Nová osoba</h2>
+            <h2 id="nadpis-osoby">${t('lide.nova')}</h2>
             <input type="hidden" id="osoba-id" value="">
             <div class="radek">
-                <div class="pole"><label for="o-jmeno">Jméno a příjmení</label>
-                    <input type="text" id="o-jmeno" placeholder="Novák Jan"></div>
-                <div class="pole"><label for="o-prezdivka">Přezdívka</label>
-                    <input type="text" id="o-prezdivka" placeholder="Nováček"></div>
+                <div class="pole"><label for="o-jmeno">${t('lide.jmeno.label')}</label>
+                    <input type="text" id="o-jmeno"></div>
+                <div class="pole"><label for="o-prezdivka">${t('lide.prezdivka')}</label>
+                    <input type="text" id="o-prezdivka"></div>
             </div>
             <div class="radek">
-                <div class="pole"><label for="o-post">Post / funkce</label>
-                    <input type="text" id="o-post" placeholder="Střední záložník"></div>
-                <div class="pole"><label for="o-role">Role</label>
-                    <select id="o-role"><option value="hrac">hráč</option><option value="trener">trenér</option></select></div>
-                <div class="pole"><label for="o-sablona">Šablona os</label>
-                    <select id="o-sablona">${Object.keys(SABLONY).map(s => `<option value="${s}">${s}</option>`).join('')}</select></div>
+                <div class="pole"><label for="o-post">${t('lide.post.label')}</label>
+                    <input type="text" id="o-post"></div>
+                <div class="pole"><label for="o-role">${t('lide.role.label')}</label>
+                    <select id="o-role">
+                        <option value="hrac">${t('lide.hrac')}</option>
+                        <option value="trener">${t('lide.trener')}</option>
+                    </select></div>
+                <div class="pole"><label for="o-sablona">${t('lide.sablona.label')}</label>
+                    <select id="o-sablona">${Object.keys(SABLONY)
+                        .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select></div>
             </div>
-            <div class="pole"><label><input type="checkbox" id="o-aktivni" checked style="width:auto"> aktivní</label></div>
-            <button class="hl" id="ulozit-osobu" title="Uloží osobu do databáze">Uložit</button>
-            <button class="vedlejsi" id="nova-osoba" title="Vyprázdní formulář">Nová</button>
+            <div class="pole"><label><input type="checkbox" id="o-aktivni" checked style="width:auto"> ${t('lide.aktivni')}</label></div>
+            <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
+            <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
         </div>`;
 
     const vyprazdni = () => {
         $('#osoba-id').value = '';
-        $('#nadpis-osoby').textContent = 'Nová osoba';
+        $('#nadpis-osoby').textContent = t('lide.nova');
         ['o-jmeno', 'o-prezdivka', 'o-post'].forEach(id => { $('#' + id).value = ''; });
         $('#o-role').value = 'hrac';
         $('#o-sablona').value = 'pole';
@@ -142,7 +220,7 @@ async function lide(kam) {
     kam.querySelectorAll('[data-upravit]').forEach(b => b.onclick = () => {
         const o = stav.lide.find(x => x.id === Number(b.dataset.upravit));
         $('#osoba-id').value = o.id;
-        $('#nadpis-osoby').textContent = `Úprava: ${o.jmeno}`;
+        $('#nadpis-osoby').textContent = t('lide.uprava', o.jmeno);
         $('#o-jmeno').value = o.jmeno;
         $('#o-prezdivka').value = o.prezdivka || '';
         $('#o-post').value = o.post || '';
@@ -168,7 +246,7 @@ async function lide(kam) {
             await api(id ? `/api/players/${id}` : '/api/players', { telo, method: id ? 'PATCH' : 'POST' });
             stav.lide = await api('/api/players');
             await prekresli();
-            hlaska($('#obsah'), 'ok', id ? 'Údaje uloženy.' : 'Osoba přidána.');
+            hlaska($('#obsah'), 'ok', id ? t('lide.ulozeno') : t('lide.pridano'));
         } catch (e) {
             hlaska($('#formular-osoby'), 'chyba', e.message);
         }
@@ -177,18 +255,17 @@ async function lide(kam) {
 
 /* ===================== záložka: Hodnotit ===================== */
 
-function stupnice(nazev, hodnota = null) {
+function stupnice(nazev) {
     let h = '<div class="stupnice">';
     for (let i = 1; i <= MAX; i++) {
-        const id = `${nazev}-${i}`;
-        h += `<input type="radio" name="${nazev}" id="${id}" value="${i}"${hodnota === i ? ' checked' : ''}>`
-           + `<label for="${id}">${i}</label>`;
+        h += `<input type="radio" name="${nazev}" id="${nazev}-${i}" value="${i}">`
+           + `<label for="${nazev}-${i}">${i}</label>`;
     }
     return h + '</div>';
 }
 
 const kotvyHtml = () =>
-    `<div class="kotvy">${KOTVY.map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>`;
+    `<div class="kotvy">${kotvy().map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>`;
 
 async function hodnotit(kam) {
     const hraci = hraciAktivni();
@@ -196,19 +273,18 @@ async function hodnotit(kam) {
 
     kam.innerHTML = `
         <div class="karta">
-            <h2>Hodnocení hráče</h2>
-            <p class="popis">Období: <b>${esc(stav.nastaveni.obdobi)}</b>. Uloží se jako nový záznam —
-               starší hodnocení se nikdy nepřepisuje.</p>
+            <h2>${t('hodnotit.nadpis')}</h2>
+            <p class="popis">${t('hodnotit.popis', esc(stav.nastaveni.obdobi))}</p>
             <div class="radek">
-                <div class="pole"><label for="h-hrac">Hráč</label>
+                <div class="pole"><label for="h-hrac">${t('hodnotit.hrac')}</label>
                     <select id="h-hrac">
-                        <option value="">— vyber hráče —</option>
+                        <option value="">${t('hodnotit.vyber')}</option>
                         ${hraci.map(h => `<option value="${h.id}">${esc(h.jmeno)}</option>`).join('')}
                     </select></div>
-                <div class="pole"><label for="h-autor">Hodnotí</label>
+                <div class="pole"><label for="h-autor">${t('hodnotit.hodnoti')}</label>
                     <select id="h-autor">
-                        <option value="">— neuvedeno —</option>
-                        ${treneri.map(t => `<option value="${t.id}">${esc(t.jmeno)}</option>`).join('')}
+                        <option value="">${t('hodnotit.neuvedeno')}</option>
+                        ${treneri.map(x => `<option value="${x.id}">${esc(x.jmeno)}</option>`).join('')}
                     </select></div>
             </div>
         </div>
@@ -220,17 +296,15 @@ async function hodnotit(kam) {
 function formularHodnoceni(kam, hracId) {
     if (!hracId) { kam.innerHTML = ''; return; }
     const hrac = stav.lide.find(o => o.id === hracId);
-    const osy = SABLONY[hrac.sablona];
+    const seznamOs = osy(hrac.sablona);
 
     kam.innerHTML = `
         <div class="karta">
-            <div class="hlaska pozor">Známkuje se naslepo. Předchozí hodnoty se schválně nezobrazují —
-                viditelné loňské číslo přitáhne nové k sobě a datová řada přestane cokoliv říkat.
-                Porovnání uvidíš až po uložení.</div>
-            <h2>${esc(hrac.jmeno)} <span class="popis">— šablona ${esc(hrac.sablona)}</span></h2>
+            <div class="hlaska pozor">${t('hodnotit.naslepo')}</div>
+            <h2>${esc(hrac.jmeno)} <span class="popis">— ${t('hodnotit.sablonaPopis', t('sablona.' + hrac.sablona))}</span></h2>
             ${kotvyHtml()}
             <div style="margin-top:10px">
-                ${osy.map(o => `
+                ${seznamOs.map(o => `
                     <div class="osa">
                         <div class="nazev">${esc(o.popis)}</div>
                         ${stupnice('osa-' + o.klic)}
@@ -239,34 +313,31 @@ function formularHodnoceni(kam, hracId) {
         </div>
 
         <div class="karta">
-            <h2>Slovní bloky</h2>
-            <p class="popis">Tyhle tři rohy modelu se nikdy neznámkují číslem. Kondice a rychlost patří do „Fyzicky".</p>
-            <div class="pole"><label for="h-fyzicky">Fyzicky</label><textarea id="h-fyzicky"></textarea></div>
-            <div class="pole"><label for="h-hlavou">Hlavou</label><textarea id="h-hlavou"></textarea></div>
-            <div class="pole"><label for="h-parta">V partě</label><textarea id="h-parta"></textarea></div>
+            <h2>${t('hodnotit.bloky')}</h2>
+            <p class="popis">${t('hodnotit.bloky.popis')}</p>
+            <div class="pole"><label for="h-fyzicky">${t('blok.fyzicky')}</label><textarea id="h-fyzicky"></textarea></div>
+            <div class="pole"><label for="h-hlavou">${t('blok.hlavou')}</label><textarea id="h-hlavou"></textarea></div>
+            <div class="pole"><label for="h-parta">${t('blok.parta')}</label><textarea id="h-parta"></textarea></div>
         </div>
 
         <div class="karta">
             <h2>${esc(stav.nastaveni.cileNadpis)}</h2>
-            <p class="popis">Dva až tři, konkrétní a ověřitelné. Hráč musí poznat, jestli je splnil.</p>
-            <div class="pole"><input type="text" id="h-cil1" placeholder="1. cíl"></div>
-            <div class="pole"><input type="text" id="h-cil2" placeholder="2. cíl"></div>
-            <div class="pole"><input type="text" id="h-cil3" placeholder="3. cíl"></div>
-            <button class="hl" id="ulozit-hodnoceni" title="Uloží hodnocení jako nový záznam">Uložit hodnocení</button>
+            <p class="popis">${t('hodnotit.cile.popis')}</p>
+            <div class="pole"><input type="text" id="h-cil1" placeholder="${t('hodnotit.cil', 1)}"></div>
+            <div class="pole"><input type="text" id="h-cil2" placeholder="${t('hodnotit.cil', 2)}"></div>
+            <div class="pole"><input type="text" id="h-cil3" placeholder="${t('hodnotit.cil', 3)}"></div>
+            <button class="hl" id="ulozit-hodnoceni" title="${t('hodnotit.ulozit.tip')}">${t('hodnotit.ulozit')}</button>
         </div>`;
 
     $('#ulozit-hodnoceni').onclick = async () => {
         const hodnoty = {};
         const chybi = [];
-        for (const o of osy) {
+        for (const o of seznamOs) {
             const vybrano = kam.querySelector(`input[name="osa-${o.klic}"]:checked`);
             if (!vybrano) chybi.push(o.popis);
             else hodnoty[o.klic] = Number(vybrano.value);
         }
-        if (chybi.length) {
-            hlaska(kam, 'chyba', `Chybí známka: ${chybi.join(', ')}.`);
-            return;
-        }
+        if (chybi.length) { hlaska(kam, 'chyba', t('hodnotit.chybi', chybi.join(', '))); return; }
 
         const telo = {
             player_id: hracId,
@@ -284,9 +355,9 @@ function formularHodnoceni(kam, hracId) {
             await api('/api/evaluations', { telo });
             kam.innerHTML = `
                 <div class="karta">
-                    <div class="hlaska ok">Hodnocení uloženo: <b>${esc(hrac.jmeno)}</b>, období ${esc(stav.nastaveni.obdobi)}.</div>
-                    <button class="vedlejsi" id="na-list" title="Otevře tiskový list tohoto hráče">Otevřít tiskový list</button>
-                    <button class="vedlejsi" id="dalsi" title="Vyhodnotit dalšího hráče">Další hráč</button>
+                    <div class="hlaska ok">${t('hodnotit.ulozeno', esc(hrac.jmeno), esc(stav.nastaveni.obdobi))}</div>
+                    <button class="vedlejsi" id="na-list" title="${t('hodnotit.naList.tip')}">${t('hodnotit.naList')}</button>
+                    <button class="vedlejsi" id="dalsi" title="${t('hodnotit.dalsi.tip')}">${t('hodnotit.dalsi')}</button>
                 </div>`;
             $('#na-list').onclick = () => otevriListy({ ids: String(hracId) });
             $('#dalsi').onclick = () => { stav.zalozka = 'hodnotit'; prekresli(); };
@@ -308,27 +379,26 @@ async function listy(kam) {
 
     kam.innerHTML = `
         <div class="karta">
-            <h2>Tiskové listy</h2>
-            <p class="popis">Jeden hráč = jedna A4. Listy se sestaví z databáze, otevřou se v nové záložce
-               a odtud jdou na tiskárnu.</p>
+            <h2>${t('listy.nadpis')}</h2>
+            <p class="popis">${t('listy.popis')}</p>
             <div class="radek">
-                <div class="pole"><label for="l-obdobi">Období</label>
+                <div class="pole"><label for="l-obdobi">${t('listy.obdobi')}</label>
                     <input type="text" id="l-obdobi" value="${esc(stav.nastaveni.obdobi)}"></div>
-                <div class="pole"><label for="l-porovnani">Druhý polygon v grafu</label>
+                <div class="pole"><label for="l-porovnani">${t('listy.polygon')}</label>
                     <select id="l-porovnani">
-                        <option value="minule">trenér minule (vývoj)</option>
-                        <option value="hrac">sebehodnocení hráče (k rozhovoru)</option>
-                        <option value="zadne">žádný — jen aktuální</option>
+                        <option value="minule">${t('listy.polygon.minule')}</option>
+                        <option value="hrac">${t('listy.polygon.hrac')}</option>
+                        <option value="zadne">${t('listy.polygon.zadne')}</option>
                     </select></div>
             </div>
-            <p class="popis">Na listu jsou maximálně dva polygony. Tři jsou nečitelné.</p>
+            <p class="popis">${t('listy.dva')}</p>
         </div>
 
         <div class="karta">
-            <h2>Kdo se vytiskne</h2>
+            <h2>${t('listy.kdo')}</h2>
             <table>
-                <thead><tr><th class="cisla"><input type="checkbox" id="vsichni" checked title="Označit všechny"></th>
-                    <th>Hráč</th><th class="cisla">trenér</th><th class="cisla">hráč</th></tr></thead>
+                <thead><tr><th class="cisla"><input type="checkbox" id="vsichni" checked title="${t('listy.vsichni.tip')}"></th>
+                    <th>${t('hodnotit.hrac')}</th><th class="cisla">${t('lide.trener')}</th><th class="cisla">${t('lide.hrac')}</th></tr></thead>
                 <tbody>${prehled.hraci.filter(h => h.aktivni).map(h => `
                     <tr>
                         <td class="cisla"><input type="checkbox" class="vyber" value="${h.id}" checked></td>
@@ -338,7 +408,7 @@ async function listy(kam) {
                     </tr>`).join('')}</tbody>
             </table>
             <p style="margin-top:14px">
-                <button class="hl" id="otevrit-listy" title="Otevře tiskové listy vybraných hráčů">Otevřít listy k tisku</button>
+                <button class="hl" id="otevrit-listy" title="${t('listy.otevrit.tip')}">${t('listy.otevrit')}</button>
             </p>
         </div>`;
 
@@ -347,7 +417,7 @@ async function listy(kam) {
 
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);
-        if (!ids.length) { hlaska(kam, 'chyba', 'Nikdo není vybraný.'); return; }
+        if (!ids.length) { hlaska(kam, 'chyba', t('listy.nikdo')); return; }
         otevriListy({ ids: ids.join(','), porovnani: $('#l-porovnani').value, obdobi: $('#l-obdobi').value });
     };
 }
@@ -358,12 +428,11 @@ async function porovnani(kam) {
     const hraci = hraciAktivni();
     kam.innerHTML = `
         <div class="karta">
-            <h2>Trenér vs. hráč</h2>
-            <p class="popis">Řeší se jen osy, kde je rozdíl větší než tolerance
-               (teď <b>${esc(stav.nastaveni.tolerance)}</b>, změna v Nastavení).</p>
-            <div class="pole"><label for="p-hrac">Hráč</label>
+            <h2>${t('porovnani.nadpis')}</h2>
+            <p class="popis">${t('porovnani.popis', esc(stav.nastaveni.tolerance))}</p>
+            <div class="pole"><label for="p-hrac">${t('hodnotit.hrac')}</label>
                 <select id="p-hrac">
-                    <option value="">— vyber hráče —</option>
+                    <option value="">${t('hodnotit.vyber')}</option>
                     ${hraci.map(h => `<option value="${h.id}">${esc(h.jmeno)}</option>`).join('')}
                 </select></div>
         </div>
@@ -373,13 +442,13 @@ async function porovnani(kam) {
         const id = Number($('#p-hrac').value);
         const cil = $('#vysledek');
         if (!id) { cil.innerHTML = ''; return; }
-        cil.innerHTML = '<p class="popis">Načítám…</p>';
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
         try {
-            const [p, t] = await Promise.all([
+            const [p, tr] = await Promise.all([
                 api(`/api/porovnani?player_id=${id}&obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`),
                 api(`/api/trend?player_id=${id}`)
             ]);
-            cil.innerHTML = tabulkaPorovnani(p) + tabulkaTrendu(t);
+            cil.innerHTML = tabulkaPorovnani(p) + tabulkaTrendu(tr);
         } catch (e) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
@@ -389,52 +458,61 @@ async function porovnani(kam) {
 function tabulkaPorovnani(p) {
     if (!p.hotovo) {
         const co = [];
-        if (!p.maTrener) co.push('hodnocení trenéra');
-        if (!p.maHrac) co.push('sebehodnocení hráče');
-        return `<div class="karta"><div class="hlaska info">Za období ${esc(p.obdobi)} zatím chybí: ${esc(co.join(' a '))}.
-                Porovnání se ukáže, až budou obě strany.</div></div>`;
+        if (!p.maTrener) co.push(t('porovnani.chybi.trener'));
+        if (!p.maHrac) co.push(t('porovnani.chybi.hrac'));
+        return `<div class="karta"><div class="hlaska info">${t('porovnani.chybi', esc(p.obdobi), co.join(t('porovnani.a')))}</div></div>`;
     }
+
+    const popisky = Object.fromEntries(osy(p.osy.length ? sablonaZOs(p.osy) : 'pole').map(o => [o.klic, o.popis]));
 
     const radky = p.osy.map(o => `
         <tr class="${o.resit ? 'resit' : ''}">
-            <td>${esc(o.popis)}</td>
+            <td>${esc(popisky[o.klic] || o.klic)}</td>
             <td class="cisla">${o.trener}</td>
             <td class="cisla">${o.hrac}</td>
             <td class="cisla">${o.rozdil > 0 ? `<span class="rozdil-plus">+${o.rozdil}</span>`
                               : o.rozdil < 0 ? `<span class="rozdil-minus">${o.rozdil}</span>` : '0'}</td>
-            <td>${o.resit ? esc(o.vyklad) : '<span class="ne">v toleranci</span>'}</td>
+            <td>${o.resit
+                    ? (o.rozdil > 0 ? t('porovnani.slepeMisto') : t('porovnani.sebeduvera'))
+                    : `<span class="ne">${t('porovnani.vToleranci')}</span>`}</td>
         </tr>`).join('');
 
     return `
         <div class="karta">
-            <h2>Rozdíly za období ${esc(p.obdobi)}</h2>
-            ${p.upozorneni ? `<div class="hlaska pozor">${esc(p.upozorneni)}</div>` : ''}
+            <h2>${t('porovnani.rozdily', esc(p.obdobi))}</h2>
+            ${p.pocetResit > 3 ? `<div class="hlaska pozor">${t('porovnani.upozorneni', p.pocetResit)}</div>` : ''}
             <table>
-                <thead><tr><th>Osa</th><th class="cisla">trenér</th><th class="cisla">hráč</th>
-                    <th class="cisla">rozdíl</th><th>k rozhovoru</th></tr></thead>
+                <thead><tr><th>${t('porovnani.osa')}</th><th class="cisla">${t('lide.trener')}</th>
+                    <th class="cisla">${t('lide.hrac')}</th><th class="cisla">${t('porovnani.rozdil')}</th>
+                    <th>${t('porovnani.kRozhovoru')}</th></tr></thead>
                 <tbody>${radky}</tbody>
             </table>
-            <p class="popis" style="margin-top:10px">
-                <b>+</b> hráč si dal víc než trenér = slepé místo, chybí zpětná vazba.<br>
-                <b>−</b> hráč si dal míň než trenér = sebedůvěra, může jít o něco mimo fotbal.
-            </p>
-            ${p.poznamkaHrace ? `<div class="hlaska info"><b>Hráč k tomu napsal:</b> ${esc(p.poznamkaHrace)}</div>` : ''}
+            <p class="popis" style="margin-top:10px">${t('porovnani.legenda')}</p>
+            ${p.poznamkaHrace ? `<div class="hlaska info"><b>${t('porovnani.napsal')}</b> ${esc(p.poznamkaHrace)}</div>` : ''}
         </div>`;
 }
 
-function tabulkaTrendu(t) {
-    if (!t.osy?.length) {
-        return `<div class="karta"><h2>Vývoj v čase</h2><p class="popis">${esc(t.souhrn)}</p></div>`;
+/** Odvodí šablonu z klíčů os, které vrátil server. */
+function sablonaZOs(seznam) {
+    const klic = seznam[0]?.klic;
+    return Object.keys(SABLONY).find(s => SABLONY[s].includes(klic)) || 'pole';
+}
+
+function tabulkaTrendu(tr) {
+    if (!tr.maTrend) {
+        return `<div class="karta"><h2>${t('trend.nadpis')}</h2><p class="popis">${t('trend.malo')}</p></div>`;
     }
+    const popisky = Object.fromEntries(osy(sablonaZOs(tr.osy)).map(o => [o.klic, o.popis]));
+
     return `
         <div class="karta">
-            <h2>Vývoj v čase <span class="popis">— jen pro trenéra, na list hráče to nepatří</span></h2>
-            <p class="popis">${esc(t.odkud)} → ${esc(t.kam)}: <b>${esc(t.souhrn)}</b>.
-               Za změnu se považuje až rozdíl 2 body; posun o 1 bod u subjektivního hodnocení není signál.</p>
+            <h2>${t('trend.nadpis')} <span class="popis">${t('trend.jenTrener')}</span></h2>
+            <p class="popis"><b>${t('trend.souhrn', esc(tr.odkud), esc(tr.kam), tr.nahoru, tr.dolu, tr.stejne)}</b><br>${t('trend.pasmo')}</p>
             <table>
-                <thead><tr><th>Osa</th><th class="cisla">${esc(t.odkud)}</th><th class="cisla">${esc(t.kam)}</th><th class="cisla"></th></tr></thead>
-                <tbody>${t.osy.map(o => `
-                    <tr><td>${esc(o.popis)}</td><td class="cisla">${o.driv}</td>
+                <thead><tr><th>${t('porovnani.osa')}</th><th class="cisla">${esc(tr.odkud)}</th>
+                    <th class="cisla">${esc(tr.kam)}</th><th class="cisla"></th></tr></thead>
+                <tbody>${tr.osy.map(o => `
+                    <tr><td>${esc(popisky[o.klic] || o.klic)}</td><td class="cisla">${o.driv}</td>
                         <td class="cisla">${o.ted}</td><td class="cisla">${o.smer}</td></tr>`).join('')}</tbody>
             </table>
         </div>`;
@@ -448,33 +526,32 @@ async function odkazy(kam) {
 
     kam.innerHTML = `
         <div class="karta">
-            <h2>Odkazy na sebehodnocení</h2>
-            <p class="popis">Odkaz je jednorázový. Posílej ho konkrétnímu hráči, ne do týmové skupiny —
-               kdo odkaz má, může sebehodnocení vyplnit za něj.</p>
+            <h2>${t('odkazy.nadpis')}</h2>
+            <p class="popis">${t('odkazy.popis')}</p>
             <div class="radek">
-                <div class="pole"><label for="t-dni">Platnost (dní)</label>
+                <div class="pole"><label for="t-dni">${t('odkazy.platnost')}</label>
                     <input type="number" id="t-dni" value="30" min="1" max="365"></div>
                 <div class="pole" style="align-self:end">
-                    <button class="hl" id="generovat" title="Vygeneruje odkaz pro každého aktivního hráče">
-                        Vygenerovat pro všechny hráče</button></div>
+                    <button class="hl" id="generovat" title="${t('odkazy.generovat.tip')}">${t('odkazy.generovat')}</button></div>
             </div>
         </div>
 
         <div class="karta">
-            <h2>Období ${esc(stav.nastaveni.obdobi)}</h2>
+            <h2>${t('odkazy.obdobi', esc(stav.nastaveni.obdobi))}</h2>
             <table>
-                <thead><tr><th>Hráč</th><th>Stav</th><th>Platí do</th><th>Odkaz</th><th></th></tr></thead>
-                <tbody>${seznam.length ? seznam.map(t => `
+                <thead><tr><th>${t('hodnotit.hrac')}</th><th>${t('odkazy.stav')}</th>
+                    <th>${t('odkazy.platiDo')}</th><th>${t('odkazy.odkaz')}</th><th></th></tr></thead>
+                <tbody>${seznam.length ? seznam.map(x => `
                     <tr>
-                        <td>${esc(t.jmeno)}</td>
-                        <td>${t.pouzit ? '<span class="ano">vyplněno</span>' : '<span class="ne">čeká</span>'}</td>
-                        <td>${t.platny_do ? esc(new Date(t.platny_do).toLocaleDateString('cs-CZ')) : '—'}</td>
-                        <td class="odkaz-pole">${esc(zaklad)}/h/${esc(t.token.slice(0, 8))}…</td>
+                        <td>${esc(x.jmeno)}</td>
+                        <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
+                        <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
+                        <td class="odkaz-pole">${esc(zaklad)}/h/${esc(x.token.slice(0, 8))}…</td>
                         <td>
-                            <button class="vedlejsi" data-kopirovat="${esc(t.token)}" title="Zkopíruje celý odkaz do schránky">Kopírovat</button>
-                            <button class="vedlejsi zrusit" data-zrusit="${esc(t.token)}" title="Odkaz přestane platit">Zneplatnit</button>
+                            <button class="vedlejsi" data-kopirovat="${esc(x.token)}" title="${t('odkazy.kopirovat.tip')}">${t('odkazy.kopirovat')}</button>
+                            <button class="vedlejsi zrusit" data-zrusit="${esc(x.token)}" title="${t('odkazy.zneplatnit.tip')}">${t('odkazy.zneplatnit')}</button>
                         </td>
-                    </tr>`).join('') : '<tr><td colspan="5">Pro tohle období zatím žádné odkazy.</td></tr>'}</tbody>
+                    </tr>`).join('') : `<tr><td colspan="5">${t('odkazy.prazdno')}</td></tr>`}</tbody>
             </table>
         </div>`;
 
@@ -482,7 +559,7 @@ async function odkazy(kam) {
         try {
             const r = await api('/api/tokens', { telo: { obdobi: stav.nastaveni.obdobi, dni: Number($('#t-dni').value) } });
             await prekresli();
-            hlaska($('#obsah'), 'ok', `Vygenerováno odkazů: ${r.vytvoreno}.`);
+            hlaska($('#obsah'), 'ok', t('odkazy.vytvoreno', r.vytvoreno));
         } catch (e) { hlaska(kam, 'chyba', e.message); }
     };
 
@@ -490,15 +567,15 @@ async function odkazy(kam) {
         const odkaz = `${zaklad}/h/${b.dataset.kopirovat}`;
         try {
             await navigator.clipboard.writeText(odkaz);
-            b.textContent = 'Zkopírováno';
-            setTimeout(() => { b.textContent = 'Kopírovat'; }, 1500);
+            b.textContent = t('odkazy.zkopirovano');
+            setTimeout(() => { b.textContent = t('odkazy.kopirovat'); }, 1500);
         } catch {
-            prompt('Zkopíruj odkaz ručně:', odkaz);
+            prompt(t('odkazy.rucne'), odkaz);
         }
     });
 
     kam.querySelectorAll('[data-zrusit]').forEach(b => b.onclick = async () => {
-        if (!confirm('Zneplatnit tenhle odkaz? Hráč pak potřebuje nový.')) return;
+        if (!confirm(t('odkazy.potvrdit'))) return;
         try {
             await api(`/api/tokens/${encodeURIComponent(b.dataset.zrusit)}`, { method: 'DELETE' });
             await prekresli();
@@ -508,40 +585,31 @@ async function odkazy(kam) {
 
 /* ===================== záložka: Nastavení ===================== */
 
-const POLE_NASTAVENI = [
-    ['tolerance',  'Tolerance rozdílu (0–9)',
-     'O kolik se smí lišit známka trenéra a hráče, aniž by se osa řešila. Větší rozdíl = téma k rozhovoru.'],
-    ['obdobi',     'Období', 'Například „2025/2026 zima". Podle něj se páruje hodnocení trenéra a hráče.'],
-    ['sezona',     'Sezóna', 'Tiskne se do hlavičky listu.'],
-    ['klub',       'Klub', ''],
-    ['kategorie',  'Kategorie', ''],
-    ['latka',      'Proti čemu se hodnotí', 'Text v patičce listu: „co má umět starší žák".'],
-    ['cileNadpis', 'Nadpis nad cíli', 'Například „Na čem makáme do zimy".']
-];
+const KLICE_NASTAVENI = ['tolerance', 'obdobi', 'sezona', 'klub', 'kategorie', 'latka', 'cileNadpis'];
+const MA_NAPOVEDU = ['tolerance', 'obdobi', 'sezona', 'latka', 'cileNadpis'];
 
 async function nastaveni(kam) {
     kam.innerHTML = `
         <div class="karta">
-            <h2>Nastavení</h2>
-            <p class="popis">Tolerance a období řídí porovnání a párování hodnocení. Zbytek jde do hlavičky listu.</p>
-            ${POLE_NASTAVENI.map(([klic, popisek, napoveda]) => `
+            <h2>${t('nastaveni.nadpis')}</h2>
+            <p class="popis">${t('nastaveni.popis')}</p>
+            ${KLICE_NASTAVENI.map(klic => `
                 <div class="pole">
-                    <label for="n-${klic}">${popisek}</label>
+                    <label for="n-${klic}">${t('nastaveni.' + klic)}</label>
                     <input type="${klic === 'tolerance' ? 'number' : 'text'}" id="n-${klic}"
                            value="${esc(stav.nastaveni[klic] ?? '')}"${klic === 'tolerance' ? ' min="0" max="9"' : ''}>
-                    ${napoveda ? `<div class="popis">${napoveda}</div>` : ''}
+                    ${MA_NAPOVEDU.includes(klic) ? `<div class="popis">${t('nastaveni.' + klic + '.napoveda')}</div>` : ''}
                 </div>`).join('')}
-            <button class="hl" id="ulozit-nastaveni" title="Uloží nastavení">Uložit</button>
+            <button class="hl" id="ulozit-nastaveni" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>
         </div>`;
 
     $('#ulozit-nastaveni').onclick = async () => {
-        const telo = Object.fromEntries(POLE_NASTAVENI.map(([k]) => [k, $('#n-' + k).value]));
+        const telo = Object.fromEntries(KLICE_NASTAVENI.map(k => [k, $('#n-' + k).value]));
         try {
             stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });
-            $('#hl-klub').textContent = stav.nastaveni.klub;
-            $('#hl-obdobi').textContent = `období: ${stav.nastaveni.obdobi}`;
+            prekresliShell();
             await prekresli();
-            hlaska($('#obsah'), 'ok', 'Nastavení uloženo.');
+            hlaska($('#obsah'), 'ok', t('nastaveni.ulozeno'));
         } catch (e) { hlaska(kam, 'chyba', e.message); }
     };
 }
@@ -551,13 +619,22 @@ async function nastaveni(kam) {
 $('#prihlasit').onclick = prihlas;
 $('#heslo').onkeydown = e => { if (e.key === 'Enter') prihlas(); };
 $('#odhlasit').onclick = async () => { await api('/api/logout', { telo: {} }); ukazPrihlaseni(); };
+$('#themeBtn').onclick = () => nastavVzhled(vzhled() === 'dark' ? 'light' : 'dark');
+$('#jazykBtn').onclick = async () => {
+    nastavJazyk(druhyJazyk());
+    prekresliShell();
+    if (stav.prihlasen) await prekresli();
+};
 
 document.querySelectorAll('#zalozky button').forEach(b => b.onclick = () => {
     stav.zalozka = b.dataset.z;
     prekresli();
 });
 
+setInterval(hodiny, 1000);
+
 (async () => {
+    prekresliShell();
     const { prihlasen } = await api('/api/me');
     if (prihlasen) await spust();
     else ukazPrihlaseni();

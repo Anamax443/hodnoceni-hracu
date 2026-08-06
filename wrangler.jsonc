@@ -19,13 +19,16 @@
         {
             "binding": "DB",
             "database_name": "hodnoceni-hracu",
-            // Nahradit skutečným id z `npx wrangler d1 create hodnoceni-hracu`.
-            // Pro lokální běh (`npm run dev`) na hodnotě nezáleží.
-            "database_id": "00000000-0000-0000-0000-000000000000"
+            "database_id": "8fe85587-7409-4b95-83f3-d23f340aa2ad"
         }
     ],
 
     "observability": { "enabled": true },
+
+    // Aplikace drží osobní údaje nezletilých — čím míň veřejných adres, tím líp.
+    // Náhledové URL jednotlivých verzí proto vypnuté, běží jen ostrá adresa.
+    "workers_dev": true,
+    "preview_urls": false,
 
     // ADMIN_HESLO a SESSION_KEY jsou secrety, ne proměnné:
     //   npx wrangler secret put ADMIN_HESLO

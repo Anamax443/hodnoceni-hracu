@@ -5,22 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sebehodnocení</title>
 <link rel="stylesheet" href="/app.css">
+<script>
+    (function () {
+        var t;
+        try { t = localStorage.getItem('hodnoceni.theme'); } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+    })();
+</script>
 <style>
-    body { background: #eceff1; }
     main { max-width: 640px; margin: 20px auto; padding: 0 14px 60px; }
     .osa .nazev { font-size: 15px; }
 </style>
 </head>
 <body>
 
-<header>
-    <span class="klub">Sebehodnocení</span>
-    <span id="hl-jmeno"></span>
+<header class="topbar">
+    <span class="brand" id="hl-nadpis">⚽</span>
+    <span class="app" id="hl-jmeno"></span>
+    <span class="tools">
+        <span class="hodiny" id="hodiny"></span>
+        <span class="verze" id="verze"></span>
+        <button id="jazykBtn"></button>
+        <button id="themeBtn"></button>
+    </span>
 </header>
 
-<main id="obsah">
-    <p class="popis">Načítám…</p>
-</main>
+<main id="obsah"></main>
 
 <script type="module" src="/h.js"></script>
 </body>

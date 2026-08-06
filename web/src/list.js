@@ -7,10 +7,13 @@
 
    Co na list NEPATŘÍ (ZADANI §7.5): šipky trendu, věty typu
    „zhoršil ses", data jiných hráčů. Tohle si čtrnáctiletý odnese domů.
+
+   List se tiskne vždy světlý, i když má aplikace tmavý vzhled — je to
+   papír, ne obrazovka.
    ===================================================================== */
 
-import { SABLONY, KOTVY } from './sablony.js';
 import { radar } from './radar.js';
+import { t, osy, kotvy, locale } from './i18n.js';
 
 /** Escapuje text z databáze, aby `&` nebo `<` v komentáři nerozbily HTML. */
 export function esc(hodnota) {
@@ -19,31 +22,36 @@ export function esc(hodnota) {
     })[z]);
 }
 
+/** Popisek druhého polygonu podle režimu, který vrátil server. */
+function popisekPorovnani(h) {
+    if (h.porovnaniRezim === 'hrac') return t('list.hracSeVidi');
+    if (h.porovnaniRezim === 'minule') return h.porovnaniObdobi || t('list.minule');
+    return '';
+}
+
 /**
  * Vrátí HTML jedné A4 stránky.
  * @param {Object} h   {jmeno, prezdivka, post, sablona, hodnoceni, porovnani,
- *                      porovnaniPopisek, fyzicky, hlavou, parta, cile[]}
+ *                      porovnaniRezim, porovnaniObdobi, fyzicky, hlavou, parta, cile[]}
  * @param {Object} nas {klub, kategorie, sezona, obdobi, latka, cileNadpis}
  */
 export function list(h, nas) {
-    const osy = SABLONY[h.sablona];
-    if (!osy) throw new Error(`Hráč „${h.jmeno}" má neznámou šablonu: ${h.sablona}`);
+    const seznamOs = osy(h.sablona);
+    if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
 
-    const nevyplneno = !h.hodnoceni;
-    const datum = new Date().toLocaleDateString('cs-CZ');
-    const popisekPorovnani = h.porovnaniPopisek || 'minule';
+    const datum = new Date().toLocaleDateString(locale());
 
     return `
     <div class="page">
         <div class="header">
             <div>
                 <div class="club">${esc(nas.klub)}</div>
-                <h1>Hodnocení hráče</h1>
+                <h1>${t('list.nadpis')}</h1>
             </div>
             <div class="meta">
-                ${esc(nas.kategorie)} &bull; sezóna ${esc(nas.sezona)}<br>
+                ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
                 ${esc(nas.obdobi)}<br>
-                Vystaveno: ${datum}
+                ${t('list.vystaveno')}: ${datum}
             </div>
         </div>
 
@@ -52,25 +60,25 @@ export function list(h, nas) {
             <span class="role">${esc(h.post)}</span>
         </div>
 
-        ${nevyplneno ? '<p class="note-unfilled">&#9888; Hodnocení za tohle období zatím není vyplněné.</p>' : ''}
+        ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
 
-        <div class="chart-wrap">${radar(osy, h.hodnoceni, h.porovnani)}</div>
+        <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
         <div class="legend">
-            <span><i class="swatch" style="background:#2196F3;opacity:.6"></i> ${esc(h.hodnoceniPopisek || 'teď')}</span>
-            ${h.porovnani ? `<span><i class="swatch" style="background:#9e9e9e;opacity:.5"></i> ${esc(popisekPorovnani)}</span>` : ''}
+            <span><i class="swatch" style="background:#2196F3;opacity:.6"></i> ${t('list.trener')}</span>
+            ${h.porovnani ? `<span><i class="swatch" style="background:#9e9e9e;opacity:.5"></i> ${esc(popisekPorovnani(h))}</span>` : ''}
         </div>
 
         <div class="blocks">
             <div class="block fyz">
-                <h4>Fyzicky</h4>
+                <h4>${t('blok.fyzicky')}</h4>
                 <p>${esc(h.fyzicky) || '&mdash;'}</p>
             </div>
             <div class="block hlava">
-                <h4>Hlavou</h4>
+                <h4>${t('blok.hlavou')}</h4>
                 <p>${esc(h.hlavou) || '&mdash;'}</p>
             </div>
             <div class="block parta">
-                <h4>V partě</h4>
+                <h4>${t('blok.parta')}</h4>
                 <p>${esc(h.parta) || '&mdash;'}</p>
             </div>
         </div>
@@ -81,14 +89,13 @@ export function list(h, nas) {
         </div>
 
         <div class="scale">
-            <b>Jak číst čísla:</b>
-            ${KOTVY.map(k => `<span><b>${k[0]}</b> &ndash; ${k[1]}</span>`).join('')}
+            <b>${t('list.jakCist')}</b>
+            ${kotvy().map(k => `<span><b>${k[0]}</b> &ndash; ${k[1]}</span>`).join('')}
         </div>
 
         <div class="footer">
-            <div>Graf tě porovnává s tím, co má umět ${esc(nas.latka)}. Ne se spoluhráči.<br>
-                 Tvary mezi sebou neporovnávejte, leváci a praváci mají zub na opačné straně.</div>
-            <div class="sign">trenér</div>
+            <div>${t('list.paticka', esc(nas.latka))}</div>
+            <div class="sign">${t('list.podpis')}</div>
         </div>
     </div>`;
 }

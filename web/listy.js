@@ -2,8 +2,42 @@
    ?obdobi=2025/2026 zima&porovnani=minule|hrac|zadne&ids=vse|1,2,3   */
 
 import { vykresli, esc } from './src/list.js';
+import { t, jazyk, nastavJazyk, druhyJazyk, locale } from './src/i18n.js';
 
+const $ = s => document.querySelector(s);
 const p = new URLSearchParams(location.search);
+let data = null;
+
+async function verze() {
+    try {
+        const v = await (await fetch('/api/version')).json();
+        $('#verze').textContent = `${t('shell.verze')} ${v.commit}`;
+        $('#verze').title = `${v.commitFull}\n${t('shell.sestaveno')}: ${new Date(v.builtAt).toLocaleString(locale())}`;
+    } catch { $('#verze').textContent = ''; }
+}
+
+function popisky() {
+    document.documentElement.lang = jazyk();
+    $('#tisk').textContent = t('tisk.vytisknout');
+    $('#tisk').title = t('tisk.tip');
+    $('#jazykBtn').textContent = t('jazyk.dalsi');
+    $('#jazykBtn').title = t('shell.jazyk.tip');
+}
+
+function nakresli() {
+    popisky();
+    if (!data) return;
+    const pocet = vykresli(data.listy, data.nastaveni, $('#output'));
+    const bez = data.listy.filter(h => !h.hodnoceni).length;
+    $('#stav').textContent = t('tisk.stav', data.nastaveni.obdobi, pocet)
+        + (bez ? t('tisk.bez', bez) : '');
+}
+
+$('#tisk').onclick = () => window.print();
+$('#jazykBtn').onclick = () => { nastavJazyk(druhyJazyk()); nakresli(); verze(); };
+
+popisky();
+verze();
 
 try {
     const dotaz = new URLSearchParams({
@@ -13,17 +47,14 @@ try {
     });
 
     const odpoved = await fetch(`/api/listy?${dotaz}`, { credentials: 'same-origin' });
-    if (odpoved.status === 401) throw new Error('Nejsi přihlášený. Otevři aplikaci a přihlas se.');
-    const data = await odpoved.json();
-    if (!odpoved.ok) throw new Error(data?.chyba || `Server odpověděl ${odpoved.status}.`);
+    if (odpoved.status === 401) throw new Error(t('tisk.neprihlasen'));
+    const telo = await odpoved.json();
+    if (!odpoved.ok) throw new Error(telo?.chyba || t('chyba.server', odpoved.status));
 
-    const pocet = vykresli(data.listy, data.nastaveni, document.getElementById('output'));
-    const bez = data.listy.filter(h => !h.hodnoceni).length;
-    document.getElementById('stav').textContent =
-        `${esc(data.nastaveni.obdobi)} — listů: ${pocet}` + (bez ? ` (z toho ${bez} bez hodnocení)` : '');
+    data = telo;
+    nakresli();
 
 } catch (e) {
-    document.getElementById('chyba').innerHTML =
-        `<div class="chyba"><b>Listy se nevykreslily.</b><br>${esc(e.message)}</div>`;
-    document.getElementById('stav').textContent = 'Chyba';
+    $('#chyba').innerHTML = `<div class="chyba"><b>${t('tisk.chyba')}</b><br>${esc(e.message)}</div>`;
+    $('#stav').textContent = t('tisk.stavChyba');
 }

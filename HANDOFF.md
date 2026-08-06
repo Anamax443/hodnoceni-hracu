@@ -2,6 +2,42 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (3) — NASAZENO do cloudu + frontpage (čas, commit, dark/light, CS/EN)
+
+**Živě na https://hodnoceni-hracu.bass443.workers.dev**
+
+**Hotové:**
+
+- D1 `hodnoceni-hracu` (EEUR, id `8fe85587-7409-4b95-83f3-d23f340aa2ad`), schéma nahrané,
+  secrety `ADMIN_HESLO` a `SESSION_KEY` nastavené, Worker i statické soubory nasazené.
+- **Horní lišta na každé stránce:** čas, commit běžící verze (celý hash v tooltipu),
+  přepínač tmavý/světlý vzhled, přepínač CS/EN. Volby se pamatují v `localStorage`.
+- **Kompletní překlad CS/EN** — `web/src/i18n.js`, včetně popisů os, kotev škály, formulací
+  v první osobě a celého tištěného listu. Jazyk jde vynutit adresou `?lang=en`.
+- **Verze do buildu** — `scripts/gen-version.mjs` běží jako `predeploy`, zapisuje commit
+  do `web/version.json`, aplikace ho čte přes `/api/version`.
+- Server přestal vracet texty: posílá klíče (`prava`, `hrac`, `minule`) a překládá prohlížeč.
+  Přepnutí jazyka proto nic nedotahuje z databáze.
+- Bezpečnostní drobnosti pro veřejnou adresu: prodleva 700 ms u špatného hesla,
+  `preview_urls: false`.
+
+**Ověřeno naživo proti nasazené aplikaci:** 48 API testů (0 chyb), vykreslení listů z ostrých
+dat česky i anglicky, headless prohlížeč na `/` i `/h/<token>` v obou jazycích. Detaily
+v `known_good.md`.
+
+**Databáze je prázdná.** Testovací data byla po ověření smazána, kádr se zadává v aplikaci
+v záložce Lidé. `migrations/002_seed.sql` je proto schválně prázdný (jen zakomentovaná šablona).
+
+**Zbývá:**
+
+1. Zadat reálný kádr (19 hráčů) v záložce Lidé.
+2. Odhodnotit, rozeslat odkazy na sebehodnocení, projít Porovnání, vytisknout.
+3. Navěsit vlastní doménu pod maxferit.cz (custom domain u Workeru, DNS je na stejném účtu).
+
+**Otevřená otázka:** mají mít k listu přístup rodiče, nebo jen hráči?
+
+---
+
 ## 2026-08-06 (2) — aplikace: fáze 2 + 3 hotové, ověřené lokálně
 
 **Hotové:**

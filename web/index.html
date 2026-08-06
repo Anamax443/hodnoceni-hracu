@@ -3,41 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hodnocení hráčů — trenér</title>
+<title>Hodnocení hráčů</title>
 <link rel="stylesheet" href="app.css">
+<script>
+    /* Vzhled se nastaví dřív, než se stránka vykreslí — jinak by při tmavém
+       vzhledu problikla bílá. Zbytek ovládá app.js. */
+    (function () {
+        var t;
+        try { t = localStorage.getItem('hodnoceni.theme'); } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+    })();
+</script>
 </head>
 <body>
 
+<header class="topbar">
+    <span class="brand" id="hl-klub">⚽</span>
+    <span class="app" id="hl-app"></span>
+    <span class="obdobi" id="hl-obdobi"></span>
+    <span class="tools">
+        <span class="hodiny" id="hodiny"></span>
+        <span class="verze" id="verze"></span>
+        <button id="jazykBtn"></button>
+        <button id="themeBtn"></button>
+        <button id="odhlasit" hidden></button>
+    </span>
+</header>
+
 <div id="prihlaseni" hidden>
     <div class="karta login">
-        <h2>Hodnocení hráčů</h2>
-        <p class="popis">Přístup pro trenéra.</p>
+        <h2 id="login-nadpis"></h2>
+        <p class="popis" id="login-popis"></p>
         <div class="pole">
-            <label for="heslo">Heslo</label>
+            <label for="heslo" id="login-heslo-label"></label>
             <input type="password" id="heslo" autocomplete="current-password">
         </div>
-        <button class="hl" id="prihlasit" title="Přihlásí trenéra na 12 hodin">Přihlásit</button>
+        <button class="hl" id="prihlasit"></button>
         <div id="prihlaseni-chyba"></div>
     </div>
 </div>
 
 <div id="aplikace" hidden>
-    <header>
-        <span class="klub" id="hl-klub">SK ŘÍČMANICE</span>
-        <span>Hodnocení hráčů</span>
-        <span class="obdobi" id="hl-obdobi"></span>
-        <button id="odhlasit" title="Ukončí přihlášení trenéra">Odhlásit</button>
-    </header>
-
     <nav id="zalozky">
-        <button data-z="lide"      class="aktivni" title="Kdo je v týmu — hráči a trenéři">Lidé</button>
-        <button data-z="hodnotit"  title="Zadání hodnocení hráče trenérem">Hodnotit</button>
-        <button data-z="listy"     title="Tiskové listy A4 sestavené z databáze">Listy</button>
-        <button data-z="porovnani" title="Kde se rozchází pohled trenéra a hráče">Porovnání</button>
-        <button data-z="odkazy"    title="Odkazy na sebehodnocení pro hráče">Odkazy</button>
-        <button data-z="nastaveni" title="Tolerance, období, hlavička listu">Nastavení</button>
+        <button data-z="lide" class="aktivni"></button>
+        <button data-z="hodnotit"></button>
+        <button data-z="listy"></button>
+        <button data-z="porovnani"></button>
+        <button data-z="odkazy"></button>
+        <button data-z="nastaveni"></button>
     </nav>
-
     <main id="obsah"></main>
 </div>
 

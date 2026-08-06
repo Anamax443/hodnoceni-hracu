@@ -4,14 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hodnotící listy — tisk</title>
-<!-- Vlastní stránka schválně: tiskový styl si nemá lézt do zelí s aplikací. -->
+<!-- Vlastní stránka schválně: papír je vždy světlý, i když má aplikace
+     tmavý vzhled. Tiskový styl si tak nemá s aplikací co lézt do zelí. -->
 <link rel="stylesheet" href="src/styl.css">
 </head>
 <body>
 
 <div class="toolbar noprint">
-    <span class="stav" id="stav">Načítám…</span>
-    <button onclick="window.print()" title="Otevře dialog tisku. Jeden hráč = jedna stránka A4. Zapni „Grafika na pozadí".">🖨️ Vytisknout</button>
+    <span class="stav" id="stav"></span>
+    <span class="nastroje">
+        <span class="verze" id="verze"></span>
+        <button class="vedlejsi" id="jazykBtn"></button>
+        <button id="tisk"></button>
+    </span>
 </div>
 
 <div id="chyba"></div>

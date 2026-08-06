@@ -41,14 +41,17 @@ hodnoceni-hracu/
 ├── wrangler.jsonc         konfigurace Workeru, assets a D1
 ├── package.json           skripty: dev, deploy, db:init, db:seed, db:export
 ├── worker/src/index.ts    API, autorizace, přístup k D1 — veškerá logika serveru
+├── scripts/gen-version.mjs  zapíše commit hash do web/version.json (predeploy)
 ├── web/                   statické soubory (obsluhuje je Worker)
 │   ├── index.html         aplikace trenéra (záložky)
 │   ├── app.js             logika aplikace
-│   ├── app.css            styl aplikace
+│   ├── app.css            styl aplikace včetně tmavého vzhledu
 │   ├── listy.html/.js     tiskové listy A4 z databáze (vlastní stránka)
 │   ├── h.html/.js         sebehodnocení hráče za tokenem
+│   ├── version.json       generovaný, v .gitignore
 │   └── src/
-│       ├── sablony.js     osy, kotvy škály, formulace v 1. osobě, validace  ← sdílí Worker
+│       ├── sablony.js     klíče os + validace hodnot  ← sdílí Worker
+│       ├── i18n.js        všechny texty česky a anglicky
 │       ├── radar.js       vykreslení SVG (převzato z docs/vzor-list.html)
 │       ├── list.js        sestavení A4 listu
 │       └── styl.css       styl listu včetně @page / @media print
@@ -60,6 +63,9 @@ hodnoceni-hracu/
 
 `web/src/sablony.js` importuje frontend i Worker — definice os je na jednom místě. Ostatní
 soubory ve `web/src/` používá jen prohlížeč.
+
+**Server texty nevrací.** API posílá klíče (`prava`, `hrac`, `minule`) a překládá až
+prohlížeč. Díky tomu se po přepnutí jazyka jen překreslí a nic se znovu netahá z databáze.
 
 Tiskové listy mají **vlastní stránku** (`listy.html`), protože `src/styl.css` nastavuje
 `body` pro A4. V aplikaci by si styly lezly do zelí.
@@ -79,6 +85,38 @@ Rozhodnuto: jedno admin heslo jako Worker secret + podepsaná session cookie (za
   a `/api/self/*` vyžaduje platnou session; při 401 se aplikace vrátí na přihlášení
 
 Hráč se nepřihlašuje vůbec — jeho přístup je jednorázový token v odkazu.
+
+Aplikace je na veřejné adrese a chrání data nezletilých, proto navíc:
+
+- **prodleva 700 ms u špatného hesla** — hádání hesla ve smyčce je tím nepraktické
+- **náhledové URL jednotlivých verzí vypnuté** (`preview_urls: false` ve `wrangler.jsonc`),
+  aby existovala jediná veřejná adresa
+
+---
+
+## 3b. Vzhled, jazyk a verze
+
+**Tmavý / světlý vzhled.** Atribut `data-theme` na `<html>`, volba v `localStorage`
+(`hodnoceni.theme`). Výchozí je systémové nastavení (`prefers-color-scheme`). Vzhled se
+nastavuje malým skriptem v `<head>` ještě před vykreslením — jinak by při tmavém vzhledu
+problikla bílá. Barvy jsou CSS proměnné v `app.css`, tmavá varianta je jen jejich přepis.
+
+**Tištěný list zůstává vždy světlý.** `listy.html` načítá pouze `src/styl.css` a o tmavém
+vzhledu nic neví. Je to papír, ne obrazovka.
+
+**Čeština a angličtina.** Všechny texty jsou v `web/src/i18n.js`, v kódu se používá
+`t('klic')`. Volba se pamatuje v `localStorage` (`hodnoceni.lang`), výchozí podle jazyka
+prohlížeče. Jazyk jde vynutit i adresou: `?lang=en` — hodí se pro poslání odkazu.
+Chybějící klíč se vypíše sám sebou, aby bylo hned vidět, co chybí.
+
+Klíče os se nepřekládají (jsou to klíče v databázi), překládají se jen jejich popisy.
+Ke každé ose je navíc věta v první osobě (`ja.*`) pro formulář hráče.
+
+**Verze.** `scripts/gen-version.mjs` zapíše před každým nasazením commit hash, větev a čas
+do `web/version.json` (soubor je v `.gitignore`). Aplikace ho čte přes `/api/version` a ukazuje
+v horní liště; celý hash a čas sestavení jsou v tooltipu. Na nasazené aplikaci je tak vidět,
+která verze běží. Odkaz na GitHub v produktu není — repozitář je private, uživatelům by
+nefungoval.
 
 ---
 
@@ -197,6 +235,7 @@ Věta „zhoršil ses" nepatří na papír, který si čtrnáctiletý odnese dom
 
 ```
 GET    /health                                    {status, module, timestamp}
+GET    /api/version                               {commit, commitFull, branch, builtAt}
 
 POST   /api/login          {heslo}                nastaví session cookie
 POST   /api/logout
@@ -221,11 +260,15 @@ GET    /api/tokens?obdobi=                        admin
 POST   /api/tokens         {player_id?, obdobi, dni}   admin
 DELETE /api/tokens/:token                         admin
 
-GET    /api/self/:token                           veřejné — jméno + osy, NIC od trenéra
+GET    /api/self/:token                           veřejné — jméno + klíče os, NIC od trenéra
 POST   /api/self/:token    {hodnoty, poznamka}    veřejné — uloží autor='hrac', token zneplatní
 ```
 
 `porovnani` = `minule` | `hrac` | `zadne`, `ids` = `vse` nebo seznam id oddělený čárkami.
+
+Odpovědi nesou klíče, ne texty: `/api/self` vrací `osy: ['prava', …]`, `/api/listy` vrací
+`porovnaniRezim` a `porovnaniObdobi` místo hotového popisku, `/api/trend` vrací počty
+`nahoru` / `dolu` / `stejne` místo věty. Popisky skládá prohlížeč podle zvoleného jazyka.
 
 ### Bezpečnostní pravidla
 
