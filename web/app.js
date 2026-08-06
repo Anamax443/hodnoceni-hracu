@@ -773,6 +773,7 @@ async function nastaveni(kam) {
         cil.innerHTML = `
             <div class="hlaska ${prijemci ? 'info' : 'pozor'}">
                 ${t('notif.ceka', s.ceka)}<br>
+                ${t('notif.hodiny', s.hodinaTed, s.hodinaCil)}<br>
                 ${t('notif.posledni', s.posledni ? new Date(s.posledni).toLocaleString(locale()) : t('notif.nikdy'))}<br>
                 ${prijemci ? t('notif.prijemci', esc(prijemci)) : t('notif.bezPrijemcu')}<br>
                 <b>${t('notif.kanaly')}:</b> Telegram — ${esc(k.telegram.popis)} · e-mail — ${esc(k.email.popis)}

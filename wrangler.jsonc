@@ -43,15 +43,14 @@
         "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz"
     },
 
-    // Souhrnné notifikace potřebují cron. VYPNUTO: účet je na Workers Free
-    // a ten dovolí 5 cron triggerů na celý účet — a ty jsou vyčerpané
-    // (job-watch, pojistky-watch, sk-ricmanice-taktika a další).
-    // Deploy s tímhle řádkem skončí na chybě 10072.
+    // Souhrnné notifikace. Běží každou hodinu, protože Cloudflare umí jen UTC,
+    // kdežto čas se nastavuje v aplikaci v místním čase — která hodina je ta
+    // správná, rozhodne Worker sám (Europe/Prague).
     //
-    // Až bude cron k dispozici (Workers Paid, nebo se jeden uvolní), stačí
-    // odkomentovat — logika rozesílky ve scheduled() je hotová a otestovaná
-    // přes tlačítko „Poslat souhrn teď".
-    // "triggers": { "crons": ["0 * * * *"] },
+    // Pozor: Workers Free dovolí 5 cron triggerů na CELÝ účet. Tenhle slot se
+    // uvolnil vypnutím denního běhu pojistky-watch (2026-08-06). Další cron
+    // na účtu skončí na chybě 10072.
+    "triggers": { "crons": ["0 * * * *"] },
 
     "observability": { "enabled": true },
 

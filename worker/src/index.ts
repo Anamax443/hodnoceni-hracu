@@ -736,6 +736,11 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         return json({
             ceka: ceka?.pocet ?? 0,
             posledni: nas.notifPosledni || null,
+            // Ať je vidět, že Worker počítá s pražským časem a ne s UTC —
+            // jinak by se chyba poznala až tím, že souhrn nedorazí.
+            hodinaTed: prazskaHodina(new Date()),
+            hodinaCil: Number((nas.notifCas || '19:00').split(':')[0]),
+            cronZapnuty: true,
             prijemci: (prijemci ?? []).map(p => ({
                 jmeno: p.jmeno,
                 kanaly: [p.notif_telegram ? 'Telegram' : null, p.notif_email ? 'e-mail' : null].filter(Boolean)
