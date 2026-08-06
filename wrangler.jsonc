@@ -30,8 +30,17 @@
     // příjemce, jinak E_RECIPIENT_NOT_ALLOWED.
     "send_email": [{ "name": "EMAIL" }],
 
+    // Vlastní doména. Zóna maxferit.cz je na stejném účtu, takže si Cloudflare
+    // DNS záznam založí sám. workers.dev adresa zůstává funkční jako záloha.
+    "routes": [
+        { "pattern": "hodnoceni.maxferit.cz", "custom_domain": true }
+    ],
+
     "vars": {
-        "EMAIL_FROM": "hodnoceni@maxferit.cz"
+        "EMAIL_FROM": "hodnoceni@maxferit.cz",
+        // Používá se v odkazech uvnitř notifikací — ty vznikají v cronu,
+        // kde není žádný request, ze kterého by šla adresa odvodit.
+        "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz"
     },
 
     // Souhrnné notifikace potřebují cron. VYPNUTO: účet je na Workers Free

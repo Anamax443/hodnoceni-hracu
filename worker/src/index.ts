@@ -26,6 +26,7 @@ export interface Env {
     EMAIL_FROM?: string;
     OBNOVA_EMAILY?: string;    // čárkami oddělené adresy, na které smí jít obnova hesla
     TELEGRAM_BOT_TOKEN?: string;
+    ZAKLADNI_URL?: string;     // adresa do odkazů v notifikacích (cron nemá request)
 }
 
 const MODUL = 'hodnoceni-hracu';
@@ -502,7 +503,7 @@ export default {
        podle času v Nastavení (v pražské zóně). Cloudflare umí jen UTC. */
     async scheduled(_udalost: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
         ctx.waitUntil((async () => {
-            const zpravy = await rozesliSouhrn(env, 'https://hodnoceni-hracu.bass443.workers.dev');
+            const zpravy = await rozesliSouhrn(env, env.ZAKLADNI_URL || 'https://hodnoceni.maxferit.cz');
             for (const z of zpravy) console.log('Souhrn:', z);
         })());
     }
