@@ -5,7 +5,61 @@ Nový záznam nahoru.
 
 ---
 
-## 2026-08-06 (2) — aplikace nad D1, fáze 2 + 3
+## 2026-08-06 (3) — NASAZENO: Cloudflare Worker + D1, frontpage CS/EN + vzhled + verze
+
+**Commit:** `5c1d62e58f3c4dfa218b7659d9a2bba26fb847fd`
+**Adresa:** https://hodnoceni-hracu.bass443.workers.dev
+**Prostředí:** Cloudflare Worker, D1 `hodnoceni-hracu` (EEUR, `8fe85587-7409-4b95-83f3-d23f340aa2ad`),
+wrangler 4.119.0.
+
+### Co bylo ověřeno — proti běžící produkci, ne lokálně
+
+**48 API testů, 0 chyb.** Stejná sada jako u předchozího záznamu, spuštěná proti nasazené
+aplikaci přes HTTPS. Nad rámec minula ověřeno:
+
+| Kontrola | Výsledek |
+|---|---|
+| session cookie přes HTTPS | `HttpOnly` + `SameSite=Lax` + **`Secure`** |
+| `/api/self` vrací jen klíče os, ne texty | ANO (`osy: ['prava', …]`) |
+| `/api/listy` vrací `porovnaniRezim`, ne hotový popisek | ANO |
+| znaménko rozdílu a `pocetResit` | +3 u levé nohy, 1 osa k řešení |
+| `/health`, `/api/version` | odpovídají, `cisto: true` |
+
+**Tiskové listy z ostrých dat, česky i anglicky** (Node, `web/src/list.js`, data z živého API) —
+0 chyb: jedna stránka a jeden graf na hráče, správný počet polygonů, přeložený nadpis, bloky,
+kotvy škály i legenda, **žádná šipka trendu na listu hráče**, **žádné jméno jiného hráče**,
+escapovaný ampersand z komentáře trenéra.
+
+**Headless prohlížeč proti živé adrese:**
+
+| Stránka | Výsledek |
+|---|---|
+| `/?lang=cs` | Hodnocení hráčů · Heslo · Přihlásit · záložky Lidé/Hodnotit/Listy/Porovnání/Odkazy/Nastavení |
+| `/?lang=en` | Player evaluation · Password · Sign in · People/Evaluate/Sheets/Comparison/Links/Settings |
+| horní lišta | čas `6. 8. 07:44:03`, `verze 2a88150`, tlačítka vzhledu a jazyka, `data-theme="light"`, `<html lang>` se mění |
+| `/h/<token>?lang=cs` | „Ahoj Vzorák", 6 os / 60 tlačítek, „Chytání a zákroky", věta v 1. osobě, otevřená otázka |
+| `/h/<token>?lang=en` | „Hi Vzorák", „Shot stopping", „I stop the shot and hold on to the ball.", „What do you want to work on?" |
+| oba jazyky `/h/` | **nic z hodnocení trenéra**, žádná chybová hláška |
+
+**Chyba nalezená a opravená při ověřování:** `/api/version` se držel na edge (`cf-cache-status: HIT`)
+a po nasazení ještě chvíli hlásil předchozí commit — tedy přesně to, proti čemu ta lišta je.
+Opraveno `cache-control: no-store`; po opravě lišta ukazuje `5c1d62e` hned po nasazení.
+
+**Stav databáze po ověření:** testovací data smazána, `players` / `evaluations` / `tokens`
+prázdné, `tolerance = 2`. Aplikace čeká na reálný kádr.
+
+### Co ověřeno NEBYLO
+
+- **Proklikání admin obrazovek člověkem** — API, vykreslování listů a obě jazykové mutace
+  ověřeny automaticky, ale záložky Lidé, Hodnotit, Porovnání, Odkazy a Nastavení nikdo
+  neproklikal myší.
+- **Fyzický tisk na papír** — zalomení stránek na reálné tiskárně a grafika na pozadí.
+- **Druhé období** — trend se šipkami je naprogramovaný, na reálných datech nevyzkoušený.
+- **Vlastní doména** pod maxferit.cz — zatím jen `*.workers.dev`.
+
+---
+
+## 2026-08-06 (2) — aplikace nad D1, fáze 2 + 3 (lokálně)
 
 **Commit:** `1bb0f44e970a8fad430ed4c717b99e01caeb9791`
 **Prostředí:** `npm run dev` (wrangler 4.119.0, Node v24.13.1), lokální D1, Windows 11.
