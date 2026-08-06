@@ -4,20 +4,25 @@ Co se dělá pravidelně a co dělat, když něco nesedí.
 
 **Adresa:** https://hodnoceni.maxferit.cz
 (záloha: `https://hodnoceni-hracu.bass443.workers.dev`)
-**Heslo trenéra:** v repozitáři není. Mění se v aplikaci — **Nastavení → Změna hesla**.
+**Přihlášení:** každý trenér má svoje jméno (`maxla`, `julek`, `maso`) a svoje heslo.
+Hesla nejsou v repozitáři ani v secretech — jsou to hashe u řádku v `players`.
 
-**Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo* → zadat adresu →
-přijde jednorázový odkaz (platí 15 minut, funguje jednou). Odkaz chodí jen na adresy
-v secretu `OBNOVA_EMAILY`; teď je tam `maxla@seznam.cz`. Nová adresa musí být nejdřív
-ověřená v Cloudflare (Email Routing → destination addresses), pak
-`npx wrangler secret put OBNOVA_EMAILY`.
+**Zapomenuté heslo:** na přihlašovací stránce *Zapomenuté heslo* → přihlašovací jméno →
+odkaz přijde na Telegram nebo e-mail toho člověka (platí 15 minut, funguje jednou).
 
-**Když se ztratí heslo i přístup k té schránce:**
+**Nový trenér / trenér bez hesla:** Lidé → vyplnit přihlašovací jméno a Telegram/e-mail →
+Uložit → *Poslat odkaz na nastavení hesla*.
+
+**Přechodné společné heslo** (prázdné přihlašovací jméno) zatím platí, aby nešlo vyzamknout
+celý tým. Až budou mít všichni svůj účet, zrušit:
 
 ```powershell
 npx wrangler d1 execute hodnoceni-hracu --remote --command="DELETE FROM auth"
-npx wrangler secret put ADMIN_HESLO
 ```
+
+**Nouzové odemčení, když se ztratí všechno:** nastavit heslo přímo do řádku nejde (je hashované),
+ale jde vrátit společné heslo — `DELETE FROM auth` a pak `npx wrangler secret put ADMIN_HESLO`;
+po přihlášení rozeslat trenérům nové odkazy.
 
 ---
 
@@ -67,6 +72,11 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | aplikace je celá anglicky | jazyk prohlížeče nebo dřívější volba | tlačítko **Čeština** v horní liště, nebo adresa s `?lang=cs` |
 | po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
 | hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
+| „Tenhle účet ještě nemá nastavené heslo" | trenér má login, ale heslo si nenastavil | Lidé → *Poslat odkaz na nastavení hesla* |
+| souhrn nechodí | vypnutý, nikdo nemá kanál, nebo neuplynul interval | Nastavení → stav rozesílky to napíše; *Poslat souhrn teď* obejde interval |
+| Telegram: „chat not found" | trenér botovi nikdy nenapsal, nebo špatné chat id | ať napíše `@skricmanice_bot`, pak Lidé → *Dotáhnout chat id* |
+| e-mail: `E_RECIPIENT_NOT_ALLOWED` | adresa není ověřená destination address | ověřit v Cloudflare (Email Routing) |
+| e-mail: `E_SENDER_NOT_VERIFIED` | doména odesílatele není onboardovaná | Cloudflare → Email Service → Email Sending |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
 
@@ -115,7 +125,8 @@ a aplikace pracuje s tím posledním. Původní zůstane v historii, což je zá
 - Odkaz na sebehodnocení posílat jen konkrétnímu hráči — kdo odkaz má, může vyplnit za něj.
 - Hodnocení jednoho hráče se nikdy neukazuje jinému.
 - Zálohy (`zaloha*.sql`) neukládat na sdílené disky.
-- Admin heslo je jedno společné. Když se změní tým trenérů, změň heslo
-  (`npx wrangler secret put ADMIN_HESLO`).
+- Každý trenér má vlastní heslo. Když někdo z týmu odejde, stačí ho v Lidech
+  deaktivovat — tím se přestane moct přihlásit.
+- Notifikace nesou jen „kdo a co". Známky ani slovní bloky do Telegramu a e-mailu nepatří.
 - Aplikace je na veřejné adrese. Špatné heslo má 700ms prodlevu, aby hádání ve smyčce
   nebylo praktické; náhledová URL jednotlivých verzí jsou vypnutá.

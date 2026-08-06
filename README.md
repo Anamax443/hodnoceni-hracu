@@ -20,6 +20,26 @@ Metodicky vychází z **FA Four Corner Model**: technicko-taktický roh se znám
 zbylé tři rohy (Fyzicky / Hlavou / V partě) jsou slovní bloky **bez čísel**. Povahové vlastnosti
 se nikdy neznámkují.
 
+## Co umí
+
+| | |
+|---|---|
+| **Lidé** | kádr a trenéři; u hráče **N pozic** (levý bek i křídlo i brankář), u trenéra účet a notifikační kanály |
+| **Hodnotit** | 6 os po 1–10, tři slovní bloky, 2–3 cíle; **šestice os se vybírá u hodnocení** |
+| **Listy** | tiskové A4 z databáze, druhý polygon volitelně (trenér minule / sebehodnocení / žádný) |
+| **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, vývoj v čase se šipkami |
+| **Odkazy** | jednorázové odkazy na sebehodnocení, nesou i šablonu os |
+| **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace |
+| **Notifikace** | souhrn na Telegram a e-mail; zvlášť interval „když se něco děje" a „když se nic neděje" |
+
+Účty jsou **po lidech**: každý trenér má přihlašovací jméno a vlastní heslo, obnova chodí
+na jeho vlastní kanál.
+
+V horní liště je čas, commit běžící verze, přepínač **tmavého/světlého** vzhledu a přepínač
+**CS/EN**. Volba se pamatuje; jazyk jde vynutit i odkazem `?lang=en`.
+
+Tištěný list je vždy světlý, i když má aplikace tmavý vzhled — je to papír, ne obrazovka.
+
 ## Stav
 
 | Fáze | Obsah | Stav |
@@ -29,7 +49,10 @@ se nikdy neznámkují.
 | 3 | Odkazy + sebehodnocení + porovnání s tolerancí | **nasazeno** |
 | 4 | Historie a trendy | šipky u os hotové, plný pohled až s druhým obdobím |
 
-Databáze je prázdná a čeká na kádr. Lidé se zadávají v aplikaci v záložce **Lidé**.
+Nad rámec zadání: účty po lidech, obnova hesla, souhrnné notifikace, vlastní doména, CS/EN,
+tmavý vzhled. V backlogu SMS jako třetí kanál — viz [docs/TECHNICAL.md](docs/TECHNICAL.md) §9b.
+
+**Kádr je nahraný** (19 hráčů + 3 trenéři), hodnocení zatím žádné.
 
 ## Stack
 
@@ -46,16 +69,12 @@ Frontend nikdy nesahá do D1 přímo a veškerá autorizace je ve Workeru. Žád
 
 | Cesta | Kdo | Co |
 |---|---|---|
-| `/` | trenér (heslo) | Lidé, Hodnotit, Listy, Porovnání, Odkazy, Nastavení |
+| `/` | trenér (jméno + heslo) | Lidé, Hodnotit, Listy, Porovnání, Odkazy, Nastavení |
 | `/listy.html` | trenér | tiskové listy A4 sestavené z databáze |
 | `/h/<token>` | hráč | sebehodnocení přes jednorázový odkaz |
+| `/obnova/<token>` | trenér | nastavení nového hesla za jednorázovým odkazem |
 | `/health` | kdokoliv | `{status, module, timestamp}` |
 | `/api/version` | kdokoliv | commit a čas sestavení běžící verze |
-
-V horní liště je čas, commit běžící verze, přepínač **tmavého/světlého** vzhledu a přepínač
-**CS/EN**. Volba se pamatuje; jazyk jde vynutit i odkazem: `?lang=en`.
-
-Tištěný list je vždy světlý, i když má aplikace tmavý vzhled — je to papír, ne obrazovka.
 
 ## Nasazení a provoz
 
@@ -64,15 +83,15 @@ npm install
 npm run deploy      # predeploy zapíše commit hash do web/version.json
 ```
 
-Secrety (`ADMIN_HESLO`, `SESSION_KEY`) jsou uložené jako Worker secrets, ne v repozitáři.
-Postup od nuly a změna hesla viz [docs/BUILD.md](docs/BUILD.md) a [docs/RUNBOOK.md](docs/RUNBOOK.md).
+Secrety jsou Worker secrets, ne součást repozitáře. Postup od nuly viz
+[docs/BUILD.md](docs/BUILD.md), běžný provoz [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 
 ## Dokumentace
 
 - [docs/README.md](docs/README.md) — **uživatelská**: jak hodnotit, tisknout a vést rozhovor
-- [docs/TECHNICAL.md](docs/TECHNICAL.md) — architektura, datový model, API, funkční pravidla
+- [docs/TECHNICAL.md](docs/TECHNICAL.md) — architektura, datový model, API, funkční pravidla, backlog
 - [docs/BUILD.md](docs/BUILD.md) — jak postavit a nasadit od nuly (výrobní)
 - [docs/RUNBOOK.md](docs/RUNBOOK.md) — provoz: co dělat, když
 - [docs/ZADANI.md](docs/ZADANI.md) — původní zadání projektu
@@ -86,4 +105,5 @@ Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 hráčů, známky a slovní posudky. V repozitáři samotném žádná osobní data nejsou — kádr se
 zadává až v běžící aplikaci.
 
-Vytištěné listy patří hráči. Do rukou jiných hráčů nebo na nástěnku ne.
+Notifikace nesou jen „kdo a co", nikdy obsah hodnocení. Vytištěné listy patří hráči.
+Do rukou jiných hráčů nebo na nástěnku ne.

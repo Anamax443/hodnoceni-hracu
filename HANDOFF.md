@@ -2,6 +2,28 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (9) — dokumentace srovnaná, cron potvrzený, SMS do backlogu
+
+- Celá dokumentace projita a srovnána se skutečností: README, uživatelská příručka,
+  TECHNICAL, BUILD (secrety + pořadí migrací), RUNBOOK, known_good (doplněny záznamy
+  o ověření pozic, notifikací a účtů).
+- **Cron je uvolněný a běží** — slot dal `pojistky-watch`, deploy hlásí `schedule: 0 * * * *`.
+  V TECHNICAL opraveno tvrzení „cron je vypnutý", které už nebyla pravda.
+- **SMS jako třetí kanál** zapsána do backlogu (TECHNICAL §9b) — nestaví se teď.
+  Poznámky: cenu neřešit (desetikoruny měsíčně), providera jako přepínač, v dev režimu
+  `console` provider, Twilio trial na ověřená čísla, BulkGate/GoSMS jako české alternativy,
+  tabulka v D1 + rate limit jako u obnovy hesla.
+
+**Zbývá:**
+
+1. Zadat hodnocení (aplikace je připravená, kádr nahraný, hodnocení zatím žádné).
+2. Julek a Maso nemají heslo ani kanál — až budou mít Telegram nebo ověřený e-mail,
+   poslat pozvánku z Lidí. Pak zrušit společné heslo (`DELETE FROM auth`).
+3. Doplnit pozice zbylým hráčům (má je zatím jen Ferda).
+4. SMS kanál — viz backlog.
+
+---
+
 ## 2026-08-06 (8) — účty po lidech, přezdívky, favicon
 
 **Účty po lidech** (migrace `007_ucty.sql`): každý trenér má `login` a vlastní heslo

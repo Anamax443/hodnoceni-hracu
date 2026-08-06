@@ -44,15 +44,27 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 
 ## 3. Přihlášení
 
-Aplikace běží na **https://hodnoceni.maxferit.cz**. Zadáš heslo trenéra,
-přihlášení platí 12 hodin. Heslo je jedno společné — kdo ho má, vidí všechno.
+Aplikace běží na **https://hodnoceni.maxferit.cz**. Přihlášení platí 12 hodin.
+
+**Každý trenér má svůj účet.** Zadáš svoje **přihlašovací jméno** (`maxla`, `julek`, `maso`)
+a svoje heslo. V záhlaví je pak vidět, kdo je přihlášený.
 
 **Změna hesla:** Nastavení → Změna hesla (stávající + nové dvakrát, aspoň 10 znaků).
+Měníš si vždycky jen svoje.
 
-**Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo*. Napíšeš adresu
-a přijde na ni odkaz, kterým si nastavíš nové. Odkaz platí 15 minut a funguje jen jednou;
-heslo se mailem nikdy neposílá. Chodí jen na adresu, která je pro obnovu povolená — když
-tam potřebuješ přidat další, řekni si, nastavuje se to mimo aplikaci.
+**Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo*. Napíšeš svoje
+přihlašovací jméno a odkaz na nastavení nového hesla ti přijde **na tvůj Telegram nebo
+e-mail** — podle toho, co máš u sebe vyplněné. Odkaz platí 15 minut a funguje jen jednou.
+Heslo se zprávou nikdy neposílá; kdyby ti zpráva někam unikla, zůstalo by v ní navždy.
+
+Odpověď je vždycky stejná, i když jméno neexistuje — schválně, ať se nedá zkoušet, kdo
+v aplikaci účet má.
+
+**Nový trenér:** v Lidech mu vyplň přihlašovací jméno a Telegram nebo e-mail, ulož a klikni
+na *Poslat odkaz na nastavení hesla*. Heslo si nastaví sám, nemusíš mu ho diktovat.
+
+> Přechodně funguje i staré společné heslo — přihlašovací jméno necháš prázdné. Zůstalo tam,
+> aby se nedal vyzamknout celý tým, než budou mít všichni svoje. Až to nastane, dá se zrušit.
 
 ### Horní lišta
 
@@ -156,6 +168,31 @@ Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 - **Období** — například „2025/2026 zima". Podle něj se páruje tvoje hodnocení
   se sebehodnocením hráče. Před novým kolem ho přepiš.
 - **Sezóna, klub, kategorie, laťka, nadpis nad cíli** — text do hlavičky a patičky listu
+- **Změna hesla** — svého vlastního
+- **Souhrnné notifikace** — viz níž
+
+### Notifikace
+
+Aplikace umí poslat souhrn na **Telegram** nebo **e-mail**. Zapíná se u konkrétního trenéra
+v Lidech, ne globálně — kdo nic nezapne, nedostane nic.
+
+Nastavují se dva **nezávislé** intervaly:
+
+- **Když se něco děje** — souhrn nejvýš jednou za N dní (výchozí 3). Změny se nasčítají do
+  jedné zprávy. Ne zpráva za každé odeslané sebehodnocení; při 19 hráčích by to byl spam.
+- **Když se nic neděje** — po N dnech (výchozí 14) přijde zpráva *„nic se nezměnilo"*.
+  Vypadá to zbytečně, ale není: bez ní nepoznáš rozdíl mezi „nikdo nic nedělá" a „aplikace
+  je rozbitá". Zpráva to říká výslovně.
+
+Do zprávy **nikdy nejde obsah hodnocení** — jen kdo a co, plus stav období. Známky ani slovní
+bloky do Telegramu a e-mailu nepatří. Detail se otevře v aplikaci.
+
+Tlačítko *Poslat souhrn teď* odešle souhrn okamžitě, bez ohledu na nastavený čas.
+
+**Telegram:** trenér musí botovi (`@skricmanice_bot`) jednou napsat — Telegram nedovolí, aby
+bot oslovil člověka první. Pak v Lidech klikneš na *Dotáhnout chat id z Telegramu* a vybereš ho.
+
+**E-mail:** adresa musí být předem ověřená v Cloudflare, jinak odeslání selže. Řekni si.
 
 ---
 

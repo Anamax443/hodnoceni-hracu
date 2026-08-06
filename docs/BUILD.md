@@ -39,6 +39,24 @@ npx wrangler d1 create hodnoceni-hracu
 npm run db:init
 ```
 
+Migrace se pouštějí **v pořadí**; `db:init` aplikuje jen `001`. Zbytek ručně:
+
+| Soubor | Co přidává |
+|---|---|
+| `001_init.sql` | základní schéma (players, evaluations, tokens, settings) |
+| `002_seed.sql` | prázdný — kádr se zadává v aplikaci |
+| `003_auth.sql` | společné heslo v DB + tabulka `obnova` |
+| `004_pozice.sql` | N pozic u hráče, šablona na tokenu |
+| `005_notifikace.sql` | kanály u osoby, tabulka `udalosti` |
+| `006_notif_intervaly.sql` | dva intervaly místo „jak často" |
+| `007_ucty.sql` | účty po lidech (login + vlastní heslo) |
+
+```powershell
+foreach ($f in Get-ChildItem migrations\*.sql | Sort-Object Name) {
+  npx wrangler d1 execute hodnoceni-hracu --remote --file=$($f.FullName)
+}
+```
+
 `npm run db:seed` je schválně prázdný — kádr se zadává v aplikaci v záložce **Lidé**,
 aby v nasazené aplikaci nezůstali smyšlení lidé, které přes UI nejde smazat.
 Kdo chce nahrát kádr hromadně, odkomentuje si šablonu v `migrations/002_seed.sql`.
@@ -47,18 +65,25 @@ Kdo chce nahrát kádr hromadně, odkomentuje si šablonu v `migrations/002_seed
 
 Dva, oba povinné a oba už nastavené:
 
-| Secret | K čemu |
-|---|---|
-| `ADMIN_HESLO` | **jen první přihlášení**, než se heslo poprvé nastaví z aplikace |
-| `SESSION_KEY` | podpis session cookie; 32+ náhodných bajtů |
-| `OBNOVA_EMAILY` | adresy oddělené čárkou, kam smí přijít odkaz na obnovu hesla |
+| Secret | K čemu | Povinný |
+|---|---|---|
+| `SESSION_KEY` | podpis session cookie; 32+ náhodných bajtů | ano |
+| `ADMIN_HESLO` | přechodné **společné** heslo (prázdné přihlašovací jméno) | ano, než mají všichni svůj účet |
+| `TELEGRAM_BOT_TOKEN` | bot pro notifikace a odkazy na obnovu hesla | jen pro Telegram |
+| `OBNOVA_EMAILY` | adresy oddělené čárkou pro obnovu **společného** hesla | ne |
+
+Hesla jednotlivých trenérů secrety nejsou — jsou to PBKDF2 hashe u jejich řádku v `players`.
 
 ```powershell
 npx wrangler secret list                  # co je nastavene
-npx wrangler secret put ADMIN_HESLO
 npx wrangler secret put SESSION_KEY       # rotace klice = vsichni se odhlasi
+npx wrangler secret put ADMIN_HESLO
+npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put OBNOVA_EMAILY
 ```
+
+Telegram bota založí `@BotFather` (`/newbot`); token je ten dlouhý řetězec, co vrátí.
+Bota **nelze** oslovit první — každý trenér mu musí jednou napsat, teprve pak vznikne chat id.
 
 **Heslo se běžně mění v aplikaci** (Nastavení → Změna hesla), ne přes secret — ukládá se
 jako hash do D1 a od té chvíle se `ADMIN_HESLO` ignoruje. Když se heslo ztratí i s obnovou:

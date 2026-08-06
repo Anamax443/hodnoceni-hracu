@@ -272,16 +272,21 @@ nikdo nic nedělá, nebo se něco rozbilo. Zpráva to říká výslovně.
 Události se označí za vyřízené, jen když se aspoň jednomu příjemci povedlo doručit — jinak
 by se ztratily.
 
-### Cron — zatím vypnutý
+### Cron
 
-Rozesílku má spouštět cron (`"triggers": { "crons": ["0 * * * *"] }`) — každou hodinu, protože
-Cloudflare umí jen UTC, kdežto čas se nastavuje v místním. Která hodina je ta správná, rozhodne
-Worker sám.
+`"triggers": { "crons": ["0 * * * *"] }` — každou hodinu, protože Cloudflare umí jen UTC,
+kdežto čas se nastavuje v místním. Která hodina je ta správná, rozhodne Worker sám
+(`prazskaHodina()`, zóna Europe/Prague). Stav v Nastavení ukazuje, kolik je podle Workeru
+hodin — chyba v časové zóně by se jinak projevila až tím, že souhrn nedorazí.
 
-**V `wrangler.jsonc` je zakomentovaný.** Účet je na Workers Free a ten dovolí **5 cron triggerů
-na celý účet**; jsou vyčerpané (job-watch, pojistky-watch, sk-ricmanice-taktika a další).
-Deploy s ním skončí na `code: 10072`. Logika je hotová a ověřená přes tlačítko
-„Poslat souhrn teď" v Nastavení; až bude cron k dispozici, stačí odkomentovat.
+**Pozor na limit účtu:** Workers Free dovolí **5 cron triggerů na celý účet** (ne na Worker).
+Deploy nad limit skončí na `code: 10072` a triggery se nenastaví, i když se kód nahraje.
+Slot pro tenhle projekt se uvolnil vypnutím denního běhu u `pojistky-watch` (2026-08-06).
+Další cron na tomhle účtu už se nevejde.
+
+Pozn.: `sk-ricmanice-taktika` má v `wrangler.toml` `[triggers]`, ale **není to Worker**
+(Cloudflare vrací „This Worker does not exist on your account") — je to Pages projekt
+a ten zápis je mrtvý, žádný slot nedrží.
 
 ### Telegram
 
@@ -465,6 +470,38 @@ Exit criteria:
 - build krok u frontendu (framework, bundler)
 Následující krok: rozdelit na Pages + Worker podle puvodniho zadani §3
 ```
+
+---
+
+## 9b. Backlog
+
+### SMS jako třetí kanál
+
+Zatím **nepostaveno**, vedeno vědomě na později. Dnes jsou kanály e-mail a Telegram; SMS
+by se hodila pro trenéry, kteří Telegram nepoužívají, a případně jako doručení odkazu
+na obnovu hesla.
+
+Poznámky k rozhodnutí, až na to dojde:
+
+- **Cenu neřešit.** Při jednotkách zpráv měsíčně je rozdíl mezi 0,40 a 1,50 Kč/SMS
+  v řádu desetikorun. Vybírat podle toho, co se snáz integruje.
+- **Provider jako přepínač**, ne natvrdo. V dev režimu `console` provider, který zprávu
+  jen zaloguje — reálná SMS ať odejde jen když se testuje doručení, ne při každém běhu:
+
+  ```js
+  const provider = env.SMS_PROVIDER === 'twilio' ? posliTwilio : posliDoKonzole;
+  ```
+
+- **Twilio trial** dá kredit zdarma na stovky zpráv; posílá jen na ověřená čísla a před text
+  přilepí poznámku o trial účtu. Na vývoj to nevadí. Karta až do produkce.
+- **BulkGate / GoSMS** jako české alternativy, kdyby bylo potřeba porovnat doručitelnost
+  na česká čísla.
+- Potřeba bude tabulka v D1 pro odeslané kódy/zprávy a **rate limit** — stejná logika jako
+  u obnovy hesla (nejvýš N za okno), aby se nedalo protelefonovat kredit.
+- Telefon patří k osobě (`players.telefon`) vedle e-mailu a chat id, se stejným přepínačem
+  „posílat SMS" jako ostatní kanály.
+
+Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
 ---
 

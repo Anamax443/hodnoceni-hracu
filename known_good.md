@@ -5,6 +5,67 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-06 (6) — účty po lidech + vlastní obnova hesla
+
+**Commit:** `1c7f3bf` · **Ověřeno proti** https://hodnoceni.maxferit.cz
+
+| Kontrola | Výsledek |
+|---|---|
+| pozvánka trenérovi z administrace | `Telegram → Maxla: odesláno` |
+| nastavení hesla jednorázovým odkazem | 200, `{"nastaveno":true,"login":"maxla"}` |
+| přihlášení `maxla` + heslo | 200, session zná `{"jmeno":"Maxla","id":1}` |
+| `/api/me` po přihlášení | vrací jméno a id |
+| cizí účet (`maso`) stejným heslem | 409 „účet nemá nastavené heslo" — nepustí |
+| špatné heslo u existujícího účtu | 401 „Špatné přihlašovací jméno nebo heslo." |
+| odkaz podruhé | 410 |
+| přechodné společné heslo (prázdný login) | 200, `{"jmeno":null,"id":null}` |
+| hash ani sůl v `/api/players` | neposílá se, jen příznak `ma_heslo` |
+
+**Co ověřeno NEBYLO:** doručení e-mailem u účtu bez Telegramu (Julek, Maso zatím nemají
+ani jeden kanál).
+
+---
+
+## 2026-08-06 (5) — souhrnné notifikace
+
+**Commit:** `de6e038` · 13 testů proti nasazené aplikaci, **0 chyb**
+
+| Kontrola | Výsledek |
+|---|---|
+| Telegram `getMe` | bot `@skricmanice_bot` odpovídá |
+| binding EMAIL | zapojený |
+| uložení hodnocení → událost | +1 |
+| sebehodnocení hráče → událost | +1 |
+| ruční rozeslání souhrnu | `Telegram → Maxla: odesláno`, uživatel potvrdil doručení |
+| po odeslání nic nečeká | 0 |
+| souhrn i bez změn (liveness) | odesláno |
+| uložení intervalů (3 / 14 dní) a vypínače | sedí |
+
+**Cron:** slot uvolněn vypnutím denního běhu `pojistky-watch`; deploy hlásí `schedule: 0 * * * *`.
+Stav v Nastavení ukazuje pražskou hodinu (Worker 10, PC 10:39 při UTC 08:39) — časová zóna sedí.
+
+**Co ověřeno NEBYLO:** skutečné spuštění cronem v 19:00 (od nasazení neuplynulo).
+
+---
+
+## 2026-08-06 (4) — N pozic + šablona os na hodnocení
+
+**Commit:** `c4926ba` · 25 testů proti nasazené aplikaci, **0 chyb**
+
+| Kontrola | Výsledek |
+|---|---|
+| tři pozice u jednoho hráče | uloženo, vrací se jako pole |
+| neznámá pozice | 400 |
+| hodnocení brankářskou i polní šablonou v jednom období | obojí 201 |
+| polní osy do brankářské šablony | 400 |
+| jeden hráč → dva listy, každý svou šablonou | 2 listy, 2 různé šablony |
+| token nese šablonu, `/api/self` vrací její osy | `brankar` → `chytani` |
+| porovnání v rámci šablony | hotovo, rozdíly sedí |
+| hráč vyplnil jinou šablonou | `jinaSablona: true`, ne „ještě nevyplnil" |
+| `/api/trend` | 200 (dřív padal — chybějící `.bind`) |
+
+---
+
 ## 2026-08-06 (3) — NASAZENO: Cloudflare Worker + D1, frontpage CS/EN + vzhled + verze
 
 **Commit:** `5c1d62e58f3c4dfa218b7659d9a2bba26fb847fd`
