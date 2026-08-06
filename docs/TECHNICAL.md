@@ -475,6 +475,31 @@ Následující krok: rozdelit na Pages + Worker podle puvodniho zadani §3
 
 ## 9b. Backlog
 
+### Přehled možných kanálů
+
+Zvažované cesty, jak dostat souhrn nebo odkaz na obnovu hesla k trenérovi. Pořadí podle
+poměru „co to dá" / „co to stojí za byrokracii":
+
+| Kanál | Marginální cena | Co je potřeba | Hlavní omezení | Stav |
+|---|---|---|---|---|
+| **E-mail** (Cloudflare Email Sending) | zdarma | binding `[[send_email]]`, onboardovaná doména | příjemce musí být **ověřená destination address** | **běží** |
+| **Telegram** (Bot API) | zdarma | bot od `@BotFather`, token jako secret | bot **nesmí napsat první** — uživatel mu musí poslat zprávu | **běží** |
+| **SMS** (Twilio) | $0,0706/segment (~1,50 Kč); s diakritikou 2× | účet, alfanumerický odesílatel (zdarma) | UCS-2 kvůli háčkům půlí délku segmentu na 70 znaků | účet založen, **nepostaveno** |
+| **WhatsApp** (Twilio) | za konverzaci | WhatsApp Business účet, ověření subjektu u Mety | mimo 24h okno jen **schválené šablony**, ne volný text | **nepostaveno** |
+| **SMS z MikroTiku** (`/tool sms send`) | v paušálu, prakticky zdarma | dosažitelný router + komponenta, která tahá frontu | router pod CGNAT; SMS je u LTE modemů vedlejší funkce bez doručenek | **zamítnuto** pro notifikace |
+
+Poznámky k rozhodnutí:
+
+- **Telefonní číslo u Twilia nekupovat** — na jednosměrné zprávy stačí alfanumerický
+  odesílatel zdarma; české mobilní číslo stojí 12 $/měsíc a je potřeba, jen když má někdo
+  na zprávu odpovídat.
+- **U SMS zvážit odstranění diakritiky.** „Novak odeslal sebehodnoceni" se vejde do jednoho
+  segmentu, s háčky do dvou. Při jednotkách zpráv je to jedno, při stovkách ne.
+- **MikroTik dává smysl v garážích**, ne tady: tam je modem to jediné, co při výpadku uplinku
+  ještě žije, takže lokální poplach přes SMS projde. Notifikační kanál pro tuhle aplikaci
+  ale nemá stát na zařízení, které je samo nejnáchylnější k výpadku.
+- Přidat providera je díky přepínači otázka jedné funkce, takže se žádná z cest nezavírá.
+
 ### SMS jako třetí kanál
 
 Zatím **nepostaveno**, vedeno vědomě na později. Dnes jsou kanály e-mail a Telegram; SMS
