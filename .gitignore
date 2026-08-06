@@ -40,4 +40,5 @@ zaloha*.sql
 
 # generuje se pred kazdym deployem (scripts/gen-version.mjs)
 web/version.json
+worker/src/version.ts
 

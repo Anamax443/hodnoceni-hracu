@@ -21,4 +21,14 @@ const version = {
 };
 
 writeFileSync(new URL("../web/version.json", import.meta.url), JSON.stringify(version, null, 2));
+
+// Totéž zapečené do Workeru. Číst verzi z assetu se neosvědčilo: na custom doméně
+// ji držela cache zóny a po nasazení lišta ukazovala předchozí commit, i když
+// odpověď měla no-store. Co je v bundlu, to cache obejít nemůže.
+writeFileSync(
+  new URL("../worker/src/version.ts", import.meta.url),
+  `// Generovaný soubor (scripts/gen-version.mjs), v .gitignore. Needituj ručně.\n`
+    + `export const VERZE = ${JSON.stringify(version, null, 4)} as const;\n`
+);
+
 console.log(`version.json: ${version.commit} (${version.branch})${version.cisto ? "" : " +necommitnuté změny"} @ ${version.builtAt}`);

@@ -12,6 +12,8 @@
 /* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
 import { SABLONY, klice, zkontrolujHodnoty, zkontrolujPozice } from '../../web/src/sablony.js';
+/* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
+import { VERZE } from './version';
 
 interface EmailBinding {
     send(zprava: { to: string; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown>;
@@ -569,16 +571,10 @@ export default {
                 return json({ status: 'ok', module: MODUL, timestamp: new Date().toISOString() });
             }
             if (cesta === '/api/version') {
-                // Bez no-store by se odpověď držela na edge a po nasazení
-                // by lišta ještě chvíli ukazovala předchozí commit.
-                const v = await soubor(env, url, '/version.json');
-                return new Response(v.body, {
-                    status: v.status,
-                    headers: {
-                        'content-type': 'application/json; charset=utf-8',
-                        'cache-control': 'no-store'
-                    }
-                });
+                // Verze je zapečená v bundlu, ne čtená z assetu — ten na custom
+                // doméně držela cache zóny a lišta ukazovala předchozí commit.
+                // no-store navíc brání tomu, aby se držela samotná odpověď.
+                return json(VERZE, 200, { 'cache-control': 'no-store' });
             }
 
             /* ---------- stránka sebehodnocení ----------
