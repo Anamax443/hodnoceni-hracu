@@ -970,11 +970,14 @@ async function posliSms(env: Env, cislo: string, text: string): Promise<{ ok: bo
     }
 }
 
-/** Pojistka proti smyčce: kolik SMS už odešlo za posledních 24 h. */
+/** Pojistka proti smyčce: kolik SMS opravdu odešlo za posledních 24 h.
+ *  Zprávy z režimu `console` se nepočítají — nic nestály. */
 async function smsZaDen(env: Env): Promise<number> {
     const r = await env.DB.prepare(
         `SELECT COUNT(*) AS pocet FROM komunikace
-          WHERE kanal = 'sms' AND vysledek = 'ok' AND cas > datetime('now', '-1 day')`
+          WHERE kanal = 'sms' AND vysledek = 'ok'
+            AND (kod IS NULL OR kod <> 'console')
+            AND cas > datetime('now', '-1 day')`
     ).first<{ pocet: number }>();
     return r?.pocet ?? 0;
 }

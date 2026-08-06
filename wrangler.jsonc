@@ -42,10 +42,10 @@
         // kde není žádný request, ze kterého by šla adresa odvodit.
         "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz",
 
-        // 'console' = SMS se jen zaloguje a nikam neodejde (výchozí, aby se
-        // kredit neprotelefonoval testy). Na ostrý provoz přepnout na 'twilio'
-        // a doplnit secrety TWILIO_ACCOUNT_SID a TWILIO_AUTH_TOKEN.
-        "SMS_PROVIDER": "console",
+        // 'console' = SMS se jen zaloguje a nikam neodejde; 'twilio' = ostré
+        // odesílání. Secrety TWILIO_ACCOUNT_SID a TWILIO_AUTH_TOKEN nastaveny
+        // 2026-08-06. Proti protelefonování kreditu hlídá settings.smsDenniStrop.
+        "SMS_PROVIDER": "twilio",
         // Alfanumerický odesílatel (max 11 znaků). Zdarma; číslo se kupovat
         // nemusí, dokud nemá někdo na SMS odpovídat.
         "SMS_ODESILATEL": "SKRicmanice"
