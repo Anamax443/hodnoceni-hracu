@@ -512,6 +512,25 @@ v neobsluhované garáži je obrácené. Přidat `mikrotik` providera později j
 funkce, takže se nic nezavírá. Pro *garáže* samotné naopak dává smysl jako lokální poplach,
 protože funguje i při výpadku uplinku.
 
+**Twilio přes víc projektů:** jeden účet, **subúčet na projekt** (vlastní SID a token, vlastní
+logy a spotřeba, sloučená fakturace), k tomu API Key na aplikaci kvůli odvolatelnosti
+a Messaging Service na projekt kvůli sender ID. Do Workeru jdou jen údaje jeho subúčtu.
+
+### Logování komunikace (backlog)
+
+Dnes je stopa po odeslaných zprávách jen ve `wrangler tail` — pomíjivá a vyžaduje terminál.
+Až přibude SMS, bude potřeba tabulka `komunikace` v D1 a jednoduchý výpis v Nastavení:
+
+- **metadata, ne obsah**: čas, kanál, komu (osoba + adresa/chat id), typ zprávy
+  (souhrn / obnova hesla / test) a **výsledek včetně kódu chyby**
+- **nikdy tokeny** — log s platným obnovovacím odkazem je reset hesla čekající na zneužití;
+  nanejvýš prvních pár znaků na spárování
+- **retence** (např. 12 měsíců) a mazání; záznamy o tom, kdo byl kdy kontaktován, jsou po
+  čase spíš riziko než užitek
+- výjimka u SMS: ukládat i text kvůli počtu segmentů a sporům o fakturaci — obsah hodnocení
+  v něm stejně nikdy nebude
+- výpis musí být čitelný i pro toho, kdo neví, co je wrangler
+
 **Hromadné rozesílání (pozvánky na zápasy) do téhle aplikace nepatří** — zadání §2 má
 rozesílání mimo scope. Navíc je to jiný právní režim: obchodní sdělení podle zákona 480/2004 §7
 vyžaduje souhlas, identifikovatelného odesílatele a funkční odhlášení v každé zprávě. To řeší
