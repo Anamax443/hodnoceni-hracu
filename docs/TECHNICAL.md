@@ -224,6 +224,57 @@ pořízena (sloupec `evaluations.sablona`).
 
 ---
 
+## 5b. Souhrnné notifikace
+
+Trenér si u sebe (záložka Lidé) zapne e-mail nebo Telegram. Hráči notifikace nedostávají —
+do aplikace nechodí.
+
+**Do zprávy nikdy nejde obsah hodnocení.** Žádné známky, žádné slovní bloky — jen „kdo a co"
+plus stav období. Jsou to posudky nezletilých a e-mail i Telegram jsou třetí strany;
+detail se otevírá v aplikaci.
+
+**Události, ne zprávy.** Každé uložené hodnocení i sebehodnocení zapíše řádek do `udalosti`.
+Rozesílka je bere hromadně. Zápis události nesmí shodit uložení hodnocení — chyba se jen loguje.
+
+**Dva nezávislé intervaly** (`settings`):
+
+| Klíč | Význam |
+|---|---|
+| `notifZapnuto` | hlavní vypínač |
+| `notifCas` | v kolik (místní čas, Europe/Prague) |
+| `notifDnyZmeny` | když se něco děje, souhrn nejvýš jednou za N dní (výchozí 3) |
+| `notifDnyTicho` | když se nic neděje, po N dnech přijde „nic se nezměnilo" (výchozí 14) |
+| `notifPosledni` | kdy naposledy něco odešlo |
+
+Ten druhý interval je **liveness signál**, ne notifikace: z ticha jinak nejde poznat, jestli
+nikdo nic nedělá, nebo se něco rozbilo. Zpráva to říká výslovně.
+
+Události se označí za vyřízené, jen když se aspoň jednomu příjemci povedlo doručit — jinak
+by se ztratily.
+
+### Cron — zatím vypnutý
+
+Rozesílku má spouštět cron (`"triggers": { "crons": ["0 * * * *"] }`) — každou hodinu, protože
+Cloudflare umí jen UTC, kdežto čas se nastavuje v místním. Která hodina je ta správná, rozhodne
+Worker sám.
+
+**V `wrangler.jsonc` je zakomentovaný.** Účet je na Workers Free a ten dovolí **5 cron triggerů
+na celý účet**; jsou vyčerpané (job-watch, pojistky-watch, sk-ricmanice-taktika a další).
+Deploy s ním skončí na `code: 10072`. Logika je hotová a ověřená přes tlačítko
+„Poslat souhrn teď" v Nastavení; až bude cron k dispozici, stačí odkomentovat.
+
+### Telegram
+
+Bot API přes `https://api.telegram.org/bot<token>/…`, token v secretu `TELEGRAM_BOT_TOKEN`.
+Do odpovědí API ani do logu se nikdy nedostane token ani celá URL — jen `description`
+od Telegramu.
+
+**Telegram nedovolí, aby bot napsal první.** Každý trenér musí botovi poslat zprávu, teprve
+pak vznikne chat id. Tlačítko v Lidech ho dotáhne přes `getUpdates` (Telegram drží updaty
+jen ~24 h).
+
+---
+
 ## 6. Datový model (D1)
 
 Viz `migrations/001_init.sql`. Tabulky: `players`, `evaluations`, `tokens`, `settings`.

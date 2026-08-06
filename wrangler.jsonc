@@ -34,6 +34,16 @@
         "EMAIL_FROM": "hodnoceni@maxferit.cz"
     },
 
+    // Souhrnné notifikace potřebují cron. VYPNUTO: účet je na Workers Free
+    // a ten dovolí 5 cron triggerů na celý účet — a ty jsou vyčerpané
+    // (job-watch, pojistky-watch, sk-ricmanice-taktika a další).
+    // Deploy s tímhle řádkem skončí na chybě 10072.
+    //
+    // Až bude cron k dispozici (Workers Paid, nebo se jeden uvolní), stačí
+    // odkomentovat — logika rozesílky ve scheduled() je hotová a otestovaná
+    // přes tlačítko „Poslat souhrn teď".
+    // "triggers": { "crons": ["0 * * * *"] },
+
     "observability": { "enabled": true },
 
     // Aplikace drží osobní údaje nezletilých — čím míň veřejných adres, tím líp.

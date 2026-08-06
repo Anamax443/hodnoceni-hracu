@@ -242,6 +242,27 @@ async function lide(kam) {
                     <div class="popis">${t('lide.sablona.napoveda')}</div></div>
             </div>
             <div class="pole"><label><input type="checkbox" id="o-aktivni" checked style="width:auto"> ${t('lide.aktivni')}</label></div>
+
+            <h2 style="margin-top:18px">${t('lide.notifikace')}</h2>
+            <p class="popis">${t('lide.notifikace.popis')}</p>
+            <div class="radek">
+                <div class="pole"><label for="o-email">${t('lide.email')}</label>
+                    <input type="text" id="o-email" autocomplete="off">
+                    <div class="popis">${t('lide.email.napoveda')}</div>
+                    <label style="margin-top:5px"><input type="checkbox" id="o-notif-email" style="width:auto"> ${t('lide.notifEmail')}</label>
+                </div>
+                <div class="pole"><label for="o-chatid">${t('lide.chatid')}</label>
+                    <input type="text" id="o-chatid" autocomplete="off">
+                    <div class="popis">${t('lide.chatid.napoveda')}</div>
+                    <label style="margin-top:5px"><input type="checkbox" id="o-notif-telegram" style="width:auto"> ${t('lide.notifTelegram')}</label>
+                </div>
+            </div>
+            <p>
+                <button class="vedlejsi" id="dotahnout-chat" title="${t('lide.dotahnout.tip')}">${t('lide.dotahnout')}</button>
+                <button class="vedlejsi" id="zkusebni-zprava" title="${t('lide.zkusebni.tip')}">${t('lide.zkusebni')}</button>
+            </p>
+            <div id="chat-vysledek"></div>
+
             <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
             <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
         </div>`;
@@ -254,6 +275,44 @@ async function lide(kam) {
         $('#o-sablona').value = 'pole';
         $('#o-aktivni').checked = true;
         kam.querySelectorAll('.o-pozice').forEach(c => { c.checked = false; });
+        $('#o-email').value = '';
+        $('#o-chatid').value = '';
+        $('#o-notif-email').checked = false;
+        $('#o-notif-telegram').checked = false;
+        $('#chat-vysledek').innerHTML = '';
+    };
+
+    $('#dotahnout-chat').onclick = async () => {
+        const cil = $('#chat-vysledek');
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const r = await api('/api/telegram/chaty');
+            if (!r.chaty.length) {
+                cil.innerHTML = `<div class="hlaska pozor">${esc(t('lide.zadneChaty'))}</div>`;
+                return;
+            }
+            cil.innerHTML = `<div class="hlaska info">${r.chaty.map(c =>
+                `<button class="vedlejsi" data-chat="${esc(c.chat_id)}">${esc(c.jmeno)} — ${esc(c.chat_id)}</button>`
+            ).join(' ')}</div>`;
+            cil.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => {
+                $('#o-chatid').value = b.dataset.chat;
+                $('#o-notif-telegram').checked = true;
+            });
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
+    $('#zkusebni-zprava').onclick = async () => {
+        const cil = $('#chat-vysledek');
+        const chat = $('#o-chatid').value.trim();
+        if (!chat) { cil.innerHTML = `<div class="hlaska chyba">${t('lide.chatid')}?</div>`; return; }
+        try {
+            const r = await api('/api/telegram/test', { telo: { chat_id: chat } });
+            cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'chyba'}">${esc(r.popis)}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
     };
 
     kam.querySelectorAll('[data-upravit]').forEach(b => b.onclick = () => {
@@ -682,7 +741,67 @@ async function nastaveni(kam) {
             <div class="pole"><label for="h-nove2">${t('heslo.nove2')}</label>
                 <input type="password" id="h-nove2" autocomplete="new-password"></div>
             <button class="hl" id="zmenit-heslo" title="${t('heslo.ulozit.tip')}">${t('heslo.ulozit')}</button>
+        </div>
+
+        <div class="karta" id="karta-notifikaci">
+            <h2>${t('notif.nadpis')}</h2>
+            <p class="popis">${t('notif.popis')}</p>
+            <div class="pole"><label><input type="checkbox" id="n-zapnuto" style="width:auto"
+                ${stav.nastaveni.notifZapnuto === '1' ? 'checked' : ''}> ${t('notif.zapnuto')}</label></div>
+            <div class="radek">
+                <div class="pole"><label for="n-cas">${t('notif.cas')}</label>
+                    <input type="text" id="n-cas" value="${esc(stav.nastaveni.notifCas ?? '19:00')}" placeholder="19:00">
+                    <div class="popis">${t('notif.cas.napoveda')}</div></div>
+                <div class="pole"><label for="n-dnyZmeny">${t('notif.dnyZmeny')}</label>
+                    <input type="number" id="n-dnyZmeny" min="1" max="60" value="${esc(stav.nastaveni.notifDnyZmeny ?? '3')}">
+                    <div class="popis">${t('notif.dnyZmeny.napoveda')}</div></div>
+                <div class="pole"><label for="n-dnyTicho">${t('notif.dnyTicho')}</label>
+                    <input type="number" id="n-dnyTicho" min="1" max="180" value="${esc(stav.nastaveni.notifDnyTicho ?? '14')}">
+                    <div class="popis">${t('notif.dnyTicho.napoveda')}</div></div>
+            </div>
+            <div id="notif-stav"></div>
+            <button class="hl" id="ulozit-notif" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>
+            <button class="vedlejsi" id="poslat-ted" title="${t('notif.poslatTed.tip')}">${t('notif.poslatTed')}</button>
+            <div id="notif-vysledek"></div>
         </div>`;
+
+    // Stav rozesílky a kanálů — ať je vidět, jestli má souhrn komu chodit.
+    Promise.all([api('/api/notifikace/stav'), api('/api/kanaly')]).then(([s, k]) => {
+        const cil = $('#notif-stav');
+        if (!cil) return;
+        const prijemci = s.prijemci.map(p => `${p.jmeno} (${p.kanaly.join(' + ')})`).join(', ');
+        cil.innerHTML = `
+            <div class="hlaska ${prijemci ? 'info' : 'pozor'}">
+                ${t('notif.ceka', s.ceka)}<br>
+                ${t('notif.posledni', s.posledni ? new Date(s.posledni).toLocaleString(locale()) : t('notif.nikdy'))}<br>
+                ${prijemci ? t('notif.prijemci', esc(prijemci)) : t('notif.bezPrijemcu')}<br>
+                <b>${t('notif.kanaly')}:</b> Telegram — ${esc(k.telegram.popis)} · e-mail — ${esc(k.email.popis)}
+            </div>`;
+    }).catch(() => { /* informativní */ });
+
+    $('#ulozit-notif').onclick = async () => {
+        const telo = {
+            notifZapnuto: $('#n-zapnuto').checked ? '1' : '0',
+            notifCas: $('#n-cas').value,
+            notifDnyZmeny: $('#n-dnyZmeny').value,
+            notifDnyTicho: $('#n-dnyTicho').value
+        };
+        try {
+            stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });
+            hlaska($('#karta-notifikaci'), 'ok', t('nastaveni.ulozeno'));
+        } catch (e) { hlaska($('#karta-notifikaci'), 'chyba', e.message); }
+    };
+
+    $('#poslat-ted').onclick = async () => {
+        const cil = $('#notif-vysledek');
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const r = await api('/api/notifikace/ted', { telo: {} });
+            cil.innerHTML = `<div class="hlaska info">${r.zpravy.map(esc).join('<br>') || '—'}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
 
     // Kam chodí obnova hesla — ať je vidět, jestli je vůbec zapojená.
     api('/api/obnova-adresy').then(o => {

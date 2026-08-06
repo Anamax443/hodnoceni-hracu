@@ -175,7 +175,12 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     klub: 'SK ŘÍČMANICE',
     kategorie: 'Starší žáci',
     latka: 'starší žák',
-    cileNadpis: 'Na čem makáme do zimy'
+    cileNadpis: 'Na čem makáme do zimy',
+    notifZapnuto: '1',         // hlavní vypínač souhrnů
+    notifCas: '19:00',         // místní čas; cron běží každou hodinu a vybere si tu svou
+    notifDnyZmeny: '3',        // když se něco změnilo: nejvýš jednou za N dní
+    notifDnyTicho: '14',       // když se nic neděje: po N dnech přijde „nic se nezměnilo"
+    notifPosledni: ''          // kdy naposledy něco odešlo
 };
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
@@ -245,6 +250,159 @@ async function predchoziObdobi(env: Env, playerId: number, obdobi: string, sablo
           ORDER BY id DESC LIMIT 1`
     ).bind(playerId, obdobi, sablona).first<RadekHodnoceni>();
     return r ? rozbal(r) : null;
+}
+
+/* ===================== souhrnné notifikace ===================== */
+
+/** Zapíše, že se něco stalo. Rozesílá se až souhrnně (cron), ne hned. */
+async function zapisUdalost(env: Env, typ: 'hodnoceni' | 'sebehodnoceni',
+                            playerId: number, obdobi: string, autorId: number | null) {
+    try {
+        await env.DB.prepare(
+            'INSERT INTO udalosti (typ, player_id, obdobi, autor_id) VALUES (?, ?, ?, ?)'
+        ).bind(typ, playerId, obdobi, autorId).run();
+    } catch (e) {
+        // Notifikace nesmí shodit uložení hodnocení — to je to podstatné.
+        console.warn('Událost se nezapsala:', e instanceof Error ? e.message : String(e));
+    }
+}
+
+/** Hodina v Praze (cron běží v UTC, nastavení je v místním čase). */
+function prazskaHodina(kdy: Date): number {
+    return Number(new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Prague', hour: '2-digit', hour12: false
+    }).format(kdy));
+}
+
+interface Prijemce {
+    id: number; jmeno: string; email: string | null; telegram_chat_id: string | null;
+    notif_email: number; notif_telegram: number;
+}
+
+/**
+ * Sestaví text souhrnu. Jen „kdo a co" — žádné známky, žádné slovní bloky.
+ * Prázdný seznam událostí není chyba: pak je to zpráva „nic se nezměnilo",
+ * aby bylo poznat, že aplikace žije a jen se nic neděje.
+ */
+async function textSouhrnu(env: Env, udalosti: any[], nas: Record<string, string>,
+                           zaklad: string, dnuTicha: number): Promise<string> {
+    const sebe = udalosti.filter(u => u.typ === 'sebehodnoceni').map(u => u.jmeno);
+    const trener = udalosti.filter(u => u.typ === 'hodnoceni')
+        .map(u => u.autor ? `${u.jmeno} (${u.autor})` : u.jmeno);
+
+    const stav = await env.DB.prepare(
+        `SELECT
+            (SELECT COUNT(*) FROM players WHERE role='hrac' AND aktivni=1) AS celkem,
+            (SELECT COUNT(DISTINCT player_id) FROM evaluations WHERE obdobi=? AND autor='trener') AS odTrenera,
+            (SELECT COUNT(DISTINCT player_id) FROM evaluations WHERE obdobi=? AND autor='hrac')   AS odHracu`
+    ).bind(nas.obdobi, nas.obdobi).first<{ celkem: number; odTrenera: number; odHracu: number }>();
+
+    const radky = [`${nas.klub} — hodnocení hráčů`, ''];
+
+    if (udalosti.length) {
+        if (sebe.length) radky.push(`Nová sebehodnocení (${sebe.length}): ${sebe.join(', ')}`);
+        if (trener.length) radky.push(`Nová hodnocení trenéra (${trener.length}): ${trener.join(', ')}`);
+    } else {
+        radky.push(dnuTicha
+            ? `Za posledních ${dnuTicha} dní se nic nezměnilo — žádné nové hodnocení ani sebehodnocení.`
+            : 'Zatím se nic nezměnilo — žádné nové hodnocení ani sebehodnocení.');
+        radky.push('Tohle není chyba, aplikace běží. Píše se to proto, abys poznal rozdíl');
+        radky.push('mezi „nikdo nic nedělá" a „něco se rozbilo".');
+    }
+
+    radky.push('');
+    radky.push(`Období ${nas.obdobi}: od trenéra ${stav?.odTrenera ?? 0} z ${stav?.celkem ?? 0}, `
+        + `sebehodnocení ${stav?.odHracu ?? 0} z ${stav?.celkem ?? 0}.`);
+    radky.push(zaklad);
+    return radky.join('\n');
+}
+
+/**
+ * Rozešle souhrn nerozeslaných událostí. `vynutit` obejde kontrolu času
+ * (tlačítko „poslat teď"). Vrací lidsky čitelné řádky o tom, co se stalo —
+ * ať je i bez znalosti vnitřností poznat, proč se něco (ne)poslalo.
+ */
+async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise<string[]> {
+    const zpravy: string[] = [];
+    const nas = await nastaveni(env);
+
+    const { results: udalostiRaw } = await env.DB.prepare(
+        `SELECT u.id, u.typ, u.obdobi, p.jmeno, a.jmeno AS autor
+           FROM udalosti u
+           JOIN players p ON p.id = u.player_id
+           LEFT JOIN players a ON a.id = u.autor_id
+          WHERE u.odeslano = 0
+          ORDER BY u.id`
+    ).all<any>();
+    const udalosti = udalostiRaw ?? [];
+
+    const ted = new Date();
+    const odMinule = nas.notifPosledni
+        ? (ted.getTime() - new Date(nas.notifPosledni).getTime()) / 86400_000
+        : Infinity;
+    const dnuTicha = Number.isFinite(odMinule) ? Math.floor(odMinule) : 0;
+
+    if (!vynutit) {
+        if (nas.notifZapnuto !== '1') return ['Souhrny jsou v nastavení vypnuté.'];
+
+        if (prazskaHodina(ted) !== Number((nas.notifCas || '19:00').split(':')[0])) return [];
+
+        // Dva nezávislé intervaly: jak často psát, když se něco děje,
+        // a po jaké době ticha se ozvat s tím, že se neděje nic.
+        const potrebaZmeny = udalosti.length > 0 && odMinule >= Number(nas.notifDnyZmeny || '3');
+        const potrebaTicha = udalosti.length === 0 && odMinule >= Number(nas.notifDnyTicho || '14');
+
+        if (!potrebaZmeny && !potrebaTicha) {
+            return udalosti.length
+                ? [`Čeká ${udalosti.length} změn, ale od posledního souhrnu neuběhlo `
+                    + `${nas.notifDnyZmeny} dní — pošle se později.`]
+                : [];
+        }
+    }
+
+    const { results: prijemci } = await env.DB.prepare(
+        `SELECT id, jmeno, email, telegram_chat_id, notif_email, notif_telegram
+           FROM players
+          WHERE role = 'trener' AND aktivni = 1
+            AND ((notif_email = 1 AND email IS NOT NULL) OR (notif_telegram = 1 AND telegram_chat_id IS NOT NULL))`
+    ).all<Prijemce>();
+
+    if (!prijemci?.length) {
+        zpravy.push(`Je ${udalosti.length} nových událostí, ale nikdo nemá zapnutou notifikaci.`);
+        return zpravy;
+    }
+
+    const text = await textSouhrnu(env, udalosti, nas, zaklad);
+    let uspech = 0;
+
+    for (const p of prijemci) {
+        if (p.notif_telegram && p.telegram_chat_id) {
+            const r = await posliTelegram(env, p.telegram_chat_id, text);
+            zpravy.push(`Telegram → ${p.jmeno}: ${r.ok ? 'odesláno' : 'selhalo — ' + r.popis}`);
+            if (r.ok) uspech++;
+        }
+        if (p.notif_email && p.email) {
+            const ok = await posliMail(env, p.email, `${nas.klub} — hodnocení hráčů, souhrn`, text);
+            zpravy.push(`E-mail → ${p.jmeno} (${p.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
+            if (ok) uspech++;
+        }
+    }
+
+    // Události označíme za vyřízené, jen když se aspoň někomu povedlo doručit —
+    // jinak by se ztratily a nikdo by se o nich nedozvěděl.
+    if (uspech) {
+        await env.DB.batch([
+            env.DB.prepare('UPDATE udalosti SET odeslano = 1 WHERE odeslano = 0'),
+            env.DB.prepare(
+                `INSERT INTO settings (klic, hodnota) VALUES ('notifPosledni', ?)
+                 ON CONFLICT(klic) DO UPDATE SET hodnota = excluded.hodnota`
+            ).bind(new Date().toISOString())
+        ]);
+    } else {
+        zpravy.push('Nepodařilo se doručit nikomu, události zůstávají nevyřízené na příště.');
+    }
+
+    return zpravy;
 }
 
 /* ===================== router ===================== */
@@ -338,6 +496,15 @@ export default {
             console.error('Chyba požadavku', cesta, zprava);
             return chyba(`Chyba serveru: ${zprava}`, 500);
         }
+    },
+
+    /* Cron běží každou hodinu; jestli je zrovna ta správná, rozhodne Worker
+       podle času v Nastavení (v pražské zóně). Cloudflare umí jen UTC. */
+    async scheduled(_udalost: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+        ctx.waitUntil((async () => {
+            const zpravy = await rozesliSouhrn(env, 'https://hodnoceni-hracu.bass443.workers.dev');
+            for (const z of zpravy) console.log('Souhrn:', z);
+        })());
     }
 } satisfies ExportedHandler<Env>;
 
@@ -398,6 +565,7 @@ async function self(request: Request, env: Env, token: string): Promise<Response
         env.DB.prepare('UPDATE tokens SET pouzit = 1 WHERE token = ?').bind(token)
     ]);
 
+    await zapisUdalost(env, 'sebehodnoceni', t.player_id, t.obdobi, null);
     return json({ ulozeno: true });
 }
 
@@ -548,6 +716,32 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         return json({ zmeneno: true });
     }
 
+    /* ---------- ruční odeslání souhrnu (tlačítko „poslat teď") ---------- */
+    if (cesta === '/api/notifikace/ted' && metoda === 'POST') {
+        const zpravy = await rozesliSouhrn(env, url.origin, true);
+        return json({ zpravy });
+    }
+
+    /* ---------- co čeká na odeslání ---------- */
+    if (cesta === '/api/notifikace/stav' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        const ceka = await env.DB.prepare('SELECT COUNT(*) AS pocet FROM udalosti WHERE odeslano = 0')
+            .first<{ pocet: number }>();
+        const { results: prijemci } = await env.DB.prepare(
+            `SELECT jmeno, notif_email, notif_telegram FROM players
+              WHERE role = 'trener' AND aktivni = 1
+                AND ((notif_email = 1 AND email IS NOT NULL) OR (notif_telegram = 1 AND telegram_chat_id IS NOT NULL))`
+        ).all<{ jmeno: string; notif_email: number; notif_telegram: number }>();
+        return json({
+            ceka: ceka?.pocet ?? 0,
+            posledni: nas.notifPosledni || null,
+            prijemci: (prijemci ?? []).map(p => ({
+                jmeno: p.jmeno,
+                kanaly: [p.notif_telegram ? 'Telegram' : null, p.notif_email ? 'e-mail' : null].filter(Boolean)
+            }))
+        });
+    }
+
     /* ---------- stav notifikačních kanálů ---------- */
     if (cesta === '/api/kanaly' && metoda === 'GET') {
         const tg = await telegramApi(env, 'getMe');
@@ -644,11 +838,14 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
             const problem = zkontrolujOsobu(p);
             if (problem) return chyba(problem, 400);
             const r = await env.DB.prepare(
-                `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni)
-                 VALUES (?, ?, ?, ?, ?, ?, 1) RETURNING *`
+                `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                                      email, telegram_chat_id, notif_email, notif_telegram)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?) RETURNING *`
             ).bind(
                 p.jmeno.trim(), p.prezdivka || null, p.post || null,
-                JSON.stringify(p.pozice ?? []), p.role, p.sablona
+                JSON.stringify(p.pozice ?? []), p.role, p.sablona,
+                (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
+                p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0
             ).first();
             return json(osobaVen(r), 201);
         }
@@ -661,11 +858,15 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         if (problem) return chyba(problem, 400);
         const r = await env.DB.prepare(
             `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
-                                role = ?, sablona = ?, aktivni = ?
+                                role = ?, sablona = ?, aktivni = ?,
+                                email = ?, telegram_chat_id = ?, notif_email = ?, notif_telegram = ?
               WHERE id = ? RETURNING *`
         ).bind(
             p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
-            p.role, p.sablona, p.aktivni ? 1 : 0, Number(osobaId)
+            p.role, p.sablona, p.aktivni ? 1 : 0,
+            (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
+            p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
+            Number(osobaId)
         ).first();
         if (!r) return chyba('Osoba nenalezena.', 404);
         return json(osobaVen(r));
@@ -724,18 +925,20 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
                 ? h.cile.map((c: unknown) => String(c).trim()).filter(Boolean).slice(0, 5)
                 : [];
 
+            const autorId = h.autor_id ? Number(h.autor_id) : null;
             const r = await env.DB.prepare(
                 `INSERT INTO evaluations
                     (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile)
                  VALUES (?, ?, 'trener', ?, ?, ?, ?, ?, ?, ?) RETURNING id, datum`
             ).bind(
-                playerId, obdobi, h.autor_id ? Number(h.autor_id) : null, sablona,
+                playerId, obdobi, autorId, sablona,
                 JSON.stringify(h.hodnoty),
                 (h.fyzicky ?? '').trim() || null,
                 (h.hlavou ?? '').trim() || null,
                 (h.parta ?? '').trim() || null,
                 JSON.stringify(cile)
             ).first();
+            await zapisUdalost(env, 'hodnoceni', playerId, obdobi, autorId);
             return json({ ulozeno: true, ...r }, 201);
         }
     }

@@ -2,6 +2,35 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-06 (6) — souhrnné notifikace (Telegram ověřený, cron blokovaný limitem)
+
+**Hotové** (migrace `005_notifikace.sql`, `006_notif_intervaly.sql`, nasazeno):
+
+- Kanály se zapínají u konkrétního trenéra v Lidech: e-mail, Telegram chat id, dva přepínače.
+  Tlačítko dotáhne chat id z Telegramu, druhé pošle zkušební zprávu.
+- **Dva nezávislé intervaly** místo „jak často": `notifDnyZmeny` (když se něco děje, souhrn
+  nejvýš jednou za N dní, výchozí 3) a `notifDnyTicho` (když se nic neděje, po N dnech přijde
+  „nic se nezměnilo", výchozí 14). Druhý je liveness signál — z ticha jinak nejde poznat,
+  jestli nikdo nic nedělá, nebo se něco rozbilo.
+- Zpráva nese jen „kdo a co" + stav období. **Nikdy známky ani slovní bloky.**
+- Události se označí za odeslané, jen když se aspoň někomu povedlo doručit.
+- `/api/kanaly`, `/api/notifikace/stav`, `/api/notifikace/ted` (poslat teď).
+
+**Telegram ověřený naostro:** bot `@skricmanice_bot`, chat id Maxly uložené, doručení
+potvrzené uživatelem. Julek a Maso mají notifikace vypnuté (nevíme, jestli Telegram používají).
+
+**Ověřeno:** 13 testů proti nasazené aplikaci, 0 chyb — vznik událostí při hodnocení
+i sebehodnocení, odeslání souhrnu, zpráva „nic se nezměnilo", uložení intervalů.
+Testovací data smazána.
+
+**BLOKUJE: cron.** `wrangler.jsonc` má trigger zakomentovaný — Workers Free dovolí
+**5 cron triggerů na celý účet** a ty jsou vyčerpané (job-watch, pojistky-watch,
+sk-ricmanice-taktika…). Deploy s ním padá na `code: 10072`. Do vyřešení se souhrn posílá
+jen tlačítkem „Poslat souhrn teď" v Nastavení. Řešení: Workers Paid, uvolnit cron jinde,
+nebo nechat existující cron jiného Workeru pingnout tenhle.
+
+---
+
 ## 2026-08-06 (5) — N pozic u hráče + šablona os na hodnocení
 
 **Hotové** (migrace `004_pozice.sql`, nasazeno):
