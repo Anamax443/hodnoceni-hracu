@@ -1116,7 +1116,8 @@ async function admin(request: Request, env: Env, url: URL): Promise<Response> {
         if (metoda === 'GET') {
             const obdobi = q.get('obdobi') || (await nastaveni(env)).obdobi;
             const { results } = await env.DB.prepare(
-                `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do, p.jmeno
+                `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do, t.sablona,
+                        p.jmeno, p.prezdivka
                    FROM tokens t JOIN players p ON p.id = t.player_id
                   WHERE t.obdobi = ? ORDER BY p.jmeno`
             ).bind(obdobi).all();

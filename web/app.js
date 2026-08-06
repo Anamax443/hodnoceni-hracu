@@ -185,6 +185,11 @@ function hlaska(kam, typ, text) {
 
 const hraciAktivni = () => stav.lide.filter(o => o.role === 'hrac' && o.aktivni);
 
+/* Přezdívka se ukazuje všude, kde se vypisují jména — v kádru jsou tři Trnkové
+   a bez ní se pletou. */
+const jmenoHtml = o => `${esc(o.jmeno)}${o.prezdivka ? ` <span class="popis">„${esc(o.prezdivka)}"</span>` : ''}`;
+const jmenoText = o => o.prezdivka ? `${o.jmeno} „${o.prezdivka}"` : o.jmeno;
+
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
@@ -192,7 +197,7 @@ async function lide(kam) {
 
     const radek = o => `
         <tr>
-            <td>${esc(o.jmeno)}${o.prezdivka ? ` <span class="popis">„${esc(o.prezdivka)}"</span>` : ''}</td>
+            <td>${jmenoHtml(o)}</td>
             <td>${esc(nazvyPozic(o) || t('lide.bezPozic'))}${o.post ? ` <span class="popis">${esc(o.post)}</span>` : ''}</td>
             <td><span class="znacka ${o.role}">${o.role === 'trener' ? t('lide.trener') : t('lide.hrac')}</span></td>
             <td>${o.role === 'hrac' ? t('sablona.' + o.sablona) : '—'}</td>
@@ -379,7 +384,7 @@ async function hodnotit(kam) {
                 <div class="pole"><label for="h-hrac">${t('hodnotit.hrac')}</label>
                     <select id="h-hrac">
                         <option value="">${t('hodnotit.vyber')}</option>
-                        ${hraci.map(h => `<option value="${h.id}">${esc(h.jmeno)}</option>`).join('')}
+                        ${hraci.map(h => `<option value="${h.id}">${esc(jmenoText(h))}</option>`).join('')}
                     </select></div>
                 <div class="pole"><label for="h-autor">${t('hodnotit.hodnoti')}</label>
                     <select id="h-autor">
@@ -403,7 +408,7 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {
     kam.innerHTML = `
         <div class="karta">
             <div class="hlaska pozor">${t('hodnotit.naslepo')}</div>
-            <h2>${esc(hrac.jmeno)}${pozice ? ` <span class="popis">— ${esc(pozice)}</span>` : ''}</h2>
+            <h2>${jmenoHtml(hrac)}${pozice ? ` <span class="popis">— ${esc(pozice)}</span>` : ''}</h2>
             <div class="pole" style="max-width:320px">
                 <label for="h-sablona">${t('hodnotit.sablona')}</label>
                 <select id="h-sablona">${Object.keys(SABLONY)
@@ -524,7 +529,7 @@ async function listy(kam) {
                 <tbody>${prehled.hraci.filter(h => h.aktivni).map(h => `
                     <tr>
                         <td class="cisla"><input type="checkbox" class="vyber" value="${h.id}" checked></td>
-                        <td>${esc(h.jmeno)}</td>
+                        <td>${jmenoHtml(h)}</td>
                         <td class="cisla">${h.ma_trener ? '<span class="ano">✓</span>' : '<span class="ne">—</span>'}</td>
                         <td class="cisla">${h.ma_hrac ? '<span class="ano">✓</span>' : '<span class="ne">—</span>'}</td>
                     </tr>`).join('')}</tbody>
@@ -555,7 +560,7 @@ async function porovnani(kam) {
             <div class="pole"><label for="p-hrac">${t('hodnotit.hrac')}</label>
                 <select id="p-hrac">
                     <option value="">${t('hodnotit.vyber')}</option>
-                    ${hraci.map(h => `<option value="${h.id}">${esc(h.jmeno)}</option>`).join('')}
+                    ${hraci.map(h => `<option value="${h.id}">${esc(jmenoText(h))}</option>`).join('')}
                 </select></div>
         </div>
         <div id="vysledek"></div>`;
@@ -669,7 +674,7 @@ async function odkazy(kam) {
                     <th>${t('odkazy.platiDo')}</th><th>${t('odkazy.odkaz')}</th><th></th></tr></thead>
                 <tbody>${seznam.length ? seznam.map(x => `
                     <tr>
-                        <td>${esc(x.jmeno)}</td>
+                        <td>${jmenoHtml(x)}</td>
                         <td>${t('sablona.' + (x.sablona || 'pole'))}</td>
                         <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
                         <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
