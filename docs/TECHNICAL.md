@@ -516,8 +516,19 @@ Zapnutí ostrého provozu: `npx wrangler secret put TWILIO_AUTH_TOKEN` (a `TWILI
 pak přepnout `SMS_PROVIDER` na `twilio` ve `wrangler.jsonc` a nasadit. Dokud secrety chybí,
 vrátí se `NO_CREDENTIALS` a je to vidět v Nastavení i v logu — ne ticho.
 
+**Twilio vyžaduje KYC, než pustí první SMS.** Ověřeno 2026-08-06: přihlašovací údaje projdou
+(`/api/sms/ucet` vrátí účet a stav `active`), ale odeslání skončí na
+*„Primary compliance profile is not approved — complete the KYC process in Trust Hub."*
+Je to regulatorní brána na straně Twilia, ne chyba integrace. Řeší se v konzoli:
+**Trust Hub → Primary Customer Profile**. Do schválení má smysl nechat `notif_sms` vypnuté,
+aby souhrny zbytečně nepadaly.
+
 **Diakritika se odstraňuje.** Háčky přepnou zprávu na UCS-2, kde má segment 70 znaků místo 160,
 tedy dvojnásobná cena. „Novak odeslal sebehodnoceni" se vejde do jednoho segmentu.
+
+**Ladění:** `GET /api/sms/ucet` zavolá `Accounts/{SID}.json` a nic neodešle — rozliší špatný
+token od špatného SID a vrátí délku tokenu. Auth Token má **32 znaků**; API Key SID má 34
+a začíná `SK`, což je nejčastější záměna (stálo to i tady dvě kola).
 
 **Denní strop** (`settings.smsDenniStrop`, výchozí 50) je pojistka proti smyčce, která by
 protelefonovala kredit. Počítá se z logu; po vyčerpání se zpráva nepošle a zaloguje se
