@@ -284,6 +284,7 @@ async function lide(kam) {
             <p>
                 <button class="vedlejsi" id="dotahnout-chat" title="${t('lide.dotahnout.tip')}">${t('lide.dotahnout')}</button>
                 <button class="vedlejsi" id="zkusebni-zprava" title="${t('lide.zkusebni.tip')}">${t('lide.zkusebni')}</button>
+                <button class="vedlejsi" id="zkusebni-sms-nanecisto" title="${t('lide.smsNanecisto.tip')}">${t('lide.smsNanecisto')}</button>
                 <button class="vedlejsi" id="zkusebni-sms" title="${t('lide.zkusebniSms.tip')}">${t('lide.zkusebniSms')}</button>
                 <button class="vedlejsi" id="poslat-pozvanku" title="${t('lide.pozvanka.tip')}">${t('lide.pozvanka')}</button>
             </p>
@@ -347,17 +348,20 @@ async function lide(kam) {
         }
     };
 
-    $('#zkusebni-sms').onclick = async () => {
+    // Nanečisto ověří klíče, kanál i tvar čísla, ale nic neodešle a nic nestojí.
+    const zkusSms = (nanecisto) => async () => {
         const cil = $('#chat-vysledek');
         const cislo = $('#o-telefon').value.trim();
         if (!cislo) { cil.innerHTML = `<div class="hlaska chyba">${t('lide.telefon')}?</div>`; return; }
         try {
-            const r = await api('/api/sms/test', { telo: { telefon: cislo } });
+            const r = await api('/api/sms/test', { telo: { telefon: cislo, nanecisto } });
             cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'chyba'}">${esc(r.popis)}</div>`;
         } catch (e) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
     };
+    $('#zkusebni-sms').onclick = zkusSms(false);
+    $('#zkusebni-sms-nanecisto').onclick = zkusSms(true);
 
     $('#zkusebni-zprava').onclick = async () => {
         const cil = $('#chat-vysledek');

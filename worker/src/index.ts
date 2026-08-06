@@ -1332,6 +1332,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     ok: true, provider,
                     ucet: d?.name ?? d?.organization ?? null,
                     kredit: d?.credit ?? d?.wallet?.credit ?? null,
+                    // GoSMS nemá pojmenování polí zdokumentované; syrová odpověď je
+                    // vidět jen přihlášenému trenérovi a šetří kolo dohadování.
+                    syrove: d ?? null,
                     kanal: env.GOSMS_KANAL ?? null,
                     popis: env.GOSMS_KANAL
                         ? 'Token i účet v pořádku. Zkus zprávu nanečisto, ta ověří i kanál.'

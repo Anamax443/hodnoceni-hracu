@@ -48,6 +48,9 @@
         // na chybě 21612 — neregistrovaný odesílatel, viz docs/TECHNICAL.md.
         // Proti protelefonování kreditu hlídá settings.smsDenniStrop.
         "SMS_PROVIDER": "gosms",
+        // Kanál v GoSMS, ze kterého se posílá (app.gosms.eu → Kanály → Upravit).
+        // Není to tajemství, odesílatele drží GoSMS; secrety jsou jen klíče k API.
+        "GOSMS_KANAL": "504031",
         // Alfanumerický odesílatel (max 11 znaků) — používá jen twilio.
         // U GoSMS odesílatele určuje kanál, vlastní jméno je u nich placené.
         "SMS_ODESILATEL": "SKRicmanice"
