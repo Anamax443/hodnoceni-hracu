@@ -484,7 +484,7 @@ poměru „co to dá" / „co to stojí za byrokracii":
 |---|---|---|---|---|
 | **E-mail** (Cloudflare Email Sending) | zdarma | binding `[[send_email]]`, onboardovaná doména | příjemce musí být **ověřená destination address** | **běží** |
 | **Telegram** (Bot API) | zdarma | bot od `@BotFather`, token jako secret | bot **nesmí napsat první** — uživatel mu musí poslat zprávu | **běží** |
-| **SMS** (Twilio) | $0,0706/segment (~1,50 Kč); s diakritikou 2× | účet, alfanumerický odesílatel (zdarma) | UCS-2 kvůli háčkům půlí délku segmentu na 70 znaků | účet založen, **nepostaveno** |
+| **SMS** (Twilio) | $0,0706/segment (~1,50 Kč) | účet, alfanumerický odesílatel (zdarma) | diakritika se odstraňuje, aby zpráva zůstala v jednom segmentu | **postaveno**, běží v režimu `console` |
 | **WhatsApp** (Twilio) | za konverzaci | WhatsApp Business účet, ověření subjektu u Mety | mimo 24h okno jen **schválené šablony**, ne volný text | **nepostaveno** |
 | **SMS z MikroTiku** (`/tool sms send`) | v paušálu, prakticky zdarma | dosažitelný router + komponenta, která tahá frontu | router pod CGNAT; SMS je u LTE modemů vedlejší funkce bez doručenek | **zamítnuto** pro notifikace |
 
@@ -500,33 +500,43 @@ Poznámky k rozhodnutí:
   ale nemá stát na zařízení, které je samo nejnáchylnější k výpadku.
 - Přidat providera je díky přepínači otázka jedné funkce, takže se žádná z cest nezavírá.
 
-### SMS jako třetí kanál
+### SMS (postaveno)
 
-Zatím **nepostaveno**, vedeno vědomě na později. Dnes jsou kanály e-mail a Telegram; SMS
-by se hodila pro trenéry, kteří Telegram nepoužívají, a případně jako doručení odkazu
-na obnovu hesla.
+Telefon patří k osobě (`players.telefon`) vedle e-mailu a chat id, se stejným přepínačem
+„posílat SMS". Použije se u souhrnů i u odkazu na obnovu hesla.
 
-Poznámky k rozhodnutí, až na to dojde:
+**Provider je přepínač, ne natvrdo:**
 
-- **Cenu neřešit.** Při jednotkách zpráv měsíčně je rozdíl mezi 0,40 a 1,50 Kč/SMS
-  v řádu desetikorun. Vybírat podle toho, co se snáz integruje.
-- **Provider jako přepínač**, ne natvrdo. V dev režimu `console` provider, který zprávu
-  jen zaloguje — reálná SMS ať odejde jen když se testuje doručení, ne při každém běhu:
+| `SMS_PROVIDER` | Chování |
+|---|---|
+| `console` (výchozí) | zprávu jen zaloguje, nikam neodejde — aby se kredit neprotelefonoval testy |
+| `twilio` | reálné odeslání přes `POST /2010-04-01/Accounts/{SID}/Messages.json`, Basic auth |
 
-  ```js
-  const provider = env.SMS_PROVIDER === 'twilio' ? posliTwilio : posliDoKonzole;
-  ```
+Zapnutí ostrého provozu: `npx wrangler secret put TWILIO_AUTH_TOKEN` (a `TWILIO_ACCOUNT_SID`),
+pak přepnout `SMS_PROVIDER` na `twilio` ve `wrangler.jsonc` a nasadit. Dokud secrety chybí,
+vrátí se `NO_CREDENTIALS` a je to vidět v Nastavení i v logu — ne ticho.
 
-- **Twilio trial** dá kredit zdarma na stovky zpráv; posílá jen na ověřená čísla a před text
-  přilepí poznámku o trial účtu. Na vývoj to nevadí. Karta až do produkce.
-- **BulkGate / GoSMS** jako české alternativy, kdyby bylo potřeba porovnat doručitelnost
-  na česká čísla.
-- Potřeba bude tabulka v D1 pro odeslané kódy/zprávy a **rate limit** — stejná logika jako
-  u obnovy hesla (nejvýš N za okno), aby se nedalo protelefonovat kredit.
-- Telefon patří k osobě (`players.telefon`) vedle e-mailu a chat id, se stejným přepínačem
-  „posílat SMS" jako ostatní kanály.
+**Diakritika se odstraňuje.** Háčky přepnou zprávu na UCS-2, kde má segment 70 znaků místo 160,
+tedy dvojnásobná cena. „Novak odeslal sebehodnoceni" se vejde do jednoho segmentu.
+
+**Denní strop** (`settings.smsDenniStrop`, výchozí 50) je pojistka proti smyčce, která by
+protelefonovala kredit. Počítá se z logu; po vyčerpání se zpráva nepošle a zaloguje se
+`preskoceno` s kódem `STROP`.
+
+Odesílatel je alfanumerický (`SMS_ODESILATEL`, výchozí `SKRicmanice`) — zdarma, ale nejde
+na něj odpovědět. Telefonní číslo by bylo 12 $/měsíc a je potřeba, jen když má někdo odpovídat.
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
+
+### Log komunikace (postaveno)
+
+Tabulka `komunikace`: čas, kanál, komu (osoba + adresa), typ (`souhrn` / `obnova` / `test`),
+výsledek (`ok` / `chyba` / `preskoceno`) a kód od poskytovatele. Posledních sto záznamů je
+vidět v Nastavení, takže „nic mi nepřišlo" nekončí u `wrangler tail`.
+
+**Logují se metadata, ne obsah.** Výjimkou je SMS, kde se ukládá text kvůli počtu segmentů
+a sporům o fakturaci — obsah hodnocení v něm stejně nikdy není. **Tokeny a obnovovací odkazy
+se nelogují nikdy**: záznam s platným odkazem je reset hesla čekající na zneužití.
 
 **MikroTik jako SMS provider** (LTE router s SIM, `/tool sms send`): zvažováno a odloženo.
 Router je za LTE pravděpodobně pod CGNAT, takže z Workeru nedosažitelný; WireGuard to neřeší

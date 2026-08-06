@@ -40,7 +40,15 @@
         "EMAIL_FROM": "hodnoceni@maxferit.cz",
         // Používá se v odkazech uvnitř notifikací — ty vznikají v cronu,
         // kde není žádný request, ze kterého by šla adresa odvodit.
-        "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz"
+        "ZAKLADNI_URL": "https://hodnoceni.maxferit.cz",
+
+        // 'console' = SMS se jen zaloguje a nikam neodejde (výchozí, aby se
+        // kredit neprotelefonoval testy). Na ostrý provoz přepnout na 'twilio'
+        // a doplnit secrety TWILIO_ACCOUNT_SID a TWILIO_AUTH_TOKEN.
+        "SMS_PROVIDER": "console",
+        // Alfanumerický odesílatel (max 11 znaků). Zdarma; číslo se kupovat
+        // nemusí, dokud nemá někdo na SMS odpovídat.
+        "SMS_ODESILATEL": "SKRicmanice"
     },
 
     // Souhrnné notifikace. Běží každou hodinu, protože Cloudflare umí jen UTC,

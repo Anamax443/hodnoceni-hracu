@@ -27,6 +27,10 @@ export interface Env {
     OBNOVA_EMAILY?: string;    // čárkami oddělené adresy, na které smí jít obnova hesla
     TELEGRAM_BOT_TOKEN?: string;
     ZAKLADNI_URL?: string;     // adresa do odkazů v notifikacích (cron nemá request)
+    SMS_PROVIDER?: string;     // 'console' (jen zaloguje) | 'twilio'
+    SMS_ODESILATEL?: string;   // alfanumerický odesílatel, např. SKRicmanice
+    TWILIO_ACCOUNT_SID?: string;
+    TWILIO_AUTH_TOKEN?: string;
 }
 
 const MODUL = 'hodnoceni-hracu';
@@ -86,13 +90,14 @@ function zB64url(text: string): Uint8Array {
 interface Ucet {
     id: number; jmeno: string; login: string;
     heslo_hash: string | null; heslo_sul: string | null; heslo_iterace: number | null;
-    email: string | null; telegram_chat_id: string | null;
+    email: string | null; telegram_chat_id: string | null; telefon: string | null;
 }
 
 /** Najde trenéra podle přihlašovacího jména (velikost písmen nerozhoduje). */
 async function najdiUcet(env: Env, login: string): Promise<Ucet | null> {
     return env.DB.prepare(
-        `SELECT id, jmeno, login, heslo_hash, heslo_sul, heslo_iterace, email, telegram_chat_id
+        `SELECT id, jmeno, login, heslo_hash, heslo_sul, heslo_iterace,
+                email, telegram_chat_id, telefon
            FROM players
           WHERE role = 'trener' AND aktivni = 1 AND lower(login) = lower(?)`
     ).bind(login.trim()).first<Ucet>();
@@ -400,7 +405,8 @@ function prazskaHodina(kdy: Date): number {
 
 interface Prijemce {
     id: number; jmeno: string; email: string | null; telegram_chat_id: string | null;
-    notif_email: number; notif_telegram: number;
+    telefon: string | null;
+    notif_email: number; notif_telegram: number; notif_sms: number;
 }
 
 /**
@@ -485,10 +491,12 @@ async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise
     }
 
     const { results: prijemci } = await env.DB.prepare(
-        `SELECT id, jmeno, email, telegram_chat_id, notif_email, notif_telegram
+        `SELECT id, jmeno, email, telegram_chat_id, telefon, notif_email, notif_telegram, notif_sms
            FROM players
           WHERE role = 'trener' AND aktivni = 1
-            AND ((notif_email = 1 AND email IS NOT NULL) OR (notif_telegram = 1 AND telegram_chat_id IS NOT NULL))`
+            AND ((notif_email = 1 AND email IS NOT NULL)
+              OR (notif_telegram = 1 AND telegram_chat_id IS NOT NULL)
+              OR (notif_sms = 1 AND telefon IS NOT NULL))`
     ).all<Prijemce>();
 
     if (!prijemci?.length) {
@@ -503,12 +511,27 @@ async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise
         if (p.notif_telegram && p.telegram_chat_id) {
             const r = await posliTelegram(env, p.telegram_chat_id, text);
             zpravy.push(`Telegram → ${p.jmeno}: ${r.ok ? 'odesláno' : 'selhalo — ' + r.popis}`);
+            await zalogujKomunikaci(env, {
+                kanal: 'telegram', playerId: p.id, adresa: p.telegram_chat_id, typ: 'souhrn',
+                vysledek: r.ok ? 'ok' : 'chyba', poznamka: r.ok ? null : r.popis
+            });
             if (r.ok) uspech++;
         }
         if (p.notif_email && p.email) {
             const ok = await posliMail(env, p.email, `${nas.klub} — hodnocení hráčů, souhrn`, text);
             zpravy.push(`E-mail → ${p.jmeno} (${p.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
+            await zalogujKomunikaci(env, {
+                kanal: 'email', playerId: p.id, adresa: p.email, typ: 'souhrn',
+                vysledek: ok ? 'ok' : 'chyba'
+            });
             if (ok) uspech++;
+        }
+        if (p.notif_sms && p.telefon) {
+            // Do SMS jde jen první řádek souhrnu — každý segment stojí peníze.
+            const r = await posliSmsHlidane(env, p.telefon,
+                text.split('\n').filter(Boolean).slice(1, 3).join(' ') + ` ${zaklad}`, 'souhrn', p.id);
+            zpravy.push(`SMS → ${p.jmeno} (${p.telefon}): ${r.popis}`);
+            if (r.ok) uspech++;
         }
     }
 
@@ -766,13 +789,29 @@ async function posliObnovu(env: Env, u: Ucet, zaklad: string, lang: string): Pro
     if (u.telegram_chat_id) {
         const r = await posliTelegram(env, u.telegram_chat_id, `${predmet}\n\n${text}`);
         zpravy.push(`Telegram → ${u.jmeno}: ${r.ok ? 'odesláno' : 'selhalo — ' + r.popis}`);
+        // Do logu jde jen metadata — odkaz s tokenem tam nesmí, byl by to
+        // reset hesla čekající na zneužití.
+        await zalogujKomunikaci(env, {
+            kanal: 'telegram', playerId: u.id, adresa: u.telegram_chat_id, typ: 'obnova',
+            vysledek: r.ok ? 'ok' : 'chyba', kod: r.ok ? null : 'SEND', poznamka: r.ok ? null : r.popis
+        });
     }
     if (u.email) {
         const ok = await posliMail(env, u.email, predmet, text);
         zpravy.push(`E-mail → ${u.jmeno} (${u.email}): ${ok ? 'přijato k odeslání' : 'selhalo, viz log'}`);
+        await zalogujKomunikaci(env, {
+            kanal: 'email', playerId: u.id, adresa: u.email, typ: 'obnova',
+            vysledek: ok ? 'ok' : 'chyba'
+        });
+    }
+    if (u.telefon) {
+        // SMS nese jen krátkou pobídku a odkaz; delší text by zbytečně přidal segmenty.
+        const r = await posliSmsHlidane(env, u.telefon,
+            `${en ? 'Player evaluation' : 'Hodnoceni hracu'}: ${odkaz}`, 'obnova', u.id);
+        zpravy.push(`SMS → ${u.jmeno} (${u.telefon}): ${r.popis}`);
     }
     if (!zpravy.length) {
-        zpravy.push(`${u.jmeno} nemá vyplněný ani e-mail, ani Telegram — nemá kam odkaz poslat.`);
+        zpravy.push(`${u.jmeno} nemá vyplněný e-mail, Telegram ani telefon — nemá kam odkaz poslat.`);
     }
     return zpravy;
 }
@@ -857,6 +896,109 @@ async function obnovaHesla(request: Request, env: Env, token: string): Promise<R
     await nastavHeslo(env, heslo as string);
     await env.DB.prepare('DELETE FROM obnova WHERE player_id IS NULL').run();
     return json({ nastaveno: true, login: null });
+}
+
+/* ===================== log komunikace ===================== */
+
+/**
+ * Zaznamená pokus o odeslání. Metadata, ne obsah — výjimka je SMS, kde se text
+ * ukládá kvůli počtu segmentů. Tokeny se sem nesmí dostat nikdy.
+ */
+async function zalogujKomunikaci(env: Env, z: {
+    kanal: string; playerId?: number | null; adresa?: string | null;
+    typ: string; vysledek: string; kod?: string | null; poznamka?: string | null;
+}) {
+    try {
+        await env.DB.prepare(
+            `INSERT INTO komunikace (kanal, player_id, adresa, typ, vysledek, kod, poznamka)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).bind(z.kanal, z.playerId ?? null, z.adresa ?? null, z.typ,
+               z.vysledek, z.kod ?? null, z.poznamka ?? null).run();
+    } catch (e) {
+        console.warn('Log komunikace selhal:', e instanceof Error ? e.message : String(e));
+    }
+}
+
+/* ===================== SMS ===================== */
+
+/** Háčky přepnou SMS na UCS-2 a segment se zkrátí ze 160 na 70 znaků — dvojnásobná cena. */
+function bezDiakritiky(text: string): string {
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/**
+ * Pošle SMS. Ve výchozím stavu provider 'console', který zprávu jen zaloguje —
+ * reálná SMS odejde teprve po přepnutí SMS_PROVIDER na 'twilio'. Bez toho
+ * by se kredit protelefonoval při každém testu.
+ */
+async function posliSms(env: Env, cislo: string, text: string): Promise<{ ok: boolean; kod?: string; popis?: string }> {
+    const zprava = bezDiakritiky(text);
+    const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
+
+    if (provider !== 'twilio') {
+        console.log(`SMS (console) → ${cislo}: ${zprava}`);
+        return { ok: true, kod: 'console', popis: 'Provider je console — SMS se neodeslala, jen zalogovala.' };
+    }
+    if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) {
+        return { ok: false, kod: 'NO_CREDENTIALS', popis: 'Chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.' };
+    }
+
+    try {
+        const telo = new URLSearchParams({
+            To: cislo,
+            From: env.SMS_ODESILATEL || 'SKRicmanice',
+            Body: zprava
+        });
+        const odpoved = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`,
+            {
+                method: 'POST',
+                headers: {
+                    authorization: 'Basic ' + btoa(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`),
+                    'content-type': 'application/x-www-form-urlencoded'
+                },
+                body: telo
+            });
+        const data = await odpoved.json<any>();
+        if (!odpoved.ok) {
+            // Twilio vrací code + message; token v odpovědi není a nesmí se logovat.
+            return { ok: false, kod: String(data?.code ?? odpoved.status), popis: data?.message ?? 'Twilio odmítlo zprávu.' };
+        }
+        return { ok: true, kod: data?.sid };
+    } catch (e) {
+        return { ok: false, kod: 'FETCH', popis: e instanceof Error ? e.message : String(e) };
+    }
+}
+
+/** Pojistka proti smyčce: kolik SMS už odešlo za posledních 24 h. */
+async function smsZaDen(env: Env): Promise<number> {
+    const r = await env.DB.prepare(
+        `SELECT COUNT(*) AS pocet FROM komunikace
+          WHERE kanal = 'sms' AND vysledek = 'ok' AND cas > datetime('now', '-1 day')`
+    ).first<{ pocet: number }>();
+    return r?.pocet ?? 0;
+}
+
+/** Odešle SMS s ohlídáním denního stropu a se záznamem do logu. */
+async function posliSmsHlidane(env: Env, cislo: string, text: string,
+                               typ: string, playerId?: number | null): Promise<{ ok: boolean; popis: string }> {
+    const nas = await nastaveni(env);
+    const strop = Number(nas.smsDenniStrop) || 50;
+    if (await smsZaDen(env) >= strop) {
+        await zalogujKomunikaci(env, {
+            kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',
+            kod: 'STROP', poznamka: `Denní strop ${strop} SMS vyčerpán.`
+        });
+        return { ok: false, popis: `Denní strop ${strop} SMS je vyčerpaný, zpráva se neodeslala.` };
+    }
+
+    const r = await posliSms(env, cislo, text);
+    await zalogujKomunikaci(env, {
+        kanal: 'sms', playerId, adresa: cislo, typ,
+        vysledek: r.ok ? 'ok' : 'chyba', kod: r.kod ?? null,
+        poznamka: bezDiakritiky(text).slice(0, 300)   // text kvůli segmentům; hodnocení v něm není
+    });
+    return { ok: r.ok, popis: r.ok ? (r.popis ?? 'Odesláno.') : `${r.kod ?? 'chyba'} — ${r.popis ?? ''}` };
 }
 
 /* ===================== Telegram ===================== */
@@ -989,6 +1131,18 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     ? 'Binding EMAIL je nasazený. Doručení ověří až odeslaná zpráva.'
                     : 'Chybí binding EMAIL (Cloudflare Email Sending).'
             },
+            sms: {
+                zapojeno: (env.SMS_PROVIDER || 'console').toLowerCase() === 'twilio',
+                provider: (env.SMS_PROVIDER || 'console').toLowerCase(),
+                odesilatel: env.SMS_ODESILATEL || 'SKRicmanice',
+                zaDen: await smsZaDen(env),
+                strop: Number((await nastaveni(env)).smsDenniStrop) || 50,
+                popis: (env.SMS_PROVIDER || 'console').toLowerCase() === 'twilio'
+                    ? (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
+                        ? 'Twilio je zapojené, SMS se odesílají doopravdy.'
+                        : 'Provider je twilio, ale chybí TWILIO_ACCOUNT_SID nebo TWILIO_AUTH_TOKEN.')
+                    : 'Provider je console — SMS se jen logují, nic se neodesílá. Přepni SMS_PROVIDER na twilio.'
+            },
             telegram: tg.ok
                 ? {
                     zapojeno: true, ok: true,
@@ -1021,6 +1175,26 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 ? `Botovi zatím napsali: ${chaty.size}`
                 : 'Botovi zatím nikdo nenapsal. Telegram nedovolí psát prvnímu — každý trenér musí botovi poslat aspoň jednu zprávu.'
         });
+    }
+
+    /* ---------- log odeslané komunikace ---------- */
+    if (cesta === '/api/komunikace' && metoda === 'GET') {
+        const { results } = await env.DB.prepare(
+            `SELECT k.id, k.cas, k.kanal, k.adresa, k.typ, k.vysledek, k.kod, k.poznamka, p.jmeno
+               FROM komunikace k LEFT JOIN players p ON p.id = k.player_id
+              ORDER BY k.id DESC LIMIT 100`
+        ).all();
+        return json(results ?? []);
+    }
+
+    /* ---------- zkušební SMS ---------- */
+    if (cesta === '/api/sms/test' && metoda === 'POST') {
+        const { telefon } = await request.json<{ telefon?: string }>();
+        if (!telefon) return chyba('Chybí telefon.', 400);
+        const nas = await nastaveni(env);
+        const r = await posliSmsHlidane(env, String(telefon),
+            `${nas.klub}: zkusebni zprava z aplikace Hodnoceni hracu.`, 'test', null);
+        return json({ ok: r.ok, popis: r.popis });
     }
 
     /* ---------- zkušební zpráva do Telegramu ---------- */
@@ -1066,7 +1240,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         if (metoda === 'GET') {
             const { results } = await env.DB.prepare(
                 `SELECT id, jmeno, prezdivka, post, pozice, role, sablona, aktivni, created_at,
-                        email, telegram_chat_id, notif_email, notif_telegram, login,
+                        email, telegram_chat_id, telefon,
+                        notif_email, notif_telegram, notif_sms, login,
                         hodnoceni_povinne, heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
                    FROM players ORDER BY role DESC, aktivni DESC, jmeno`
             ).all();
@@ -1079,17 +1254,19 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             if (problem) return chyba(problem, 400);
             const r = await env.DB.prepare(
                 `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                                      email, telegram_chat_id, notif_email, notif_telegram, login,
+                                      email, telegram_chat_id, telefon,
+                                      notif_email, notif_telegram, notif_sms, login,
                                       hodnoceni_povinne)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
                  RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                           email, telegram_chat_id, notif_email, notif_telegram, login,
-                           hodnoceni_povinne`
+                           email, telegram_chat_id, telefon,
+                           notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne`
             ).bind(
                 p.jmeno.trim(), p.prezdivka || null, p.post || null,
                 JSON.stringify(p.pozice ?? []), p.role, p.sablona,
                 (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
-                p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
+                (p.telefon ?? '').trim() || null,
+                p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0, p.notif_sms ? 1 : 0,
                 (p.login ?? '').trim().toLowerCase() || null,
                 p.hodnoceni_povinne ? 1 : 0
             ).first();
@@ -1105,17 +1282,19 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const r = await env.DB.prepare(
             `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
                                 role = ?, sablona = ?, aktivni = ?,
-                                email = ?, telegram_chat_id = ?, notif_email = ?, notif_telegram = ?,
+                                email = ?, telegram_chat_id = ?, telefon = ?,
+                                notif_email = ?, notif_telegram = ?, notif_sms = ?,
                                 login = ?, hodnoceni_povinne = ?
               WHERE id = ?
           RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
-                    email, telegram_chat_id, notif_email, notif_telegram, login,
-                    hodnoceni_povinne`
+                    email, telegram_chat_id, telefon,
+                    notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne`
         ).bind(
             p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
             p.role, p.sablona, p.aktivni ? 1 : 0,
             (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
-            p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0,
+            (p.telefon ?? '').trim() || null,
+            p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0, p.notif_sms ? 1 : 0,
             (p.login ?? '').trim().toLowerCase() || null,
             p.hodnoceni_povinne ? 1 : 0,
             Number(osobaId)

@@ -275,10 +275,16 @@ async function lide(kam) {
                     <div class="popis">${t('lide.chatid.napoveda')}</div>
                     <label style="margin-top:5px"><input type="checkbox" id="o-notif-telegram" style="width:auto"> ${t('lide.notifTelegram')}</label>
                 </div>
+                <div class="pole"><label for="o-telefon">${t('lide.telefon')}</label>
+                    <input type="text" id="o-telefon" autocomplete="off" placeholder="+420777123456">
+                    <div class="popis">${t('lide.telefon.napoveda')}</div>
+                    <label style="margin-top:5px"><input type="checkbox" id="o-notif-sms" style="width:auto"> ${t('lide.notifSms')}</label>
+                </div>
             </div>
             <p>
                 <button class="vedlejsi" id="dotahnout-chat" title="${t('lide.dotahnout.tip')}">${t('lide.dotahnout')}</button>
                 <button class="vedlejsi" id="zkusebni-zprava" title="${t('lide.zkusebni.tip')}">${t('lide.zkusebni')}</button>
+                <button class="vedlejsi" id="zkusebni-sms" title="${t('lide.zkusebniSms.tip')}">${t('lide.zkusebniSms')}</button>
                 <button class="vedlejsi" id="poslat-pozvanku" title="${t('lide.pozvanka.tip')}">${t('lide.pozvanka')}</button>
             </p>
             <div id="chat-vysledek"></div>
@@ -300,6 +306,8 @@ async function lide(kam) {
         $('#o-chatid').value = '';
         $('#o-notif-email').checked = false;
         $('#o-notif-telegram').checked = false;
+        $('#o-telefon').value = '';
+        $('#o-notif-sms').checked = false;
         $('#o-povinne').checked = false;
         $('#chat-vysledek').innerHTML = '';
         delete $('#formular-osoby').dataset.id;
@@ -339,6 +347,18 @@ async function lide(kam) {
         }
     };
 
+    $('#zkusebni-sms').onclick = async () => {
+        const cil = $('#chat-vysledek');
+        const cislo = $('#o-telefon').value.trim();
+        if (!cislo) { cil.innerHTML = `<div class="hlaska chyba">${t('lide.telefon')}?</div>`; return; }
+        try {
+            const r = await api('/api/sms/test', { telo: { telefon: cislo } });
+            cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'chyba'}">${esc(r.popis)}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
     $('#zkusebni-zprava').onclick = async () => {
         const cil = $('#chat-vysledek');
         const chat = $('#o-chatid').value.trim();
@@ -367,6 +387,8 @@ async function lide(kam) {
         $('#o-chatid').value = o.telegram_chat_id || '';
         $('#o-notif-email').checked = !!o.notif_email;
         $('#o-notif-telegram').checked = !!o.notif_telegram;
+        $('#o-telefon').value = o.telefon || '';
+        $('#o-notif-sms').checked = !!o.notif_sms;
         $('#o-povinne').checked = !!o.hodnoceni_povinne;
         $('#chat-vysledek').innerHTML = o.role === 'trener'
             ? `<div class="hlaska ${o.ma_heslo ? 'ok' : 'pozor'}">${o.ma_heslo ? t('lide.maHeslo') : t('lide.bezHesla')}</div>`
@@ -386,8 +408,10 @@ async function lide(kam) {
             login: $('#o-login').value,
             email: $('#o-email').value,
             telegram_chat_id: $('#o-chatid').value,
+            telefon: $('#o-telefon').value,
             notif_email: $('#o-notif-email').checked,
             notif_telegram: $('#o-notif-telegram').checked,
+            notif_sms: $('#o-notif-sms').checked,
             hodnoceni_povinne: $('#o-povinne').checked,
             pozice: [...kam.querySelectorAll('.o-pozice:checked')].map(c => c.value),
             role: $('#o-role').value,
@@ -1054,8 +1078,35 @@ async function nastaveni(kam) {
                 ${t('notif.hodiny', s.hodinaTed, s.hodinaCil)}<br>
                 ${t('notif.posledni', s.posledni ? new Date(s.posledni).toLocaleString(locale()) : t('notif.nikdy'))}<br>
                 ${prijemci ? t('notif.prijemci', esc(prijemci)) : t('notif.bezPrijemcu')}<br>
-                <b>${t('notif.kanaly')}:</b> Telegram — ${esc(k.telegram.popis)} · e-mail — ${esc(k.email.popis)}
+                <b>${t('notif.kanaly')}:</b><br>
+                Telegram — ${esc(k.telegram.popis)}<br>
+                e-mail — ${esc(k.email.popis)}<br>
+                SMS — ${esc(k.sms.popis)} (${k.sms.zaDen}/${k.sms.strop} za 24 h)
             </div>`;
+    }).catch(() => { /* informativní */ });
+
+    // Log odeslané komunikace — ať „nic mi nepřišlo" nekončí u wrangler tail.
+    api('/api/komunikace').then(zaznamy => {
+        const stav = { ok: 'ano', chyba: 'rozdil-plus', preskoceno: 'ne' };
+        kam.insertAdjacentHTML('beforeend', `
+            <div class="karta">
+                <h2>${t('komunikace.nadpis')}</h2>
+                <p class="popis">${t('komunikace.popis')}</p>
+                <table>
+                    <thead><tr><th>${t('komunikace.cas')}</th><th>${t('komunikace.kanal')}</th>
+                        <th>${t('komunikace.komu')}</th><th>${t('komunikace.typ')}</th>
+                        <th>${t('komunikace.vysledek')}</th></tr></thead>
+                    <tbody>${zaznamy.length ? zaznamy.map(z => `
+                        <tr>
+                            <td>${esc(new Date(z.cas + 'Z').toLocaleString(locale()))}</td>
+                            <td>${esc(z.kanal)}</td>
+                            <td>${esc(z.jmeno || z.adresa || '—')}</td>
+                            <td>${t('komunikace.typ.' + z.typ)}</td>
+                            <td><span class="${stav[z.vysledek] ?? ''}">${t('komunikace.' + z.vysledek)}</span>${
+                                z.kod ? ` <span class="popis">${esc(z.kod)}</span>` : ''}</td>
+                        </tr>`).join('') : `<tr><td colspan="5">${t('komunikace.prazdno')}</td></tr>`}</tbody>
+                </table>
+            </div>`);
     }).catch(() => { /* informativní */ });
 
     $('#ulozit-notif').onclick = async () => {
