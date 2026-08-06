@@ -237,7 +237,11 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     notifCas: '19:00',         // místní čas; cron běží každou hodinu a vybere si tu svou
     notifDnyZmeny: '3',        // když se něco změnilo: nejvýš jednou za N dní
     notifDnyTicho: '14',       // když se nic neděje: po N dnech přijde „nic se nezměnilo"
-    notifPosledni: ''          // kdy naposledy něco odešlo
+    notifPosledni: '',         // kdy naposledy něco odešlo
+    // SMS je mimořádný nástroj: stojí peníze a lidi ruší. Výchozí stav je vypnuto
+    // a zapíná se vědomě v Nastavení — přepínač u osoby sám o sobě nestačí.
+    smsAktivni: '0',
+    smsDenniStrop: '50'        // pojistka proti smyčce, i když je kanál zapnutý
 };
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
@@ -1011,12 +1015,16 @@ async function posliSmsGoSms(env: Env, cislo: string, zprava: string, nanecisto:
             headers: { 'content-type': 'application/json', authorization: `Bearer ${t.token}` },
             body: JSON.stringify({ message: zprava, recipients: [cislo], channel: Number(env.GOSMS_KANAL) })
         });
-        const d = await r.json<any>().catch(() => null);
+        // Chybu GoSMS vrací různě (message, error, pole errors) — bez syrového těla
+        // se hádá naslepo, tak ho v nouzi ukážeme celé. Token v něm není.
+        const syrove = await r.text();
+        let d: any = null;
+        try { d = JSON.parse(syrove); } catch { /* nechceme spadnout na HTML chybě */ }
         if (!r.ok) {
-            return {
-                ok: false, kod: String(d?.code ?? r.status),
-                popis: d?.message ?? d?.error_description ?? 'GoSMS zprávu odmítlo.'
-            };
+            const podrobnosti = d?.message ?? d?.error_description ?? d?.error
+                ?? (Array.isArray(d?.errors) ? d.errors.map((e: any) => e?.message ?? JSON.stringify(e)).join('; ') : null)
+                ?? syrove.slice(0, 300);
+            return { ok: false, kod: String(d?.code ?? r.status), popis: `GoSMS zprávu odmítlo: ${podrobnosti}` };
         }
         if (nanecisto) {
             return { ok: true, kod: 'nanecisto', popis: 'GoSMS požadavek přijalo. Nanečisto — nic se neodeslalo a nic to nestálo.' };
@@ -1079,11 +1087,22 @@ async function smsZaDen(env: Env): Promise<number> {
  */
 async function stavSms(env: Env) {
     const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
+    const nas = await nastaveni(env);
+    const aktivni = nas.smsAktivni === '1';
     const spolecne = {
-        provider,
+        provider, aktivni,
         zaDen: await smsZaDen(env),
-        strop: Number((await nastaveni(env)).smsDenniStrop) || 50
+        strop: Number(nas.smsDenniStrop) || 50
     };
+
+    // Vypnutý kanál je normální stav, ne porucha — musí to tak i vypadat.
+    if (!aktivni) {
+        return {
+            ...spolecne, zapojeno: false, odesilatel: '—',
+            popis: `SMS je vypnutá v Nastavení — mimořádný nástroj, zapíná se ručně. `
+                + `Brána (${provider}) je připravená, zkoušku nanečisto lze spustit i teď.`
+        };
+    }
 
     if (provider === 'gosms') {
         const chybi = [
@@ -1122,6 +1141,21 @@ async function posliSmsHlidane(env: Env, cislo: string, text: string,
                                nanecisto = false): Promise<{ ok: boolean; popis: string }> {
     const nas = await nastaveni(env);
     const strop = Number(nas.smsDenniStrop) || 50;
+
+    // SMS je mimořádný nástroj — dokud ji trenér v Nastavení nezapne, neodejde
+    // nic, ani když má osoba přepínač u sebe. Zkouška nanečisto smí vždy:
+    // nic neodesílá, nic nestojí a slouží právě k ověření, že by to fungovalo.
+    if (!nanecisto && nas.smsAktivni !== '1') {
+        await zalogujKomunikaci(env, {
+            kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',
+            kod: 'VYPNUTO', poznamka: 'SMS kanál je v Nastavení vypnutý.'
+        });
+        return {
+            ok: false,
+            popis: 'SMS kanál je v Nastavení vypnutý (mimořádný nástroj). Zapni ho, jen když je opravdu potřeba.'
+        };
+    }
+
     if (!nanecisto && await smsZaDen(env) >= strop) {
         await zalogujKomunikaci(env, {
             kanal: 'sms', playerId, adresa: cislo, typ, vysledek: 'preskoceno',

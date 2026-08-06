@@ -1065,6 +1065,9 @@ async function nastaveni(kam) {
                     <input type="number" id="n-dnyTicho" min="1" max="180" value="${esc(stav.nastaveni.notifDnyTicho ?? '14')}">
                     <div class="popis">${t('notif.dnyTicho.napoveda')}</div></div>
             </div>
+            <div class="pole"><label><input type="checkbox" id="n-sms" style="width:auto"
+                ${stav.nastaveni.smsAktivni === '1' ? 'checked' : ''}> ${t('notif.smsAktivni')}</label>
+                <div class="popis">${t('notif.smsAktivni.napoveda')}</div></div>
             <div id="notif-stav"></div>
             <button class="hl" id="ulozit-notif" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>
             <button class="vedlejsi" id="poslat-ted" title="${t('notif.poslatTed.tip')}">${t('notif.poslatTed')}</button>
@@ -1118,7 +1121,8 @@ async function nastaveni(kam) {
             notifZapnuto: $('#n-zapnuto').checked ? '1' : '0',
             notifCas: $('#n-cas').value,
             notifDnyZmeny: $('#n-dnyZmeny').value,
-            notifDnyTicho: $('#n-dnyTicho').value
+            notifDnyTicho: $('#n-dnyTicho').value,
+            smsAktivni: $('#n-sms').checked ? '1' : '0'
         };
         try {
             stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });
