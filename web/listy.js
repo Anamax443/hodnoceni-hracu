@@ -40,11 +40,14 @@ popisky();
 verze();
 
 try {
-    const dotaz = new URLSearchParams({
-        obdobi: p.get('obdobi') || '',
-        porovnani: p.get('porovnani') || 'minule',
-        ids: p.get('ids') || 'vse'
-    });
+    // ?verze=<id> vytiskne jednu konkrétní starší verzi hodnocení.
+    const dotaz = p.get('verze')
+        ? new URLSearchParams({ verze: p.get('verze') })
+        : new URLSearchParams({
+            obdobi: p.get('obdobi') || '',
+            porovnani: p.get('porovnani') || 'minule',
+            ids: p.get('ids') || 'vse'
+        });
 
     const odpoved = await fetch(`/api/listy?${dotaz}`, { credentials: 'same-origin' });
     if (odpoved.status === 401) throw new Error(t('tisk.neprihlasen'));

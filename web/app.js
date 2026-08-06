@@ -179,7 +179,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { lide, hodnotit, listy, porovnani, odkazy, nastaveni }[stav.zalozka];
+        const kresli = { lide, hodnotit, shoda, listy, porovnani, odkazy, nastaveni }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -257,6 +257,10 @@ async function lide(kam) {
                     <div class="popis">${t('lide.sablona.napoveda')}</div></div>
             </div>
             <div class="pole"><label><input type="checkbox" id="o-aktivni" checked style="width:auto"> ${t('lide.aktivni')}</label></div>
+            <div class="pole">
+                <label><input type="checkbox" id="o-povinne" style="width:auto"> ${t('lide.povinne')}</label>
+                <div class="popis">${t('lide.povinne.napoveda')}</div>
+            </div>
 
             <h2 style="margin-top:18px">${t('lide.notifikace')}</h2>
             <p class="popis">${t('lide.notifikace.popis')}</p>
@@ -296,7 +300,9 @@ async function lide(kam) {
         $('#o-chatid').value = '';
         $('#o-notif-email').checked = false;
         $('#o-notif-telegram').checked = false;
+        $('#o-povinne').checked = false;
         $('#chat-vysledek').innerHTML = '';
+        delete $('#formular-osoby').dataset.id;
     };
 
     $('#dotahnout-chat').onclick = async () => {
@@ -361,6 +367,7 @@ async function lide(kam) {
         $('#o-chatid').value = o.telegram_chat_id || '';
         $('#o-notif-email').checked = !!o.notif_email;
         $('#o-notif-telegram').checked = !!o.notif_telegram;
+        $('#o-povinne').checked = !!o.hodnoceni_povinne;
         $('#chat-vysledek').innerHTML = o.role === 'trener'
             ? `<div class="hlaska ${o.ma_heslo ? 'ok' : 'pozor'}">${o.ma_heslo ? t('lide.maHeslo') : t('lide.bezHesla')}</div>`
             : '';
@@ -381,6 +388,7 @@ async function lide(kam) {
             telegram_chat_id: $('#o-chatid').value,
             notif_email: $('#o-notif-email').checked,
             notif_telegram: $('#o-notif-telegram').checked,
+            hodnoceni_povinne: $('#o-povinne').checked,
             pozice: [...kam.querySelectorAll('.o-pozice:checked')].map(c => c.value),
             role: $('#o-role').value,
             sablona: $('#o-sablona').value,
@@ -533,6 +541,157 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {
     };
 }
 
+/* ===================== záložka: Shoda mezi trenéry ===================== */
+
+async function shoda(kam) {
+    const hraci = hraciAktivni();
+    kam.innerHTML = `
+        <div class="karta">
+            <h2>${t('shoda.nadpis')}</h2>
+            <p class="popis">${t('shoda.popis', esc(stav.nastaveni.tolerance))}</p>
+            <div class="radek">
+                <div class="pole"><label for="s-hrac">${t('hodnotit.hrac')}</label>
+                    <select id="s-hrac">
+                        <option value="">${t('hodnotit.vyber')}</option>
+                        ${hraci.map(h => `<option value="${h.id}">${esc(jmenoText(h))}</option>`).join('')}
+                    </select></div>
+                <div class="pole"><label for="s-sablona">${t('hodnotit.sablona')}</label>
+                    <select id="s-sablona">${Object.keys(SABLONY)
+                        .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select></div>
+            </div>
+        </div>
+        <div id="s-vysledek"></div>`;
+
+    const nacti = async () => {
+        const id = Number($('#s-hrac').value);
+        const cil = $('#s-vysledek');
+        if (!id) { cil.innerHTML = ''; return; }
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const s = await api(`/api/shoda?player_id=${id}&sablona=${$('#s-sablona').value}`
+                + `&obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
+            vykresliShodu(cil, s, id);
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+    $('#s-hrac').onchange = nacti;
+    $('#s-sablona').onchange = nacti;
+}
+
+function vykresliShodu(kam, s, hracId) {
+    if (s.cekaNaTebe) {
+        kam.innerHTML = `<div class="karta"><div class="hlaska pozor">${t('shoda.cekaNaTebe')}</div></div>`;
+        return;
+    }
+    if (!s.odevzdali.length) {
+        kam.innerHTML = `<div class="karta"><div class="hlaska info">${t('shoda.zadnaData')}</div></div>`;
+        return;
+    }
+
+    const popisky = Object.fromEntries(osy(s.sablona).map(o => [o.klic, o.popis]));
+    const treneri = s.odevzdali.filter(o => o.povinny);
+
+    const radky = s.osy.map(o => {
+        const bunky = treneri.map(tr => {
+            const h = o.hodnoty.find(x => x.trener === tr.jmeno);
+            return `<td class="cisla">${h ? h.hodnota : '—'}</td>`;
+        }).join('');
+        const shodli = o.hodnoty.length > 1 ? o.souhlasi : true;
+        return `
+            <tr class="${shodli ? '' : 'resit'}">
+                <td>${esc(popisky[o.klic] || o.klic)}</td>
+                ${bunky}
+                <td>${o.hodnoty.length < 2 ? '<span class="ne">—</span>'
+                    : shodli ? `<span class="ano">${t('shoda.souhlasi')}</span>`
+                             : `<span class="rozdil-plus">${t('shoda.rozchazi')} (${o.rozptyl})</span>`}</td>
+                <td class="cisla">${stupniceMala(o.klic, o.navrh)}</td>
+            </tr>`;
+    }).join('');
+
+    kam.innerHTML = `
+        <div class="karta">
+            ${s.chybi.length
+                ? `<div class="hlaska pozor">${t('shoda.chybi', esc(s.chybi.join(', ')))}</div>`
+                : `<div class="hlaska ok">${t('shoda.vsichni')}</div>`}
+            ${s.nesoulad ? `<div class="hlaska pozor">${t('shoda.nesoulad', s.nesoulad)}</div>` : ''}
+            ${s.uzavrena ? `<p class="popis">${t('shoda.uzavrena',
+                esc(new Date(s.uzavrena.datum + 'Z').toLocaleString(locale())))}</p>` : ''}
+            <table>
+                <thead><tr><th>${t('porovnani.osa')}</th>
+                    ${treneri.map(tr => `<th class="cisla">${esc(tr.jmeno)}</th>`).join('')}
+                    <th>${t('porovnani.kRozhovoru')}</th><th class="cisla">${t('shoda.navrh')}</th></tr></thead>
+                <tbody>${radky}</tbody>
+            </table>
+        </div>
+
+        <div class="karta">
+            <h2>${t('shoda.texty')}</h2>
+            ${s.odevzdali.map(o => `
+                <div class="osa">
+                    <div class="nazev">${esc(o.jmeno)}${o.povinny ? '' : ` <span class="popis">(${t('lide.trener')})</span>`}</div>
+                    <p class="popis"><b>${t('blok.fyzicky')}:</b> ${esc(o.fyzicky) || '—'}<br>
+                       <b>${t('blok.hlavou')}:</b> ${esc(o.hlavou) || '—'}<br>
+                       <b>${t('blok.parta')}:</b> ${esc(o.parta) || '—'}<br>
+                       <b>${esc(stav.nastaveni.cileNadpis)}:</b> ${o.cile.length ? esc(o.cile.join(' · ')) : '—'}</p>
+                </div>`).join('')}
+        </div>
+
+        <div class="karta" id="s-finalni">
+            <h2>${t('shoda.finalni')}</h2>
+            <div class="pole"><label for="s-fyzicky">${t('blok.fyzicky')}</label><textarea id="s-fyzicky"></textarea></div>
+            <div class="pole"><label for="s-hlavou">${t('blok.hlavou')}</label><textarea id="s-hlavou"></textarea></div>
+            <div class="pole"><label for="s-parta">${t('blok.parta')}</label><textarea id="s-parta"></textarea></div>
+            <div class="pole"><label for="s-cil1">${esc(stav.nastaveni.cileNadpis)}</label>
+                <input type="text" id="s-cil1" placeholder="${t('hodnotit.cil', 1)}"></div>
+            <div class="pole"><input type="text" id="s-cil2" placeholder="${t('hodnotit.cil', 2)}"></div>
+            <div class="pole"><input type="text" id="s-cil3" placeholder="${t('hodnotit.cil', 3)}"></div>
+            <div class="pole"><label for="s-poznamka">${t('shoda.poznamka')}</label>
+                <textarea id="s-poznamka"></textarea>
+                <div class="popis">${t('shoda.poznamka.napoveda')}</div></div>
+            <button class="hl" id="s-ulozit" title="${t('shoda.ulozit.tip')}">${t('shoda.ulozit')}</button>
+        </div>`;
+
+    // Texty prvního povinného trenéra jako výchozí — finalizující je přepíše.
+    const zdroj = treneri[0] ?? s.odevzdali[0];
+    if (zdroj) {
+        $('#s-fyzicky').value = zdroj.fyzicky ?? '';
+        $('#s-hlavou').value = zdroj.hlavou ?? '';
+        $('#s-parta').value = zdroj.parta ?? '';
+        (zdroj.cile ?? []).forEach((c, i) => { if (i < 3) $('#s-cil' + (i + 1)).value = c; });
+    }
+
+    $('#s-ulozit').onclick = async () => {
+        const hodnoty = {};
+        const chybi = [];
+        for (const o of s.osy) {
+            const vybrano = kam.querySelector(`select.vysledek[data-osa="${o.klic}"]`);
+            if (!vybrano?.value) chybi.push(popisky[o.klic] || o.klic);
+            else hodnoty[o.klic] = Number(vybrano.value);
+        }
+        if (chybi.length) { hlaska($('#s-finalni'), 'chyba', t('shoda.chybiOsy') + ' ' + chybi.join(', ')); return; }
+
+        try {
+            await api('/api/shoda', { telo: {
+                player_id: hracId, obdobi: stav.nastaveni.obdobi, sablona: s.sablona, hodnoty,
+                fyzicky: $('#s-fyzicky').value, hlavou: $('#s-hlavou').value, parta: $('#s-parta').value,
+                cile: [$('#s-cil1').value, $('#s-cil2').value, $('#s-cil3').value],
+                poznamka_shody: $('#s-poznamka').value
+            } });
+            hlaska($('#s-finalni'), 'ok', t('shoda.ulozeno'));
+        } catch (e) {
+            hlaska($('#s-finalni'), 'chyba', e.message);
+        }
+    };
+}
+
+/** Kompaktní volba 1..10 do tabulky shody. Deset tlačítek by řádek roztrhalo. */
+function stupniceMala(klic, predvyplneno) {
+    const volby = Array.from({ length: MAX }, (_, i) => i + 1)
+        .map(i => `<option value="${i}"${predvyplneno === i ? ' selected' : ''}>${i}</option>`).join('');
+    return `<select class="vysledek" data-osa="${klic}"><option value="">—</option>${volby}</select>`;
+}
+
 /* ===================== záložka: Listy ===================== */
 
 function otevriListy({ ids = 'vse', porovnani = 'minule', obdobi = stav.nastaveni.obdobi } = {}) {
@@ -615,10 +774,85 @@ async function porovnani(kam) {
                 api(`/api/trend?player_id=${id}`)
             ]);
             cil.innerHTML = tabulkaPorovnani(p) + tabulkaTrendu(tr);
+            await pripojHistorii(cil, id);
         } catch (e) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
     };
+}
+
+/* ===================== historie verzí ===================== */
+
+async function pripojHistorii(kam, hracId) {
+    const verze = await api(`/api/historie?player_id=${hracId}`);
+
+    const jmenoAutora = v => v.autor === 'hrac' ? t('historie.autor.hrac')
+        : v.autor === 'shoda' ? t('historie.autor.shoda')
+        : `${t('historie.autor.trener')}${v.autorJmeno ? ' — ' + v.autorJmeno : ''}`;
+
+    kam.insertAdjacentHTML('beforeend', `
+        <div class="karta" id="historie">
+            <h2>${t('historie.nadpis')}</h2>
+            <p class="popis">${t('historie.popis')}</p>
+            <table>
+                <thead><tr><th class="cisla"></th><th>${t('historie.datum')}</th>
+                    <th>${t('listy.obdobi')}</th><th>${t('historie.autor')}</th>
+                    <th>${t('lide.sablona')}</th><th></th></tr></thead>
+                <tbody>${verze.length ? verze.map(v => `
+                    <tr>
+                        <td class="cisla"><input type="checkbox" class="verze" value="${v.id}"
+                            data-sablona="${v.sablona}" data-popis="${esc(new Date(v.datum + 'Z').toLocaleString(locale()))}"></td>
+                        <td>${esc(new Date(v.datum + 'Z').toLocaleString(locale()))}</td>
+                        <td>${esc(v.obdobi)}</td>
+                        <td>${esc(jmenoAutora(v))}</td>
+                        <td>${t('sablona.' + v.sablona)}</td>
+                        <td><button class="vedlejsi" data-tisk="${v.id}" title="${t('historie.tisk.tip')}">${t('historie.tisk')}</button></td>
+                    </tr>`).join('') : `<tr><td colspan="6">${t('historie.prazdno')}</td></tr>`}</tbody>
+            </table>
+            ${verze.length > 1 ? `<p style="margin-top:12px">
+                <button class="vedlejsi" id="porovnat-verze" title="${t('historie.porovnat.tip')}">${t('historie.porovnat')}</button>
+            </p><div id="posun"></div>` : ''}
+        </div>`);
+
+    kam.querySelectorAll('[data-tisk]').forEach(b => b.onclick = () =>
+        window.open(`listy.html?verze=${b.dataset.tisk}`, '_blank'));
+
+    const tlacitko = $('#porovnat-verze');
+    if (!tlacitko) return;
+    tlacitko.onclick = () => {
+        const vybrane = [...kam.querySelectorAll('.verze:checked')];
+        const cil = $('#posun');
+        if (vybrane.length !== 2) { cil.innerHTML = `<div class="hlaska chyba">${t('historie.vyberDve')}</div>`; return; }
+        if (vybrane[0].dataset.sablona !== vybrane[1].dataset.sablona) {
+            cil.innerHTML = `<div class="hlaska pozor">${t('historie.ruznaSablona')}</div>`;
+            return;
+        }
+        // Starší vlevo: seznam je od nejnovější, takže druhý vybraný je ten dřívější.
+        const [novy, stary] = vybrane.map(v => verze.find(x => x.id === Number(v.value)));
+        cil.innerHTML = tabulkaPosunu(stary, novy);
+    };
+}
+
+function tabulkaPosunu(stary, novy) {
+    const popisky = Object.fromEntries(osy(novy.sablona).map(o => [o.klic, o.popis]));
+    const radky = Object.keys(popisky).map(klic => {
+        const a = stary.hodnoty[klic] ?? 0, b = novy.hodnoty[klic] ?? 0;
+        const zmena = b - a;
+        // Stejné pásmo šumu jako u trendu: posun o 1 bod není signál.
+        const smer = Math.abs(zmena) >= 2 ? (zmena > 0 ? '↑' : '↓') : '→';
+        return `<tr><td>${esc(popisky[klic])}</td><td class="cisla">${a}</td>
+                    <td class="cisla">${b}</td><td class="cisla">${smer}</td></tr>`;
+    }).join('');
+
+    return `
+        <table style="margin-top:10px">
+            <thead><tr><th>${t('porovnani.osa')}</th>
+                <th class="cisla">${esc(new Date(stary.datum + 'Z').toLocaleDateString(locale()))}</th>
+                <th class="cisla">${esc(new Date(novy.datum + 'Z').toLocaleDateString(locale()))}</th>
+                <th class="cisla"></th></tr></thead>
+            <tbody>${radky}</tbody>
+        </table>
+        <p class="popis">${t('trend.pasmo')}</p>`;
 }
 
 function tabulkaPorovnani(p) {
