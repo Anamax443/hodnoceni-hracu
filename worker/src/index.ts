@@ -43,7 +43,10 @@ const SESSION_HODIN = 12;
 const PASMO_SUMU = 2;         // §7.4: posun o 1 bod u subjektivního hodnocení není signál
 const OBNOVA_MINUT = 15;      // platnost odkazu na obnovu hesla
 const OBNOVA_MAX_ZA_OKNO = 3; // víc žádostí za 15 minut se nepošle (brzda na spamování schránky)
-const HESLO_MIN = 10;
+// Krátký PIN je vědomý ústupek pohodlí (trenéři to ťukají na hřišti v mobilu).
+// Únosné je to jen díky zámku po několika špatných pokusech — bez něj by se
+// 10 000 kombinací zkusilo hrubou silou za pár vteřin. Viz PRIHLASENI_*.
+const HESLO_MIN = 4;
 // Strop workerd: „iteration counts above 100000 are not supported".
 // Víc nejde, i když by OWASP chtěl výrazně víc.
 const PBKDF2_ITERACE = 100_000;
