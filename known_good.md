@@ -5,6 +5,34 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-07 (11) — úprava hodnocení jako nová verze
+
+**Commit:** `025d70d` · **Ověřeno** lokálně (`wrangler dev` + čerstvá D1 s migracemi 001–012);
+živě zatím jen nasazení a schéma — v ostré databázi není žádné hodnocení, na kterém by
+šlo úpravu proklikat.
+
+| Kontrola | Výsledek |
+|---|---|
+| API: předloha vrací vlastní hodnocení i s hodnotami, texty a autorem | ano (15/15 kontrol, 0 chyb) |
+| API: předloha jiného autora | `predloha: null` — cizí čísla se nevrací |
+| API: úprava = nový řádek | `id` 3 → 4, původní řádek beze změny (`prava` zůstalo 5) |
+| API: `uprava_id` v historii | nová verze nese nit na upravovanou, původní má `null` |
+| API: neexistující `uprava_id` | `404` |
+| API: `uprava_id` sebehodnocení hráče | `400` — trenérským formulářem to nejde |
+| UI (headless Edge přes CDP): předvyplnění | 6 os, slovní bloky i cíle, vybraný autor (23/23 kontrol) |
+| UI: varování „naslepo" při úpravě | nahrazeno vysvětlením, že vzniká nová verze |
+| UI: nabídka nad formulářem | jen datum a šablona, **žádné známky** (0 prvků `.stupnice`) |
+| UI: bez vybraného trenéra | nenabízí se nic (společné heslo nepozná, čí hodnocení hledat) |
+| UI: historie | značka *úprava verze z …*, tlačítko *Upravit* jen u trenérských verzí |
+| UI: zrušení úpravy | prázdný formulář a varování „naslepo" zpátky |
+| konzole prohlížeče | žádná chyba |
+| ostrá D1: sloupec `uprava_id` | přidán (`pragma_table_info` → 1) |
+| živě po nasazení | `/api/version` = `025d70d`, `cisto: true`; `/api/evaluations/predloha` bez přihlášení `401` |
+
+**Co ověřeno NEBYLO:** úprava proti ostrým datům — v produkci zatím žádné hodnocení není.
+
+---
+
 ## 2026-08-07 (10) — leader, tisk, příkazový řádek, jazykový model
 
 **Commit:** `1eeec22` · **Ověřeno proti** https://hodnoceni.maxferit.cz a lokálně

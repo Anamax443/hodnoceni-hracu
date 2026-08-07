@@ -17,6 +17,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Squad export / import | ✅ | `.xlsx` with Text formatting, CSV, dry-run import |
 | Coach evaluation | ✅ | 6 axes 1–10, append-only, templates `pole` / `brankar` / `leader` |
 | Bulk evaluation | ✅ | one score for several players, merged into the latest record |
+| Editing an evaluation | ✅ | load, correct, save = **a new version**; own records only, blind scoring still holds |
 | Player self-evaluation | ✅ | single-use link, blind guard verified live |
 | Coach × player comparison | ✅ | tolerance, sign, trend, version history |
 | Player × player comparison | ✅ | axis × player table with the gap |
@@ -42,6 +43,8 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 - `.xlsx` export opened in Excel via COM: phone has `@` (Text) format, value intact
 - printing: 1 page, MediaBox 595 × 842 pt (A4 portrait)
 - language model: Workers AI answered in ~0.7 s
+- editing an evaluation: 15 API checks + 23 browser click-through checks (locally, on a fresh
+  D1); live only the migration and the deploy so far — there is no real data to click through
 
 ## What is missing
 

@@ -16,6 +16,7 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Export / import kádru | ✅ | `.xlsx` s formátem Text, CSV, import nanečisto |
 | Hodnocení trenérem | ✅ | 6 os 1–10, append-only, šablony `pole` / `brankar` / `leader` |
 | Hromadné hodnocení | ✅ | jedna známka pro víc hráčů, doplní se k poslednímu záznamu |
+| Úprava hodnocení | ✅ | načíst, opravit, uložit = **nová verze**; jen vlastní, naslepo platí dál |
 | Sebehodnocení hráče | ✅ | jednorázový odkaz, blind guard ověřený naostro |
 | Porovnání trenér × hráč | ✅ | tolerance, znaménko, trend, historie verzí |
 | Srovnání hráčů mezi sebou | ✅ | tabulka osa × hráč, rozptyl |
@@ -41,6 +42,8 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 - export `.xlsx` otevřený Excelem přes COM: telefon má formát `@`, hodnota doslova
 - tisk: 1 stránka, MediaBox 595 × 842 pt (A4 na výšku)
 - jazykový model: Workers AI odpověděl za ~0,7 s
+- úprava hodnocení: 15 kontrol API + 23 proklikáním v prohlížeči (lokálně, čerstvá D1);
+  živě zatím jen migrace a nasazení — ostrá data k proklikání nejsou
 
 ## Co chybí
 
