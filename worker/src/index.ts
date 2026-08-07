@@ -1329,10 +1329,26 @@ const CSV_SLOUPCE = [
     'notif_email', 'notif_telegram', 'notif_sms', 'hodnoceni_povinne'
 ] as const;
 
+/* Sloupce, které Excel jinak spolkne jako číslo: z „+420604577765" udělá vzorec
+   a zobrazí 4,20605E+11, z chat id vědecký zápis. Zabalují se do ="…", což je
+   jediný zápis, který Excel po dvojkliku bere jako text. Import to zase svlékne. */
+const CSV_JAKO_TEXT = ['telefon', 'telegram_chat_id'];
+
 /** Jedno pole do CSV. Uvozovky se zdvojují, jinak by rozsekaly řádek. */
 function csvPole(h: unknown): string {
     const s = h === null || h === undefined ? '' : String(h);
     return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Hodnota, kterou má Excel zobrazit doslova, ne si ji přebrat po svém. */
+function csvText(h: string): string {
+    return h ? `="${h.replace(/"/g, '""')}"` : '';
+}
+
+/** Zpátky z ="…" na holou hodnotu — ať se dá vyexportovaný soubor rovnou nahrát. */
+function csvZText(h: string): string {
+    const m = h.trim().match(/^="(.*)"$/s);
+    return (m ? m[1].replace(/""/g, '"') : h).trim();
 }
 
 /**
@@ -1673,7 +1689,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
                     catch { return ''; }
                 }
-                return o[s] === null || o[s] === undefined ? '' : String(o[s]);
+                const h = o[s] === null || o[s] === undefined ? '' : String(o[s]);
+                return CSV_JAKO_TEXT.includes(s) ? csvText(h) : h;
             }));
         }
 
@@ -1702,7 +1719,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
         const sloupec = (r: string[], nazev: string) => {
             const i = hlavicka.indexOf(nazev);
-            return i >= 0 ? (r[i] ?? '').trim() : '';
+            // Buňky ="…" (aby Excel nespolkl telefon jako číslo) se tu zase svlékají.
+            return i >= 0 ? csvZText(r[i] ?? '') : '';
         };
 
         let pridano = 0, upraveno = 0;
