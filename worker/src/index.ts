@@ -47,6 +47,9 @@ const OBNOVA_MAX_ZA_OKNO = 3; // víc žádostí za 15 minut se nepošle (brzda 
 // Únosné je to jen díky zámku po několika špatných pokusech — bez něj by se
 // 10 000 kombinací zkusilo hrubou silou za pár vteřin. Viz PRIHLASENI_*.
 const HESLO_MIN = 4;
+const PRIHLASENI_OKNO_MINUT = 15;  // v jak dlouhém okně se špatné pokusy sčítají
+const PRIHLASENI_MAX_UCET = 5;     // víc marných pokusů na jeden účet = zámek
+const PRIHLASENI_MAX_IP = 15;      // a víc napříč účty z jedné adresy taky
 // Strop workerd: „iteration counts above 100000 are not supported".
 // Víc nejde, i když by OWASP chtěl výrazně víc.
 const PBKDF2_ITERACE = 100_000;
@@ -142,6 +145,51 @@ async function nastavHeslo(env: Env, heslo: string): Promise<void> {
  * slouží pouze k prvnímu přihlášení, než se heslo poprvé nastaví z aplikace.
  * Kdyby se ztratilo i to: `DELETE FROM auth;` a secret zase platí.
  */
+/* ===================== zámek proti hádání hesla ===================== */
+
+/** Kolik marných pokusů padlo na tenhle klíč za poslední okno. */
+async function pokusyZaOkno(env: Env, klic: string): Promise<number> {
+    const r = await env.DB.prepare(
+        `SELECT COUNT(*) AS pocet FROM prihlaseni_pokusy
+          WHERE klic = ? AND cas > datetime('now', ?)`
+    ).bind(klic, `-${PRIHLASENI_OKNO_MINUT} minutes`).first<{ pocet: number }>();
+    return r?.pocet ?? 0;
+}
+
+/**
+ * Je přihlášení zamčené? Vrací hlášku pro člověka, ne jen true/false —
+ * „špatné heslo" u zamčeného účtu by posílalo trenéra hádat dokola.
+ */
+async function zamceno(env: Env, klicUctu: string, klicIp: string): Promise<string | null> {
+    const [ucet, ip] = await Promise.all([pokusyZaOkno(env, klicUctu), pokusyZaOkno(env, klicIp)]);
+    if (ucet >= PRIHLASENI_MAX_UCET || ip >= PRIHLASENI_MAX_IP) {
+        return `Moc špatných pokusů. Přihlášení je na ${PRIHLASENI_OKNO_MINUT} minut zamčené — `
+            + 'počkej, nebo si nech poslat odkaz přes „Zapomenuté heslo".';
+    }
+    return null;
+}
+
+async function zapisNezdar(env: Env, klicUctu: string, klicIp: string, ip: string): Promise<void> {
+    try {
+        await env.DB.batch([
+            env.DB.prepare('INSERT INTO prihlaseni_pokusy (klic, ip) VALUES (?, ?)').bind(klicUctu, ip),
+            env.DB.prepare('INSERT INTO prihlaseni_pokusy (klic, ip) VALUES (?, ?)').bind(klicIp, ip),
+            // Úklid starých řádků, ať tabulka neroste donekonečna.
+            env.DB.prepare(`DELETE FROM prihlaseni_pokusy WHERE cas < datetime('now', '-1 day')`)
+        ]);
+    } catch (e) {
+        console.warn('Zápis nezdařeného přihlášení selhal:', e instanceof Error ? e.message : String(e));
+    }
+}
+
+/** Povedlo se — počitadlo se nuluje, ať se trenér nezamkne sám sebou. */
+async function smazNezdary(env: Env, klicUctu: string, klicIp: string): Promise<void> {
+    try {
+        await env.DB.prepare('DELETE FROM prihlaseni_pokusy WHERE klic IN (?, ?)')
+            .bind(klicUctu, klicIp).run();
+    } catch { /* na úspěšném přihlášení to nesmí padnout */ }
+}
+
 /**
  * Ověří heslo konkrétního trenéra. Vrací i jeho id, aby se dalo uložit
  * do session — díky tomu aplikace ví, kdo je přihlášený.
@@ -612,13 +660,26 @@ export default {
             /* ---------- přihlášení ---------- */
             if (cesta === '/api/login' && request.method === 'POST') {
                 const { login, heslo } = await request.json<{ login?: string; heslo?: string }>();
+
+                // Heslo smí být krátký PIN, takže prodleva sama nestačí — marné
+                // pokusy se počítají a po pár zkouškách se přihlášení zamkne.
+                const ip = request.headers.get('cf-connecting-ip') ?? 'neznama';
+                const klicUctu = login && login.trim()
+                    ? `ucet:${login.trim().toLowerCase()}`
+                    : 'ucet:@spolecne';
+                const klicIp = `ip:${ip}`;
+
+                const zamek = await zamceno(env, klicUctu, klicIp);
+                if (zamek) return chyba(zamek, 429);
+
                 // Prodleva u nezdaru: aplikace je veřejná a chrání data nezletilých,
                 // hádání hesla ve smyčce tím přestane být praktické.
-                const nezdar = async (zprava: string, kod = 401) => {
+                const nezdar = async (zprava: string, kod = 401, zapocitat = true) => {
+                    if (zapocitat) await zapisNezdar(env, klicUctu, klicIp, ip);
                     await new Promise(hotovo => setTimeout(hotovo, 700));
                     return chyba(zprava, kod);
                 };
-                if (!heslo) return nezdar('Chybí heslo.');
+                if (!heslo) return nezdar('Chybí heslo.', 401, false);
 
                 if (login && login.trim()) {
                     const v = await overUcet(env, login, heslo);
@@ -626,9 +687,11 @@ export default {
                         return nezdar('Špatné přihlašovací jméno nebo heslo.');
                     }
                     if (v.stav === 'bezHesla') {
+                        // Účet bez hesla není špatný pokus — nemá se čím trefit.
                         return nezdar('Tenhle účet ještě nemá nastavené heslo. '
-                            + 'Použij „Zapomenuté heslo" a přijde ti odkaz na jeho nastavení.', 409);
+                            + 'Použij „Zapomenuté heslo" a přijde ti odkaz na jeho nastavení.', 409, false);
                     }
+                    await smazNezdary(env, klicUctu, klicIp);
                     return json({ prihlasen: true, jmeno: v.ucet.jmeno, id: v.ucet.id }, 200, {
                         'set-cookie': cookieHlavicka(
                             await vytvorSession(env, { id: v.ucet.id, jmeno: v.ucet.jmeno }),
@@ -644,6 +707,7 @@ export default {
                 }
                 if (vysledek !== 'ok') return nezdar('Špatné heslo.');
 
+                await smazNezdary(env, klicUctu, klicIp);
                 return json({ prihlasen: true, jmeno: null, id: null }, 200, {
                     'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
                 });
