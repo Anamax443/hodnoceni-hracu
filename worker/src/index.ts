@@ -305,8 +305,21 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     // Jazykový model pro příkazový řádek. Výchozí 'vypnuto': v aplikaci jsou
     // údaje nezletilých a odesílat je ven se musí zapnout vědomě.
     aiPoskytovatel: 'vypnuto', // 'vypnuto' | 'workers' (zdarma) | 'claude' (placený)
-    aiModel: '@cf/meta/llama-3.1-8b-instruct'
+    aiModel: '@cf/meta/llama-3.1-8b-instruct-fp8'   // stejná výchozí volba jako faxx-hr
 };
+
+/**
+ * Modely nabízené v Nastavení. Cloudflare katalog průběžně mění a vyřazuje
+ * (llama-3.1-8b-instruct skončil 2026-05-30 a volání padalo na chybu 5028),
+ * takže seznam je tady vidět a dá se opravit jedním commitem. Aktuální stav
+ * účtu vypíše `npx wrangler ai models`.
+ */
+const AI_MODELY = [
+    { id: '@cf/meta/llama-3.1-8b-instruct-fp8', popis: 'Llama 3.1 8B — rychlý a levný, na pokyny stačí (výchozí)' },
+    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', popis: 'Llama 3.3 70B — silnější a lepší čeština, pomalejší' },
+    { id: '@cf/openai/gpt-oss-120b', popis: 'gpt-oss 120B — nejsilnější, latence kolísá' },
+    { id: '@cf/meta/llama-3.2-3b-instruct', popis: 'Llama 3.2 3B — nejlevnější, jen na jednoduché pokyny' }
+];
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
     const { results } = await env.DB.prepare('SELECT klic, hodnota FROM settings').all<{ klic: string; hodnota: string }>();
@@ -2264,6 +2277,12 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- porovnání trenér vs. hráč (§7.3) ---------- */
+    /* ---------- nabídka modelů pro Nastavení ---------- */
+    if (cesta === '/api/ai/modely' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        return json({ modely: AI_MODELY, zvoleny: nas.aiModel, poskytovatel: nas.aiPoskytovatel });
+    }
+
     /* ---------- ověření jazykového modelu (nic o hráčích neposílá) ----------
        Jádro dřív, než se na něm cokoli postaví: odpoví model z Workeru vůbec?
        Posílá se holá věta bez jediného údaje o komkoli z kádru.               */
