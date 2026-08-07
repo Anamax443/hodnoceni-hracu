@@ -5,6 +5,29 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-07 (9) — GoSMS, zámek přihlášení, export do Excelu
+
+**Commit:** `a89f21e` · **Ověřeno proti** https://hodnoceni.maxferit.cz
+
+| Kontrola | Výsledek |
+|---|---|
+| GoSMS: OAuth2 token z klíčů v secretech | `/api/sms/ucet` → `{"ok":true,"provider":"gosms"}` |
+| GoSMS: výpis kanálů | `404` — v1 API endpoint nemá, ID se opisuje z portálu (ošetřeno hláškou) |
+| GoSMS: ostré odeslání | ⛔ `400` — účet je neověřený a bez kreditu (odesílatel `GoSMS-test`) |
+| zámek přihlášení | 5. marný pokus zamkl, další vracely `429` s vysvětlením; testovací řádky smazány |
+| účet bez hesla se do zámku nepočítá | ano (`409`, ne započtený pokus) |
+| export `.xlsx` otevřený **Excelem přes COM** | list `lide`; `telefon` i `telegram_chat_id` mají `NumberFormat = @` |
+| hodnota telefonu v sešitu | `+420604577765` doslova, žádný vzorec ani `4,20605E+11` |
+| diakritika v sešitu | `Říčka Václav` v pořádku |
+| export bez přihlášení | `401` |
+| verze v liště po nasazení | `/api/version` = commit v gitu (čte se z bundlu, ne z assetu) |
+
+**Co ověřeno NEBYLO:** doručení SMS na telefon (čeká na ověření účtu GoSMS a dobití kreditu)
+a import sešitu `.xlsx` proti ostrým datům — parser sešitu byl zkoušen jen na souboru
+z vlastního exportu.
+
+---
+
 ## 2026-08-06 (8) — SMS kanál a log komunikace
 
 **Commit:** `c48a89f` · **Ověřeno proti** https://hodnoceni.maxferit.cz

@@ -2,6 +2,55 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-07 (12) — GoSMS místo Twilia, PIN se zámkem, export/import, dokumentace v appce
+
+**SMS přes GoSMS** (`SMS_PROVIDER: gosms`). Twilio je pro české SMS špatný nástroj: obě
+jeho cesty stojí měsíční paušál (30 $ za registrované jméno, 12 $ za české číslo). Česká
+brána nemá paušál, účtuje od 0,41 Kč za zprávu a posílá pod **svým registrovaným
+odesílatelem**, takže problém `21612` mizí. Daň: příjemce vidí `GoSMS-info`, ne klub.
+
+- klíče jsou secrety (`GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`), ID kanálu `504031` je ve
+  `wrangler.jsonc` — tajemství to není
+- API je na **`app.gosms.eu`** (`.cz` jen přesměrovává a POST by se zvrhl na GET), token
+  form-encoded; výpis kanálů v1 nemá (404), ID se opisuje z portálu
+- **zkouška nanečisto** přes `…/messages/test` ověří klíče, kanál i tvar čísla, nic
+  neodešle a nic nestojí — tlačítko *SMS nanečisto* v Lidech
+- **vypínač `smsAktivni`, výchozí vypnuto**: SMS je mimořádný nástroj. Přepínač u osoby
+  říká *kam*, tenhle *jestli vůbec*
+- **účet GoSMS je zatím neověřený a bez kreditu** → odesílatel `GoSMS-test`, ostrá SMS
+  neprojde. Poslední ostrý pokus skončil `400`; hlášení už nese text od brány, ale nikdo
+  ho zatím nepustil znovu. **Tohle je otevřený konec.**
+- Twilio účet zůstává (nic nestojí, kredit se při zavření vrací, je to jediná cesta
+  k WhatsAppu). WhatsApp by šel bez paušálu, ale chce číslo mimo běžný WhatsApp,
+  Meta Business Portfolio a schválenou šablonu — nepostaveno.
+
+**Heslo smí být 4místný PIN** a k němu **zámek přihlášení** (migrace `011`): 5 marných
+pokusů na účet nebo 15 z jedné IP v okně 15 minut → `429` s vysvětlením. Ověřeno naostro,
+testovací řádky smazány. Zámek je krátký schválně, jinak by šel trenér vyřadit z aplikace.
+
+**Přihlášení i obnova berou e-mail.** E-mail v poli „Kdo jsi" dřív tiše propadl do větve
+společného hesla — člověk si tak přenastavil něco jiného, než myslel, a nechápal, proč mu
+PIN nebere. Obnova navíc rozlišuje: nesmyslný tvar (400) a vyčerpanou brzdu (429) řekne
+nahlas, o existenci účtu dál mlčí; stránka nového hesla píše, čí heslo nastavuje.
+
+**Lidé: export a import.** `.xlsx` skládá Worker sám (`worker/src/xlsx.ts`, ZIP + XML),
+protože CSV nenese formát buněk a Excel dělal z telefonu `4,20605E+11`. Ověřeno Excelem
+přes COM: formát `@`, hodnota doslova. Import bere `.xlsx` i `.csv` (sešit se rozbaluje
+v prohlížeči kvůli kódování), běží nejdřív nanečisto a hesla ani hodnocení nemění.
+
+**České řazení** přes `Intl.Collator('cs')` — SQLite řadil podle bajtů, takže Říčka
+a Šplíchal padali za Weisse.
+
+**Verze se čte z bundlu, ne z assetu.** Na custom doméně držela cache zóny starý
+`version.json` a lišta po nasazení hlásila předchozí commit.
+
+**Nová záložka 📖 Dokumentace** (CS i EN, `web/src/dokumentace.js`) a srovnané `docs/`.
+
+**Zbývá:** ověřit účet GoSMS a dobít kredit, pak doladit to `400`; zadat první hodnocení;
+pozvánky pro Julka a Masa a pak `DELETE FROM auth`; doplnit pozice zbylým hráčům.
+
+---
+
 ## 2026-08-06 (11) — SMS kanál, log komunikace, Twilio naráží na české Sender ID
 
 **Hotové a nasazené:**

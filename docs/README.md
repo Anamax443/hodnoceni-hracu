@@ -46,19 +46,27 @@ Kotvy jsou pevné schválně. Bez nich hodnocení mezi sezónami ujede a čísla
 
 Aplikace běží na **https://hodnoceni.maxferit.cz**. Přihlášení platí 12 hodin.
 
-**Každý trenér má svůj účet.** Zadáš svoje **přihlašovací jméno** (`maxla`, `julek`, `maso`)
-a svoje heslo. V záhlaví je pak vidět, kdo je přihlášený.
+**Každý trenér má svůj účet.** Do pole „Kdo jsi" napíšeš **přihlašovací jméno
+(`maxla`, `julek`, `maso`) nebo svůj e-mail** — funguje obojí. V záhlaví je pak vidět,
+kdo je přihlášený.
 
-**Změna hesla:** Nastavení → Změna hesla (stávající + nové dvakrát, aspoň 10 znaků).
+**Heslo může být krátké, klidně čtyřmístný PIN.** Ťuká se to do mobilu na hřišti.
+Aby to nebylo na hlouposti: po **pěti špatných pokusech** se přihlášení na patnáct minut
+zamkne a aplikace to napíše. Když se trefíš, počitadlo se vynuluje.
+
+**Změna hesla:** Nastavení → Změna hesla (stávající + nové dvakrát, aspoň 4 znaky).
 Měníš si vždycky jen svoje.
 
 **Zapomenuté heslo:** na přihlašovací stránce tlačítko *Zapomenuté heslo*. Napíšeš svoje
-přihlašovací jméno a odkaz na nastavení nového hesla ti přijde **na tvůj Telegram nebo
-e-mail** — podle toho, co máš u sebe vyplněné. Odkaz platí 15 minut a funguje jen jednou.
-Heslo se zprávou nikdy neposílá; kdyby ti zpráva někam unikla, zůstalo by v ní navždy.
+přihlašovací jméno **nebo e-mail** a odkaz na nastavení nového hesla ti přijde **na tvůj
+Telegram nebo e-mail** — podle toho, co máš u sebe vyplněné. Odkaz platí 15 minut a funguje
+jen jednou. Heslo se zprávou nikdy neposílá; kdyby ti zpráva někam unikla, zůstalo by v ní
+navždy.
 
-Odpověď je vždycky stejná, i když jméno neexistuje — schválně, ať se nedá zkoušet, kdo
-v aplikaci účet má.
+Jestli takový účet existuje, aplikace neřekne — schválně, ať se nedá zkoušet, kdo v aplikaci
+účet má. Co ale řekne nahlas: že je vstup nesmysl, a že se za posledních 15 minut žádalo
+moc často. Na stránce s novým heslem je vždycky napsané, **čí heslo zrovna nastavuješ** —
+jestli svůj účet, nebo staré společné heslo.
 
 **Nový trenér:** v Lidech mu vyplň přihlašovací jméno a Telegram nebo e-mail, ulož a klikni
 na *Poslat odkaz na nastavení hesla*. Heslo si nastaví sám, nemusíš mu ho diktovat.
@@ -99,6 +107,20 @@ vybíráš až u konkrétního hodnocení.
 - **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil
 - **šablona** — `pole` pro hráče v poli, `brankar` pro brankáře (jiných šest os)
 - **aktivní** — vypni místo mazání, když hráč odejde. Historie hodnocení má zůstat.
+  Číslo, které hráč dostal, si drží napořád a nikomu jinému se už nepřidělí.
+
+**Export a import.** Pod tabulkou jsou tlačítka:
+
+- **⬇ Export do Excelu** — stáhne sešit `.xlsx`. Telefon a chat id v něm mají formát Text,
+  takže z `+420604577765` nevznikne `4,20605E+11`. Když ještě nikdo zadaný není, stáhne se
+  samotná hlavička — je to prázdná tabulka k vyplnění.
+- **⬇ Export CSV** — totéž pro programy mimo Excel.
+- **⬆ Import z Excelu / CSV** — nahraje kádr ze souboru. Nejdřív ukáže, co by se stalo
+  („řádků 22, přibylo by 19, upravilo by se 3"), a **zapisuje až po potvrzení**. Vadné řádky
+  přeskočí a vypíše je i s číslem řádku, jak ho vidíš v Excelu.
+
+Import mění jen kartotéku lidí. **Hesla ani hodnocení nikdy nepřepisuje.** Když někoho
+opravuješ, nech v souboru sloupec `id` — podle něj se řádek spáruje se správným člověkem.
 
 ### Hodnotit
 
@@ -170,6 +192,13 @@ Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 - **Sezóna, klub, kategorie, laťka, nadpis nad cíli** — text do hlavičky a patičky listu
 - **Změna hesla** — svého vlastního
 - **Souhrnné notifikace** — viz níž
+- **Povolit odesílání SMS** — mimořádný kanál, výchozí vypnuto (viz níž)
+
+### 📖 Dokumentace
+
+Poslední záložka. Je v ní tenhle popis v kostce přímo v aplikaci — jak se hodnotí, co znamená
+tolerance a znaménko, jak funguje sebehodnocení, kanály, hesla i export a import. Přepíná se
+s jazykem aplikace, takže je i anglicky.
 
 ### Notifikace
 
@@ -193,6 +222,22 @@ Tlačítko *Poslat souhrn teď* odešle souhrn okamžitě, bez ohledu na nastave
 bot oslovil člověka první. Pak v Lidech klikneš na *Dotáhnout chat id z Telegramu* a vybereš ho.
 
 **E-mail:** adresa musí být předem ověřená v Cloudflare, jinak odeslání selže. Řekni si.
+
+**SMS je mimořádný nástroj.** Stojí peníze a ruší, proto je v Nastavení přepínač
+*Povolit odesílání SMS* a **ve výchozím stavu je vypnutý**. Dokud ho nezapneš, neodejde
+žádná SMS ani člověku, který ji má zapnutou u sebe — pokus se zapíše do logu jako
+přeskočený, i s důvodem. Příjemce uvidí jako odesílatele jméno brány (GoSMS), ne klub,
+takže značka klubu patří do textu zprávy.
+
+Tlačítko *SMS nanečisto* v Lidech ověří spojení s bránou, kanál i tvar čísla, ale **nic
+neodešle a nic nestojí**. Funguje i při vypnutém kanálu.
+
+### Odeslaná komunikace
+
+V Nastavení je posledních sto pokusů o odeslání: kdy, kanál, **platforma** (GoSMS,
+Telegram, Cloudflare), komu, typ a výsledek. U neúspěchu je vidět i důvod, který vrátil
+poskytovatel — proto se „nic mi nepřišlo" dá dohledat. Ukládají se údaje o odeslání, ne
+obsah zpráv; odkazy s tokeny se nelogují nikdy.
 
 ---
 

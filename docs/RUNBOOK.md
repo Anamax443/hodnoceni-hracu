@@ -77,6 +77,13 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | Telegram: „chat not found" | trenér botovi nikdy nenapsal, nebo špatné chat id | ať napíše `@skricmanice_bot`, pak Lidé → *Dotáhnout chat id* |
 | e-mail: `E_RECIPIENT_NOT_ALLOWED` | adresa není ověřená destination address | ověřit v Cloudflare (Email Routing) |
 | e-mail: `E_SENDER_NOT_VERIFIED` | doména odesílatele není onboardovaná | Cloudflare → Email Service → Email Sending |
+| přihlášení hlásí „moc špatných pokusů" (429) | zámek po 5 marných pokusech na účet | počkat 15 minut, nebo si nechat poslat odkaz *Zapomenuté heslo*; nouzově `DELETE FROM prihlaseni_pokusy` |
+| PIN nebere, ačkoli byl právě nastavený | odkaz na obnovu měnil **společné** heslo, ne účet | přihlásit se s prázdným „Kdo jsi", nebo si nechat poslat nový odkaz na svoje jméno / e-mail — stránka nového hesla píše, čí heslo nastavuje |
+| SMS neodchází, v logu `VYPNUTO` | `smsAktivni = 0`, mimořádný kanál je vypnutý | Nastavení → *Povolit odesílání SMS* |
+| SMS: `NO_CREDENTIALS` / `NO_CHANNEL` | chybí `GOSMS_*` secrety nebo `GOSMS_KANAL` | doplnit dle `docs/BUILD.md`; *SMS nanečisto* to ověří zdarma |
+| GoSMS vrací `400` u ostrého odeslání | účet neověřený a bez kreditu (odesílatel `GoSMS-test`) | ověřit účet v portálu a dobít kredit; text chyby je v logu komunikace |
+| v Excelu je z telefonu `4,20605E+11` | otevřel se **CSV**, které formát buněk nenese | použít **Export do Excelu** (`.xlsx`), tam je sloupec Text |
+| import z Excelu udělal duplikáty | v souboru chyběl sloupec `id` a lišilo se jméno | v souboru nechat `id`; párování je id → login → jméno + role |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
 

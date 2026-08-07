@@ -50,6 +50,10 @@ Migrace se pouštějí **v pořadí**; `db:init` aplikuje jen `001`. Zbytek ruč
 | `005_notifikace.sql` | kanály u osoby, tabulka `udalosti` |
 | `006_notif_intervaly.sql` | dva intervaly místo „jak často" |
 | `007_ucty.sql` | účty po lidech (login + vlastní heslo) |
+| `008_shoda.sql` | shoda mezi trenéry a historie verzí listu |
+| `009_sms.sql` | telefon u osoby, tabulka `komunikace`, denní strop SMS |
+| `010_komunikace_platforma.sql` | sloupce `platforma` a `podrobnosti` v logu komunikace |
+| `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (nutný ke 4místnému PINu) |
 
 ```powershell
 foreach ($f in Get-ChildItem migrations\*.sql | Sort-Object Name) {
@@ -71,6 +75,8 @@ Dva, oba povinné a oba už nastavené:
 | `ADMIN_HESLO` | přechodné **společné** heslo (prázdné přihlašovací jméno) | ano, než mají všichni svůj účet |
 | `TELEGRAM_BOT_TOKEN` | bot pro notifikace a odkazy na obnovu hesla | jen pro Telegram |
 | `OBNOVA_EMAILY` | adresy oddělené čárkou pro obnovu **společného** hesla | ne |
+| `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET` | klíče k SMS bráně GoSMS (app.gosms.eu → API) | jen pro SMS |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio; do Česka se nepoužívá (viz TECHNICAL) | ne |
 
 Hesla jednotlivých trenérů secrety nejsou — jsou to PBKDF2 hashe u jejich řádku v `players`.
 
@@ -80,7 +86,13 @@ npx wrangler secret put SESSION_KEY       # rotace klice = vsichni se odhlasi
 npx wrangler secret put ADMIN_HESLO
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put OBNOVA_EMAILY
+npx wrangler secret put GOSMS_CLIENT_ID       # SMS brana, app.gosms.eu -> API
+npx wrangler secret put GOSMS_CLIENT_SECRET   # jde kdykoli pregenerovat v portalu
 ```
+
+ID kanálu GoSMS tajemství není a je ve `wrangler.jsonc` jako `GOSMS_KANAL` (dnes `504031`).
+Nad providerem je ještě vypínač v aplikaci: `settings.smsAktivni` je výchozím stavem `0`,
+takže po nasazení neodejde žádná SMS, dokud ji někdo v Nastavení vědomě nepovolí.
 
 Telegram bota založí `@BotFather` (`/newbot`); token je ten dlouhý řetězec, co vrátí.
 Bota **nelze** oslovit první — každý trenér mu musí jednou napsat, teprve pak vznikne chat id.

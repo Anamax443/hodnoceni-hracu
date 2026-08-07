@@ -41,7 +41,9 @@ hodnoceni-hracu/
 ├── wrangler.jsonc         konfigurace Workeru, assets a D1
 ├── package.json           skripty: dev, deploy, db:init, db:seed, db:export
 ├── worker/src/index.ts    API, autorizace, přístup k D1 — veškerá logika serveru
-├── scripts/gen-version.mjs  zapíše commit hash do web/version.json (predeploy)
+├── worker/src/xlsx.ts     ruční zapisovač .xlsx (ZIP + XML, bez knihovny)
+├── worker/src/version.ts  generovaný, v .gitignore — verze zapečená v bundlu
+├── scripts/gen-version.mjs  zapíše commit hash do web/version.json i worker/src/version.ts
 ├── web/                   statické soubory (obsluhuje je Worker)
 │   ├── index.html         aplikace trenéra (záložky)
 │   ├── app.js             logika aplikace
@@ -52,6 +54,7 @@ hodnoceni-hracu/
 │   └── src/
 │       ├── sablony.js     klíče os + validace hodnot  ← sdílí Worker
 │       ├── i18n.js        všechny texty česky a anglicky
+│       ├── dokumentace.js text záložky 📖 Dokumentace (souvislé odstavce, CS i EN)
 │       ├── radar.js       vykreslení SVG (převzato z docs/vzor-list.html)
 │       ├── list.js        sestavení A4 listu
 │       └── styl.css       styl listu včetně @page / @media print
@@ -78,6 +81,30 @@ Tiskové listy mají **vlastní stránku** (`listy.html`), protože `src/styl.cs
 (`players.login`) a vlastní heslo (`heslo_hash`, `heslo_sul`, `heslo_iterace` u jeho řádku).
 Session nese jeho `id` a `jmeno`, takže aplikace ví, kdo je přihlášený — a obnova hesla
 může být pro každého zvlášť.
+
+**Přihlásit se jde jménem i e-mailem** (od 2026-08-07). `najdiUcet()` hledá podle
+`login` i `email`. Předtím e-mail v poli „Kdo jsi“ tiše propadl do větve společného
+hesla — člověk si obnovou přenastavil staré společné heslo, pak s ním nemohl vlézt na
+svůj účet a nechápal proč. Tichý průchod do jiné větve je horší než chyba.
+
+**Heslo smí být 4místný PIN** (`HESLO_MIN = 4`, od 2026-08-07). Trenéři to ťukají do
+mobilu na hřišti. Deset tisíc kombinací je únosných jen díky zámku níž — samotná
+prodleva 700 ms u špatného pokusu robota nezastaví.
+
+**Zámek proti hádání hesla** (tabulka `prihlaseni_pokusy`, migrace 011):
+
+| Klíč | Strop | Okno |
+|---|---|---|
+| `ucet:<login>` | 5 marných pokusů | 15 minut |
+| `ip:<adresa>` | 15 marných pokusů | 15 minut |
+
+Po překročení vrací `/api/login` **429 s vysvětlením**, ne další „špatné heslo".
+Úspěšné přihlášení počitadlo nuluje; účet, který ještě heslo nemá, se nepočítá (nemá se
+čím trefit). Zámek na účet je **schválně krátký** — kdyby držel dlouho, pár špatných
+pokusů by stačilo k vyřazení trenéra z aplikace, což je útok sám o sobě. Staré řádky
+se uklízejí při zápisu (starší než den).
+
+Ověřeno naostro 2026-08-07: pátý pokus zamkl, další vracely 429, testovací řádky smazány.
 
 **Obnova jde na kanál toho člověka**, ne na globální seznam adres: Telegram chat id nebo
 e-mail, které má u sebe vyplněné. Díky tomu nebylo potřeba čekat na ověřené e-maily
@@ -116,7 +143,15 @@ navždy. Stejná logika jako u tokenů hráčů:
 - platnost 15 minut, jedno použití; po nastavení hesla se smažou i všechny ostatní odkazy
 - cílové adresy jsou v secretu `OBNOVA_EMAILY` (čárkami), **ne v nastavení aplikace** —
   jinak by si cíl obnovy přesměroval ten, kdo se zrovna dostal dovnitř
-- odpověď na žádost je vždy stejná, ať se nedá zjistit, které adresy jsou povolené
+- **o existenci účtu se mlčí, o všem ostatním ne** (upřesněno 2026-08-07): nesmyslný tvar
+  vstupu vrací 400 („tohle nevypadá jako přihlašovací jméno ani e-mail“) a vyčerpaná brzda
+  429. Dřív obojí vypadalo jako úspěch — zelený rámeček „odkaz je na cestě“ i ve chvíli,
+  kdy se neodeslalo nic. Tichá lež je horší než přiznaná mez.
+- **žádost na neznámé jméno se zapíše do logu komunikace** (`preskoceno` / `NEZNAMY`),
+  aby trenér vůbec věděl, že o obnovu někdo žádal
+- **stránka s novým heslem píše, čí heslo nastavuje** — `GET /api/obnova/<token>` vrací
+  `komu` a `spolecne`. Držitel odkazu na to právo má a bez toho si člověk plete účet
+  se starým společným heslem
 - nejvýš 3 žádosti za 15 minut (brzda na spamování schránky), počítá se z tabulky `obnova`
 - odesílá se přes **Cloudflare Email Sending**, binding `[[send_email]] name = "EMAIL"`,
   `env.EMAIL.send({to, from, subject, text, html})` — stejný mechanismus jako JobWatch.
@@ -124,7 +159,8 @@ navždy. Stejná logika jako u tokenů hráčů:
   Email Routing musí být ověřená i adresa příjemce (jinak `E_RECIPIENT_NOT_ALLOWED`).
 
 Změna hesla z aplikace (Nastavení → Změna hesla) chce stávající heslo a nové 2×, minimálně
-10 znaků. Běžící session se změnou hesla neruší — kdo je přihlášený, dojede svých 12 hodin.
+**4 znaky** (viz PIN výš). Běžící session se změnou hesla neruší — kdo je přihlášený,
+dojede svých 12 hodin.
 
 - `POST /api/login` porovná heslo s `ADMIN_HESLO` a nastaví cookie
   `sess=<payload>.<HMAC-SHA256>`; payload nese jen čas vypršení
@@ -138,7 +174,8 @@ Hráč se nepřihlašuje vůbec — jeho přístup je jednorázový token v odka
 
 Aplikace je na veřejné adrese a chrání data nezletilých, proto navíc:
 
-- **prodleva 700 ms u špatného hesla** — hádání hesla ve smyčce je tím nepraktické
+- **prodleva 700 ms u špatného hesla** a nad ní **zámek po pěti pokusech** (viz výš) —
+  samotná prodleva krátký PIN neuhlídá
 - **náhledové URL jednotlivých verzí vypnuté** (`preview_urls: false` ve `wrangler.jsonc`),
   aby existovala jediná veřejná adresa
 
@@ -163,10 +200,45 @@ Klíče os se nepřekládají (jsou to klíče v databázi), překládají se je
 Ke každé ose je navíc věta v první osobě (`ja.*`) pro formulář hráče.
 
 **Verze.** `scripts/gen-version.mjs` zapíše před každým nasazením commit hash, větev a čas
-do `web/version.json` (soubor je v `.gitignore`). Aplikace ho čte přes `/api/version` a ukazuje
-v horní liště; celý hash a čas sestavení jsou v tooltipu. Na nasazené aplikaci je tak vidět,
+do `web/version.json` **i do `worker/src/version.ts`** (oba jsou v `.gitignore`). `/api/version`
+čte tu **zapečenou v bundlu**, ne asset: na custom doméně držela cache zóny starý
+`/version.json`, takže lišta po nasazení hlásila předchozí commit, ačkoli `workers.dev`
+už měl nový. `no-store` hlídá odpověď, ne asset pod ní; co je v bundlu, cache obejít nemůže.
+Aplikace verzi ukazuje v horní liště, celý hash a čas sestavení jsou v tooltipu. Na nasazené aplikaci je tak vidět,
 která verze běží. Odkaz na GitHub v produktu není — repozitář je private, uživatelům by
 nefungoval.
+
+---
+
+## 3c. Export a import kádru
+
+**Proč sešit, a ne CSV.** CSV nenese formátování buněk — Excel mu vždy přiřadí „Obecný",
+takže z `+420604577765` udělá vzorec a zobrazí `4,20605E+11`. Berlička `="…"` hodnotu
+zachrání, ale v buňce zůstane vzorec. Proto `GET /api/players/export.xlsx` skládá
+**skutečný sešit** (`worker/src/xlsx.ts`): ZIP z několika XML, bez komprese (metoda 0),
+CRC32 vlastní. Knihovna kvůli tomu do Workeru nepatří — soubor má pár kilobajtů.
+
+Sloupce `telefon` a `telegram_chat_id` mají styl s `numFmtId="49"` (formát Text). Ověřeno
+2026-08-07 přímo Excelem přes COM: `NumberFormat` je `@` a hodnota `+420604577765` zůstala
+doslova, bez vzorce; diakritika v pořádku.
+
+CSV export zůstává pro programy mimo Excel (středníky, CRLF, BOM) a tam se `="…"` používá.
+
+**Import** (`POST /api/players/import`) čte jediný formát — CSV. Sešit `.xlsx` se proto
+rozbaluje **v prohlížeči** (`DecompressionStream('deflate-raw')` + `DOMParser`) a posílá se
+už jako CSV. Důvod je praktický: prohlížeč umí i `TextDecoder('windows-1250')`, kterým se
+zachrání soubor uložený Excelem ve staré kódové stránce — Worker umí jen UTF-8 a z háčků
+by byly patvary.
+
+Párování řádku k člověku: **`id` → `login` → jméno + role**. Bez toho by z každé opravy
+vznikl nový člověk. Import běží nejdřív `nanecisto` (řekne, co by se stalo) a zapisuje až
+po potvrzení; vadné řádky se přeskočí a vypíšou s číslem řádku, jak ho ukazuje Excel.
+**Hesla ani hodnocení import nemění** — `heslo_*` v seznamu sloupců schválně nejsou, aby
+je export nevynesl ven a import nepřepsal.
+
+**Řazení jmen se dělá v kódu** (`Intl.Collator('cs')`), ne v SQL: SQLite v D1 nemá českou
+collation a porovnává bajty, takže Říčka a Šplíchal končili až za Weissem — v tabulce
+i v exportu to vypadalo jako přeházená čísla.
 
 ---
 
@@ -302,7 +374,26 @@ jen ~24 h).
 
 ## 6. Datový model (D1)
 
-Viz `migrations/001_init.sql`. Tabulky: `players`, `evaluations`, `tokens`, `settings`.
+Viz `migrations/001_init.sql` a další migrace. Tabulky: `players`, `evaluations`, `tokens`,
+`settings`, `auth`, `obnova`, `udalosti`, `komunikace`, `prihlaseni_pokusy`.
+
+Migrace, které přibyly:
+
+| Migrace | Co přinesla |
+|---|---|
+| `003_auth.sql` | společné heslo jako PBKDF2 hash v D1 místo secretu |
+| `004_pozice.sql` | N pozic u hráče, šablona se přesunula na hodnocení |
+| `005`, `006` | události a kanály notifikací, dva nezávislé intervaly |
+| `007_ucty.sql` | účty po lidech (`login`, heslo u řádku trenéra) |
+| `009_sms.sql` | telefon, přepínač `notif_sms`, tabulka `komunikace`, denní strop |
+| `010_komunikace_platforma.sql` | sloupce `platforma` a `podrobnosti` v logu komunikace |
+| `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (viz kap. 3) |
+
+### Čísla osob se nerecyklují
+
+`players.id` je `INTEGER PRIMARY KEY AUTOINCREMENT`, takže SQLite už jednou přidělené číslo
+nevydá znovu ani po smazání řádku. Aplikace navíc hráče **nemaže**, jen odškrtne `aktivni` —
+smazat člověka, na kterého odkazují hodnocení, by rozbilo historii.
 
 ### Append-only
 
@@ -323,8 +414,13 @@ platná a vykreslí se svou šablonou.
 
 ### settings
 
-Klíč–hodnota: `tolerance`, `obdobi`, `sezona`, `klub`, `kategorie`, `latka`, `cileNadpis`.
-Server přijme jen tyhle známé klíče; `tolerance` navíc musí být celé číslo 0–9.
+Klíč–hodnota: `tolerance`, `obdobi`, `sezona`, `klub`, `kategorie`, `latka`, `cileNadpis`,
+notifikační `notifZapnuto`, `notifCas`, `notifDnyZmeny`, `notifDnyTicho`, `notifPosledni`
+a SMS `smsAktivni` (výchozí `0`) se `smsDenniStrop` (výchozí `50`).
+
+Server přijme **jen klíče, které zná** (`VYCHOZI_NASTAVENI`); `tolerance` navíc musí být
+celé číslo 0–9. Výchozí hodnoty jsou v kódu, ne v migraci — nový přepínač se tak nasadí
+bez zásahu do databáze a stará databáze se chová stejně jako nová.
 
 ---
 
@@ -372,22 +468,31 @@ Věta „zhoršil ses" nepatří na papír, který si čtrnáctiletý odnese dom
 GET    /health                                    {status, module, timestamp}
 GET    /api/version                               {commit, commitFull, branch, builtAt}
 
-POST   /api/login          {heslo}                nastaví session cookie
+POST   /api/login          {login?, heslo}        login = jméno NEBO e-mail; 429 při zámku
 POST   /api/logout
 GET    /api/me                                    {prihlasen}
 
 POST   /api/heslo          {stare, nove}          admin — změna hesla
 GET    /api/obnova-adresy                         admin — kam chodí obnova, je zapojený mail?
-POST   /api/obnova         {email, lang}          veřejné — pošle jednorázový odkaz
-GET    /api/obnova/:token                         veřejné — {platny}
+POST   /api/obnova         {login|email, lang}    veřejné — 400 při nesmyslném tvaru, 429 při brzdě
+GET    /api/obnova/:token                         veřejné — {platny, komu, spolecne}
 POST   /api/obnova/:token  {heslo}                veřejné — nastaví nové heslo, odkaz zneplatní
 
 GET    /api/settings                              admin
 PUT    /api/settings       {klic: hodnota, …}     admin
 
-GET    /api/players                               admin
+GET    /api/players                               admin — řazeno česky (Intl.Collator)
 POST   /api/players                               admin
 PATCH  /api/players/:id                           admin
+GET    /api/players/export.xlsx                   admin — sešit; telefon a chat id formátem Text
+GET    /api/players/export.csv                    admin — CSV pro programy mimo Excel
+POST   /api/players/import {csv, nanecisto?}      admin — {pridano, upraveno, chyby[]}
+
+GET    /api/kanaly                                admin — stav e-mailu, Telegramu, SMS
+GET    /api/komunikace                            admin — posledních 100 pokusů o odeslání
+GET    /api/sms/ucet                              admin — ověří klíče brány, nic neodešle
+GET    /api/sms/kanaly                            admin — výpis kanálů (GoSMS v1 ho nemá → 404)
+POST   /api/sms/test       {telefon, nanecisto?}  admin — zkušební SMS, nanečisto zdarma
 
 GET    /api/prehled?obdobi=                       admin — kdo má hodnocení a kdo odkaz
 GET    /api/evaluations?player_id=&obdobi=        admin
@@ -484,15 +589,22 @@ poměru „co to dá" / „co to stojí za byrokracii":
 |---|---|---|---|---|
 | **E-mail** (Cloudflare Email Sending) | zdarma | binding `[[send_email]]`, onboardovaná doména | příjemce musí být **ověřená destination address** | **běží** |
 | **Telegram** (Bot API) | zdarma | bot od `@BotFather`, token jako secret | bot **nesmí napsat první** — uživatel mu musí poslat zprávu | **běží** |
-| **SMS** (Twilio) | $0,0706/segment (~1,50 Kč) | účet, alfanumerický odesílatel (zdarma) | diakritika se odstraňuje, aby zpráva zůstala v jednom segmentu | **postaveno**, běží v režimu `console` |
-| **WhatsApp** (Twilio) | za konverzaci | WhatsApp Business účet, ověření subjektu u Mety | mimo 24h okno jen **schválené šablony**, ne volný text | **nepostaveno** |
+| **SMS** (GoSMS) | od 0,41 Kč/SMS, **žádný paušál** | účet na gosms.cz, OAuth2 klíče, ID kanálu | odesílatel je jméno brány (`GoSMS-info`), ne klub | **běží**, v Nastavení vypnuto |
+| **SMS** (Twilio) | $0,0706/segment (~1,50 Kč) | + **12 $/měs. za české číslo** nebo 30 $/měs. za jméno | bez registrovaného odesílatele končí do ČR na `21612` | **postaveno**, nepoužívá se |
+| **WhatsApp** (Twilio) | $0,005 Twilio + $0,0034 Meta za utility mimo 24h okno, **bez paušálu** | číslo, které není na běžném WhatsAppu, Meta Business Portfolio, schválená šablona | neověřený subjekt smí 250 příjemců/24 h; sandbox má opt-in jen na 3 dny | **nepostaveno** |
 | **SMS z MikroTiku** (`/tool sms send`) | v paušálu, prakticky zdarma | dosažitelný router + komponenta, která tahá frontu | router pod CGNAT; SMS je u LTE modemů vedlejší funkce bez doručenek | **zamítnuto** pro notifikace |
 
 Poznámky k rozhodnutí:
 
-- **Telefonní číslo u Twilia nekupovat** — na jednosměrné zprávy stačí alfanumerický
-  odesílatel zdarma; české mobilní číslo stojí 12 $/měsíc a je potřeba, jen když má někdo
-  na zprávu odpovídat.
+- **Twilio je pro české SMS špatný nástroj.** Obě jeho cesty stojí měsíční paušál
+  (30 $ za registrované jméno, 12 $ za české číslo), kdežto česká brána účtuje jen
+  odeslané zprávy. Rada „číslo netřeba, jméno je zdarma“ z prvního kola byla mylná —
+  od 14. 7. 2025 čeští operátoři neregistrovaná jména blokují.
+- **Účet u Twilia se ruší nemusí.** Nic nestojí, dokud se neposílá, kredit neexpiruje
+  (a při zavření účtu se nevyčerpaný zůstatek vrací) a je to jediná cesta k WhatsAppu.
+- **BulkGate Mobile Connect** je třetí varianta bez paušálu: Android aplikace udělá bránu
+  z vlastního telefonu, SMS jde z vlastního tarifu a z vlastního čísla, brána si bere
+  ~0,05 Kč. Chce to telefon, který je pořád zapnutý a online.
 - **U SMS zvážit odstranění diakritiky.** „Novak odeslal sebehodnoceni" se vejde do jednoho
   segmentu, s háčky do dvou. Při jednotkách zpráv je to jedno, při stovkách ne.
 - **MikroTik dává smysl v garážích**, ne tady: tam je modem to jediné, co při výpadku uplinku
@@ -509,12 +621,34 @@ Telefon patří k osobě (`players.telefon`) vedle e-mailu a chat id, se stejný
 
 | `SMS_PROVIDER` | Chování |
 |---|---|
-| `console` (výchozí) | zprávu jen zaloguje, nikam neodejde — aby se kredit neprotelefonoval testy |
-| `twilio` | reálné odeslání přes `POST /2010-04-01/Accounts/{SID}/Messages.json`, Basic auth |
+| `console` | zprávu jen zaloguje, nikam neodejde — aby se kredit neprotelefonoval testy |
+| `gosms` (nastaveno) | česká brána: OAuth2 token, pak `POST https://app.gosms.eu/api/v1/messages/` |
+| `twilio` | `POST /2010-04-01/Accounts/{SID}/Messages.json`, Basic auth — do ČR končí na `21612` |
 
-Zapnutí ostrého provozu: `npx wrangler secret put TWILIO_AUTH_TOKEN` (a `TWILIO_ACCOUNT_SID`),
-pak přepnout `SMS_PROVIDER` na `twilio` ve `wrangler.jsonc` a nasadit. Dokud secrety chybí,
-vrátí se `NO_CREDENTIALS` a je to vidět v Nastavení i v logu — ne ticho.
+**Nad providerem je ještě vypínač v aplikaci.** `settings.smsAktivni` je ve výchozím stavu
+`0` a bez něj neodejde nic, ani člověku, který má `notif_sms` zapnuté; pokus se zaloguje
+jako `preskoceno` s kódem `VYPNUTO`. Přepínač u osoby říká *kam*, tenhle *jestli vůbec* —
+SMS je mimořádný nástroj, ne běžný kanál.
+
+**Zapojení GoSMS** (secrety, do gitu nepatří):
+
+```
+npx wrangler secret put GOSMS_CLIENT_ID       # z app.gosms.eu → API
+npx wrangler secret put GOSMS_CLIENT_SECRET   # tamtéž, jde přegenerovat
+```
+
+ID kanálu není tajemství a je ve `wrangler.jsonc` jako `GOSMS_KANAL` (dnes `504031`,
+najde se v portálu v Kanály → Upravit, je v adrese). Dokud něco chybí, vrátí se
+`NO_CREDENTIALS` / `NO_CHANNEL` a je to vidět v Nastavení i v logu — ne ticho.
+
+**Zkouška nanečisto.** `POST /api/sms/test` s `{"nanecisto": true}` (v Lidech tlačítko
+*SMS nanečisto*) posílá na `…/api/v1/messages/test`: GoSMS požadavek ověří, ale nic
+neodešle a nic to nestojí. Projde i při vypnutém kanálu a do denního stropu se nepočítá —
+je to jediný způsob, jak ověřit klíče a kanál, aniž by někomu pípl telefon.
+
+Pozor na doménu: API je na **`app.gosms.eu`**. `app.gosms.cz` jen přesměrovává a POST by
+se cestou zvrhl na GET. Token se bere form-encoded, přesně jak GoSMS ukazuje v samoobsluze.
+Výpis kanálů přes API neexistuje (`/api/v1/channels` vrací 404), ID se opisuje z portálu.
 
 **Twilio vyžaduje KYC, než pustí první SMS.** Ověřeno 2026-08-06: přihlašovací údaje projdou
 (`/api/sms/ucet` vrátí účet a stav `active`), ale odeslání skončí na
@@ -556,14 +690,19 @@ Krátká čísla (short codes) v ČR nejdou vůbec.
 
 **Rozhodnutí: `SKRicmanice` nepoužívat.** Značka patří do těla zprávy, ne do odesílatele —
 „SK Ricmanice: Novak odeslal sebehodnoceni" stojí pár znaků místo 30 $ měsíčně a příjemce
-pozná stejně dobře, o co jde. Až budou SMS opravdu potřeba, koupí se **jedno české číslo
-sdílené napříč projekty** (garáže, JobWatch, hodnocení) a `SMS_ODESILATEL` se přepíše na něj.
+pozná stejně dobře, o co jde.
 
-Pozn. ke subúčtům: číslo patří jednomu účtu, takže subúčet na projekt a sdílené číslo se
-navzájem vylučují. Při tomhle objemu vede jeden hlavní účet se sdíleným číslem.
+**Místo placení paušálu se přešlo na českou bránu GoSMS** (2026-08-07). Registrace i vedení
+účtu jsou zdarma, platí se jen odeslané zprávy (od 0,41 Kč), a hlavně: posílá se pod
+**systémovým odesílatelem brány**, který u T-Mobile a O2 registrovaný je. Tím padá celý
+problém s `21612`, aniž by se cokoli platilo měsíčně. Daň je, že příjemce uvidí jako
+odesílatele `GoSMS-info`, ne klub — vlastní jméno u nich stojí aktivaci a měsíční poplatek
+a trvá ~30 dní, takže se nepoužívá.
 
-**Do té doby zůstává `SMS_PROVIDER: twilio` a odesílání skončí na `21612`** — je to vidět
-v logu i v Nastavení, takže to není tiché selhání. Kanál nemá nikdo zapnutý.
+Účet je zatím neověřený a bez kreditu, takže odesílatel je `GoSMS-test` a ostrá SMS
+neprojde. Ověření a první dobití kreditu je otevřený krok; zkouška nanečisto funguje i tak.
+
+`SMS_ODESILATEL` zůstává v konfiguraci, ale používá ho **jen Twilio**.
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
