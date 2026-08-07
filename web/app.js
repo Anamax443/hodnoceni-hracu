@@ -650,9 +650,119 @@ async function hodnotit(kam) {
                     </select></div>
             </div>
         </div>
-        <div id="formular"></div>`;
+        <div id="formular"></div>
+
+        <div class="karta">
+            <h2>${t('hromadne.nadpis')}</h2>
+            <p class="popis">${t('hromadne.popis')}</p>
+            <button class="vedlejsi" id="hromadne-otevrit" title="${t('hromadne.otevrit.tip')}">${t('hromadne.otevrit')}</button>
+            <div id="hromadne"></div>
+        </div>`;
 
     $('#h-hrac').onchange = () => formularHodnoceni($('#formular'), Number($('#h-hrac').value));
+    $('#hromadne-otevrit').onclick = () => formularHromadny($('#hromadne'));
+}
+
+/**
+ * Hromadné hodnocení: jedna známka pro víc hráčů najednou.
+ * Vyplní se jen osy, na kterých se kádr shoduje; zbytek zůstane, jak byl.
+ */
+function formularHromadny(kam) {
+    if (kam.dataset.otevreno) { kam.innerHTML = ''; delete kam.dataset.otevreno; return; }
+    kam.dataset.otevreno = '1';
+
+    const vykresli = (sablona) => {
+        const seznamOs = osy(sablona);
+        // Nabízejí se jen hráči, kteří tuhle šablonu dávají smysl — brankářskou
+        // šablonu nemá cenu nabízet celému kádru.
+        const hraci = hraciAktivni();
+
+        kam.innerHTML = `
+            <div class="pole" style="max-width:320px;margin-top:12px">
+                <label for="hr-sablona">${t('hodnotit.sablona')}</label>
+                <select id="hr-sablona">${Object.keys(SABLONY)
+                    .map(s => `<option value="${s}"${s === sablona ? ' selected' : ''}>${t('sablona.' + s)}</option>`).join('')}</select>
+            </div>
+
+            <h3 style="margin:14px 0 4px;font-size:14px">${t('hromadne.osy')}</h3>
+            <p class="popis">${t('hromadne.osy.popis')}</p>
+            ${seznamOs.map(o => `
+                <div class="osa">
+                    <div class="nazev">${esc(o.popis)}
+                        <button class="vedlejsi" data-vycistit="${o.klic}" title="${t('hromadne.vycistit.tip')}"
+                                style="padding:1px 7px;font-size:12px;margin-left:6px">${t('hromadne.vycistit')}</button>
+                    </div>
+                    ${stupnice('hr-' + o.klic)}
+                </div>`).join('')}
+
+            <h3 style="margin:16px 0 4px;font-size:14px">${t('hromadne.hraci')}</h3>
+            <p class="popis">${t('hromadne.hraci.popis')}</p>
+            <p>
+                <button class="vedlejsi" id="hr-vse" title="${t('hromadne.vse.tip')}">${t('hromadne.vse')}</button>
+                <button class="vedlejsi" id="hr-nic" title="${t('hromadne.nic.tip')}">${t('hromadne.nic')}</button>
+            </p>
+            <div class="pozice-vyber">
+                ${hraci.map(h => `
+                    <label class="volba"><input type="checkbox" class="hr-hrac" value="${h.id}"> ${esc(jmenoText(h))}</label>
+                `).join('') || `<span class="popis">${t('lide.prazdno')}</span>`}
+            </div>
+
+            <p style="margin-top:14px">
+                <button class="hl" id="hr-ulozit" title="${t('hromadne.ulozit.tip')}">${t('hromadne.ulozit')}</button>
+            </p>
+            <div id="hr-vysledek"></div>`;
+
+        $('#hr-sablona').onchange = () => vykresli($('#hr-sablona').value);
+        $('#hr-vse').onclick = () => kam.querySelectorAll('.hr-hrac').forEach(c => { c.checked = true; });
+        $('#hr-nic').onclick = () => kam.querySelectorAll('.hr-hrac').forEach(c => { c.checked = false; });
+        kam.querySelectorAll('[data-vycistit]').forEach(b => b.onclick = () => {
+            kam.querySelectorAll(`input[name="hr-${b.dataset.vycistit}"]`).forEach(r => { r.checked = false; });
+        });
+
+        const posli = async (nanecisto) => {
+            const hodnoty = {};
+            for (const o of seznamOs) {
+                const vybrane = kam.querySelector(`input[name="hr-${o.klic}"]:checked`);
+                if (vybrane) hodnoty[o.klic] = Number(vybrane.value);
+            }
+            const player_ids = [...kam.querySelectorAll('.hr-hrac:checked')].map(c => Number(c.value));
+            return api('/api/evaluations/hromadne', {
+                telo: { sablona: $('#hr-sablona').value, obdobi: stav.nastaveni.obdobi, hodnoty, player_ids, nanecisto }
+            });
+        };
+
+        const seznam = (lidi) => lidi.map(x => esc(x.jmeno)).join(', ');
+
+        $('#hr-ulozit').onclick = async () => {
+            const cil = $('#hr-vysledek');
+            cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+            try {
+                // Nanečisto řekne, komu to sedne a komu chybí základ — teprve pak se zapisuje.
+                const zkouska = await posli(true);
+                const otazka = t('hromadne.potvrdit', zkouska.ulozeno.length, zkouska.osy.length)
+                    + (zkouska.ceka.length ? `\n\n${t('hromadne.ceka', zkouska.ceka.length)}` : '');
+                if (!zkouska.ulozeno.length) {
+                    cil.innerHTML = `<div class="hlaska pozor">${t('hromadne.nikdo')}${
+                        zkouska.ceka.length ? `<br>${t('hromadne.ceka.kdo', seznam(zkouska.ceka))}` : ''}</div>`;
+                    return;
+                }
+                if (!confirm(otazka)) {
+                    cil.innerHTML = `<div class="hlaska pozor">${t('hromadne.zruseno')}</div>`;
+                    return;
+                }
+                const r = await posli(false);
+                cil.innerHTML = `<div class="hlaska ${r.ceka.length || r.chyby.length ? 'pozor' : 'ok'}">`
+                    + t('hromadne.hotovo', r.ulozeno.length, seznam(r.ulozeno))
+                    + (r.ceka.length ? `<br>${t('hromadne.ceka.kdo', seznam(r.ceka))}` : '')
+                    + (r.chyby.length ? `<br>${r.chyby.map(ch => `${esc(ch.jmeno)}: ${esc(ch.duvod)}`).join('<br>')}` : '')
+                    + '</div>';
+            } catch (e) {
+                cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+            }
+        };
+    };
+
+    vykresli('pole');
 }
 
 function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {

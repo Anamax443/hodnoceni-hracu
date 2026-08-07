@@ -11,7 +11,7 @@
 
 /* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
-import { SABLONY, POZICE, klice, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
+import { SABLONY, POZICE, MAX, klice, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
 import { xlsxSoubor, type Sloupec } from './xlsx';
@@ -2014,6 +2014,85 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             await zapisUdalost(env, 'hodnoceni', playerId, obdobi, autorId);
             return json({ ulozeno: true, ...r }, 201);
         }
+    }
+
+    /* ---------- hromadné hodnocení ----------
+       Když má půlka kádru stejné hlavičky, nemá smysl klikat každého zvlášť.
+       Vyplněné osy se **doplní k poslednímu hodnocení** toho hráče (od stejného
+       trenéra, ve stejném období a šabloně) a uloží se jako nový záznam — nic
+       se nepřepisuje, historie zůstává. Kdo od tebe v tomhle období hodnocení
+       ještě nemá, se nezaloží: chybějícím osám by nebylo co doplnit a neúplný
+       záznam nejde vykreslit ani vytisknout. Takoví hráči se vrátí v `ceka`.  */
+    if (cesta === '/api/evaluations/hromadne' && metoda === 'POST') {
+        const h = await request.json<any>();
+        const sablona = String(h.sablona || 'pole');
+        if (!(sablona in SABLONY)) return chyba(`Neznámá šablona: ${sablona}`, 400);
+
+        const osy = klice(sablona);
+        const zadane: Record<string, number> = {};
+        for (const [osa, hodnota] of Object.entries(h.hodnoty ?? {})) {
+            if (hodnota === '' || hodnota === null || hodnota === undefined) continue;
+            if (!osy.includes(osa)) return chyba(`Osa ${osa} do šablony ${sablona} nepatří.`, 400);
+            const n = Number(hodnota);
+            if (!Number.isInteger(n) || n < 1 || n > MAX) {
+                return chyba(`Osa ${osa}: hodnota musí být celé číslo 1–${MAX}.`, 400);
+            }
+            zadane[osa] = n;
+        }
+        if (!Object.keys(zadane).length) return chyba('Nevyplnil jsi ani jednu osu.', 400);
+
+        const ids = Array.isArray(h.player_ids) ? h.player_ids.map(Number).filter(Boolean) : [];
+        if (!ids.length) return chyba('Nevybral jsi ani jednoho hráče.', 400);
+
+        const obdobi = (h.obdobi || '').trim() || (await nastaveni(env)).obdobi;
+        const ulozeno: { id: number; jmeno: string }[] = [];
+        const ceka: { id: number; jmeno: string }[] = [];
+        const chyby: { jmeno: string; duvod: string }[] = [];
+
+        for (const id of ids) {
+            const hrac = await env.DB.prepare('SELECT id, jmeno, role FROM players WHERE id = ?')
+                .bind(id).first<{ id: number; jmeno: string; role: string }>();
+            if (!hrac) { chyby.push({ jmeno: `#${id}`, duvod: 'Hráč v databázi není.' }); continue; }
+            if (hrac.role !== 'hrac') {
+                chyby.push({ jmeno: hrac.jmeno, duvod: 'Hodnotí se jen hráči, ne trenéři.' });
+                continue;
+            }
+
+            // Základ je poslední hodnocení od TOHOTO trenéra — cizí čísla se nepřebírají.
+            const zaklad = await env.DB.prepare(
+                `SELECT hodnoty, fyzicky, hlavou, parta, cile FROM evaluations
+                  WHERE player_id = ? AND obdobi = ? AND sablona = ? AND autor = 'trener'
+                    AND autor_id IS ? ORDER BY id DESC LIMIT 1`
+            ).bind(id, obdobi, sablona, kdo.id ?? null).first<RadekHodnoceni>();
+
+            if (!zaklad) { ceka.push({ id, jmeno: hrac.jmeno }); continue; }
+
+            let puvodni: Record<string, number> = {};
+            try { puvodni = JSON.parse(String(zaklad.hodnoty ?? '{}')); } catch { puvodni = {}; }
+            const hodnoty = { ...puvodni, ...zadane };
+
+            const problem = zkontrolujHodnoty(sablona, hodnoty);
+            if (problem) { chyby.push({ jmeno: hrac.jmeno, duvod: problem }); continue; }
+
+            if (!h.nanecisto) {
+                await env.DB.prepare(
+                    `INSERT INTO evaluations
+                        (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile)
+                     VALUES (?, ?, 'trener', ?, ?, ?, ?, ?, ?, ?)`
+                ).bind(
+                    id, obdobi, kdo.id ?? null, sablona, JSON.stringify(hodnoty),
+                    zaklad.fyzicky ?? null, zaklad.hlavou ?? null, zaklad.parta ?? null,
+                    zaklad.cile ?? '[]'
+                ).run();
+                await zapisUdalost(env, 'hodnoceni', id, obdobi, kdo.id ?? null);
+            }
+            ulozeno.push({ id, jmeno: hrac.jmeno });
+        }
+
+        return json({
+            nanecisto: !!h.nanecisto, obdobi, sablona,
+            osy: Object.keys(zadane), ulozeno, ceka, chyby
+        });
     }
 
     /* ---------- shoda mezi trenéry ---------- */
