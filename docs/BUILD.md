@@ -76,6 +76,7 @@ Dva, oba povinné a oba už nastavené:
 | `TELEGRAM_BOT_TOKEN` | bot pro notifikace a odkazy na obnovu hesla | jen pro Telegram |
 | `OBNOVA_EMAILY` | adresy oddělené čárkou pro obnovu **společného** hesla | ne |
 | `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET` | klíče k SMS bráně GoSMS (app.gosms.eu → API) | jen pro SMS |
+| `ANTHROPIC_API_KEY` | placený model pro příkazový řádek | ne — bez něj jede Workers AI |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio; do Česka se nepoužívá (viz TECHNICAL) | ne |
 
 Hesla jednotlivých trenérů secrety nejsou — jsou to PBKDF2 hashe u jejich řádku v `players`.
@@ -93,6 +94,17 @@ npx wrangler secret put GOSMS_CLIENT_SECRET   # jde kdykoli pregenerovat v porta
 ID kanálu GoSMS tajemství není a je ve `wrangler.jsonc` jako `GOSMS_KANAL` (dnes `504031`).
 Nad providerem je ještě vypínač v aplikaci: `settings.smsAktivni` je výchozím stavem `0`,
 takže po nasazení neodejde žádná SMS, dokud ji někdo v Nastavení vědomě nepovolí.
+
+Jazykový model má stejnou logiku: `settings.aiPoskytovatel` je výchozím stavem `vypnuto`.
+Workers AI jede přes binding `ai` a nepotřebuje klíč; pro Claude se přidá secret
+
+```powershell
+npx wrangler secret put ANTHROPIC_API_KEY
+```
+
+Bez klíče (nebo při vyčerpaném kreditu) povel dokončí model zdarma. `@anthropic-ai/sdk` je
+jediná runtime závislost a vyžaduje `"compatibility_flags": ["nodejs_compat"]` ve
+`wrangler.jsonc` — bez něj Worker spadne za běhu na chybějících modulech Node.
 
 Telegram bota založí `@BotFather` (`/newbot`); token je ten dlouhý řetězec, co vrátí.
 Bota **nelze** oslovit první — každý trenér mu musí jednou napsat, teprve pak vznikne chat id.

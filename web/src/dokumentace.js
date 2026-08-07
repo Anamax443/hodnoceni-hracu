@@ -52,12 +52,35 @@ jinak by z každé opravy vznikl nový člověk. Vadné řádky se přeskočí a
 s číslem řádku tak, jak ho vidíš v Excelu.</p>
 <p><b>Import nikdy nemění hesla ani hodnocení.</b> Jde výhradně o kartotéku lidí.</p>
 
+<h2>Příkazový řádek</h2>
+<p>Pruh nad obsahem. Napiš jméno hráče a aplikace nabídne, co s ním: <b>Hodnotit</b>,
+<b>Porovnat</b>, <b>Listy</b>. Napiš dvě jména a nabídne srovnání. Povel se dá
+říct i celý — „listy Robin", „porovnej Robina a Ferdu", „hodnotit Ferda".</p>
+<p>Hledání a rozřazení dělá <b>samotná aplikace</b> nad kádrem, který už má
+načtený: je to okamžité a nestojí to nic. Jazykový model se ptá teprve tehdy,
+když si aplikace s větou neporadí — a jen když je v Nastavení zapnutý.</p>
+
 <h2>Hodnotit</h2>
 <p>Vyber hráče, období a šablonu a dej známky 1–10 na šesti osách. Nepovinně
 lze připsat poznámku. Hodnocení se <b>nikdy nepřepisuje</b>: každé uložení je
 nový záznam, takže je vidět vývoj i to, kdo co kdy napsal.</p>
 <p>Hráč, který chytá i hraje v poli, může mít v jednom období obě šablony a
-dostane dva listy.</p>
+dostane dva listy. Vedle herních šablon je i <b>leader</b> — samostatná šestice
+os na vůdcovství (vedení na hřišti, příklad v tréninku, reakce na chybu a tlak,
+fair play, podpora spoluhráčů, spolehlivost). Je to <i>druhý list</i> vedle
+herního, ne sedmá osa: sedm vrcholů by změnilo tvar radaru a nešlo by porovnat
+se staršími hodnoceními. Osy popisují chování, které je vidět, ne povahu.</p>
+
+<h3>Hromadné hodnocení</h3>
+<p>Když má víc hráčů stejnou úroveň v jedné disciplíně, nemusíš proklikat každého
+zvlášť. Dole v Hodnotit otevřeš <b>Hodnotit víc hráčů najednou</b>, vyplníš jen
+osy, na kterých se shodují, a zaškrtneš hráče. Aplikace napřed spočítá, koho se
+to týká, a <b>zapíše až po potvrzení</b>.</p>
+<p>Vyplněné osy se <b>doplní k poslednímu hodnocení</b> hráče v tomhle období
+a šabloně; ostatní osy zůstanou beze změny a vznikne nový záznam. Kdo od tebe
+v období hodnocení ještě nemá, se nezaloží — chybějícím osám by nebylo co
+doplnit — a vypíše se jmenovitě, ať ho doplníš jednotlivě. Základ se bere jen
+z <b>tvých</b> hodnocení, aby se tiše nesmíchaly dva pohledy.</p>
 
 <h2>Sebehodnocení hráče</h2>
 <p>V záložce <b>Odkazy</b> se hráči vygeneruje jednorázový odkaz. Osy jsou
@@ -79,6 +102,15 @@ má výklad:</p>
 </ul>
 <p>Když se rozchází víc než tři osy, aplikace doporučí vybrat dvě až tři témata.
 Na víc není při jednom rozhovoru nikdo zvědavý.</p>
+
+<h2>Porovnat hráče mezi sebou</h2>
+<p>Druhá karta v Porovnání. Vybereš šablonu a zaškrtneš hráče (dva brankáře, dva
+stopery) a dostaneš tabulku osa × hráč: vyšší známka tučně, sloupec <b>Rozdíl</b>
+říká, o kolik se nejlepší a nejhorší liší, a osy s rozdílem 3 a víc se zvýrazní —
+tam se ti hráči opravdu liší, jinde jsou na tom stejně.</p>
+<p>Srovnávají se jen hodnocení od trenérů a vždy v rámci jedné šablony;
+sebehodnocení hráče je jiná optika a míchat je by lhalo. Kdo tou šablonou
+v období hodnocení nemá, vypíše se pod tabulkou místo tichého vynechání.</p>
 
 <h2>Shoda</h2>
 <p>Když hráče hodnotí víc trenérů, tahle záložka ukáže matici osa × trenér a
@@ -125,10 +157,22 @@ smyčce je denní strop.</p>
 <p>Tlačítko <b>SMS nanečisto</b> ověří přihlášení k bráně, kanál i tvar čísla,
 ale nic neodešle a nic nestojí. Funguje i při vypnutém kanálu.</p>
 
+<h2>Jazykový model</h2>
+<p>V Nastavení se vybírá, kdo obsluhuje příkazový řádek, když si aplikace neporadí
+sama: <b>vypnuto</b> (výchozí — model se nevolá vůbec), <b>Cloudflare Workers AI</b>
+(zdarma, denní limit) nebo <b>Claude</b> (placený). Tlačítko <i>Vyzkoušet spojení</i>
+pošle jednu holou větu bez jediného údaje o hráčích a řekne, jestli model odpověděl.</p>
+<p>Model dostane jen napsanou větu a jména kádru — <b>ne známky a ne posudky</b> —
+a sám nic neprovede: vrátí návrh akce, kterou spustí aplikace. Každé volání se
+zapíše do logu komunikace i s tím, jak dlouho trvalo.</p>
+<p><b>Když u Claude dojde kredit</b>, vyčerpá se limit nebo má výpadek, povel
+dokončí model zdarma a důvod se napíše — aplikace kvůli fakturaci nepřestane
+fungovat. Chyba ve vlastním požadavku se ale zálohou nezakrývá, ta se ukáže.</p>
+
 <h2>Log komunikace</h2>
 <p>V Nastavení je posledních sto pokusů o odeslání: kdy, kanál, platforma
-(GoSMS, Telegram, Cloudflare), komu, typ a výsledek i s důvodem, proč to
-poskytovatel odmítl. Slouží k tomu, aby „nic mi nepřišlo“ šlo dohledat.</p>
+(GoSMS, Telegram, Cloudflare, model), komu, typ a výsledek i s důvodem, proč to
+poskytovatel odmítl. Slouží k tomu, aby „nic mi nepřišlo” šlo dohledat.</p>
 <p>Ukládají se <b>metadata, ne obsah</b>. Výjimkou je text SMS, a to kvůli
 počtu segmentů a sporům o fakturaci — hodnocení v něm stejně nikdy není.
 <b>Odkazy s tokeny se nelogují nikdy</b>: záznam s platným odkazem na obnovu
@@ -160,6 +204,15 @@ tak, že se pole „Kdo jsi“ nechá prázdné. Až budou mít všichni trené�
   <li>notifikace nenesou známky ani posudky;</li>
   <li>zdrojový kód i data zůstávají v neveřejném repozitáři.</li>
 </ul>
+
+<h2>Na telefonu a na papíře</h2>
+<p>Na úzké obrazovce se záložky schovají pod tlačítko <b>☰</b>, které zároveň
+ukazuje, kde zrovna jsi. Známky mají větší plochu na palec a široké tabulky se
+posouvají do stran uvnitř karty, takže stránka nikam neuteče.</p>
+<p>Tiskový list je <b>A4 na výšku</b> a náhled v prohlížeči má rozměr papíru
+i s okraji — co vidíš, to vyjede z tiskárny. Jeden hráč je jedna stránka
+a podpis trenéra sedí dole u kraje, aby nad ním zůstalo místo na poznámky
+od ruky.</p>
 
 <h2>Provoz</h2>
 <p>Aplikace běží na Cloudflare, data jsou v databázi D1 v Evropě. Dole v liště
@@ -204,10 +257,37 @@ name and role — otherwise every correction would create a new person. Invalid
 rows are skipped and listed with the row number as Excel shows it.</p>
 <p><b>Import never touches passwords or evaluations.</b></p>
 
+<h2>Command bar</h2>
+<p>The strip above the content. Type a player's name and the app offers what to do:
+<b>Evaluate</b>, <b>Compare</b>, <b>Sheets</b>. Type two names and it offers a
+comparison. Whole commands work too — “sheets Robin”, “compare Robin and Ferda”,
+“evaluate Ferda”.</p>
+<p>Matching and routing are done by <b>the app itself</b>, over the squad it has
+already loaded: instant, and it costs nothing. The language model is asked only
+when the app cannot resolve the sentence — and only if it is switched on in Settings.</p>
+
 <h2>Evaluate</h2>
 <p>Pick a player, a period and a template, then score six axes 1–10, optionally
 with a note. Evaluations are <b>never overwritten</b>: every save is a new record,
 so the progression stays visible, including who wrote what and when.</p>
+<p>Besides the playing templates there is <b>leader</b> — a separate set of six
+axes for leadership (leading on the pitch, example in training, response to
+mistakes and pressure, fair play, supporting team-mates, reliability). It is a
+<i>second sheet</i> alongside the playing one, not a seventh axis: seven vertices
+would change the radar's shape and break comparison with older evaluations. The
+axes describe visible behaviour, not personality.</p>
+
+<h3>Bulk evaluation</h3>
+<p>When several players are at the same level in one discipline, you don't have to
+click through them one by one. At the bottom of Evaluate open <b>Evaluate several
+players at once</b>, fill in only the axes where they agree, and tick the players.
+The app first reports who is affected and <b>writes only after you confirm</b>.</p>
+<p>The axes you set are <b>merged into each player's latest evaluation</b> for this
+period and template; the other axes stay untouched and a new record is created.
+Players with no evaluation from you in this period are skipped — there would be
+nothing to merge into — and listed by name so you can do them individually. The
+base is taken from <b>your own</b> evaluations only, so two viewpoints never get
+silently mixed.</p>
 
 <h2>Player self-evaluation</h2>
 <p>Under <b>Links</b> you generate a single-use link for a player. The axes are
@@ -229,6 +309,17 @@ The sign carries meaning:</p>
 </ul>
 <p>When more than three axes disagree, the app suggests picking two or three
 topics. Nobody takes more than that from a single conversation.</p>
+
+<h2>Comparing players with each other</h2>
+<p>The second card under Comparison. Pick a template and tick the players (two
+goalkeepers, two centre backs) and you get an axis × player table: the higher score
+in bold, a <b>Gap</b> column showing the distance between the best and the worst,
+and axes with a gap of 3 or more highlighted — that is where they genuinely differ;
+elsewhere they are level.</p>
+<p>Only coach evaluations are compared, always within one template; a player's
+self-evaluation is a different lens and mixing the two would lie. Anyone without an
+evaluation in that template and period is listed under the table rather than
+silently dropped.</p>
 
 <h2>Agreement</h2>
 <p>When several coaches evaluate one player, this tab shows an axis × coach
@@ -273,10 +364,26 @@ A daily cap guards against loops. The <b>Dry run SMS</b> button verifies the
 gateway login, the channel and the number format without sending anything and
 without spending credit — it works even while the channel is off.</p>
 
+<h2>Language model</h2>
+<p>Settings is where you choose who serves the command bar when the app cannot
+resolve a sentence itself: <b>off</b> (the default — the model is never called),
+<b>Cloudflare Workers AI</b> (free, daily limit) or <b>Claude</b> (paid). The
+<i>Test the connection</i> button sends one bare sentence with no player data and
+reports whether the model answered.</p>
+<p>The model receives only the typed sentence and the squad names — <b>no scores and
+no written assessments</b> — and never acts on its own: it returns a proposed action
+that the app performs. Every call is written to the communication log, including how
+long it took.</p>
+<p><b>When Claude runs out of credit</b>, hits its limit, or has an outage, the free
+model finishes the command and the reason is stated — the app does not stop working
+over billing. An error in the request itself is not papered over by the fallback;
+that one is shown.</p>
+
 <h2>Communication log</h2>
-<p>Settings shows the last hundred send attempts: time, channel, platform,
-recipient, type and result including the provider's reason for a refusal.
-It exists so that “I got nothing” can be investigated.</p>
+<p>Settings shows the last hundred send attempts: time, channel, platform
+(GoSMS, Telegram, Cloudflare, model), recipient, type and result including the
+provider's reason for a refusal. It exists so that “I got nothing” can be
+investigated.</p>
 <p>It stores <b>metadata, not content</b>. The exception is the SMS text, kept
 because of segment counting and billing disputes — it never contains evaluation
 data anyway. <b>Links with tokens are never logged</b>: a stored password-reset
@@ -304,6 +411,15 @@ always states whose password is being changed.</p>
 evaluations are visible only to a signed-in coach; a player sees their own
 sheet and nothing of the others; notifications carry no scores or assessments;
 and both the source code and the data stay in a private repository.</p>
+
+<h2>On a phone and on paper</h2>
+<p>On a narrow screen the tabs collapse under a <b>☰</b> button, which also shows
+where you currently are. Scores get a bigger touch target and wide tables scroll
+sideways inside their card, so the page itself never runs away.</p>
+<p>The printed sheet is <b>A4 portrait</b>, and the browser preview has the paper's
+dimensions including margins — what you see is what comes out of the printer. One
+player is one page, and the coach's signature sits at the bottom edge so there is
+room above it for handwritten notes.</p>
 
 <h2>Operations</h2>
 <p>The app runs on Cloudflare with a D1 database in Europe. The bar at the top

@@ -5,6 +5,29 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-07 (10) — leader, tisk, příkazový řádek, jazykový model
+
+**Commit:** `1eeec22` · **Ověřeno proti** https://hodnoceni.maxferit.cz a lokálně
+
+| Kontrola | Výsledek |
+|---|---|
+| šablona `leader` — popisky i formulace v 1. osobě | česky i anglicky kompletní, žádný chybějící klíč |
+| validace `leader` | cizí osa i hodnota mimo 1–10 odmítnuty |
+| tisk listu do PDF (headless Edge) | **1 stránka**, MediaBox 595 × 842 pt = A4 na výšku |
+| podpis trenéra | sedí dole u kraje papíru (patička si bere zbylé místo) |
+| jazykový model — Workers AI | `{"ok":true,"odpoved":"Funguje.","trvaloMs":701}` |
+| vyřazený model rozpoznán | `5028 … was deprecated on 2026-05-30` → nahrazen `-fp8` variantou |
+| Worker s Anthropic SDK | bundle 513 kB / 108 kB gzip, `nodejs_compat` zapnutý |
+| `/api/evaluations/hromadne` a `/api/srovnani` bez přihlášení | `401` |
+| popisky exportu tam a zpět | `trenér`/`hráč v poli`/`střední záložník` → klíče, i velkými písmeny a bez diakritiky |
+
+**Co ověřeno NEBYLO:** doručení SMS (účet GoSMS neověřený, bez kreditu); Claude jako
+poskytovatel (chybí `ANTHROPIC_API_KEY`, organizace bez kreditu) — pád na model zdarma
+je proto ověřený jen kódem, ne živým během; hromadné hodnocení a srovnání hráčů proti
+ostrým datům (v období zatím není žádné hodnocení).
+
+---
+
 ## 2026-08-07 (9) — GoSMS, zámek přihlášení, export do Excelu
 
 **Commit:** `a89f21e` · **Ověřeno proti** https://hodnoceni.maxferit.cz

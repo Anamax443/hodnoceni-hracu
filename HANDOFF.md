@@ -2,6 +2,59 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-07 (13) — leader, hromadné hodnocení, srovnání hráčů, příkazový řádek s AI
+
+**Šablona `leader`** — vůdcovství jako třetí sada os (vedení na hřišti, příklad
+v tréninku, reakce na chybu a tlak, fair play, podpora spoluhráčů, spolehlivost),
+ne jako sedmá osa u všech: sedm vrcholů mění tvar radaru a rozbilo by porovnání
+se staršími hodnoceními. Hráč tak dostane druhý list vedle herního. Osy popisují
+**chování, které je vidět**, ne povahu — na papír pro rodiče nepatří posudek osobnosti.
+
+**Hromadné hodnocení** (Hodnotit → *Hodnotit víc hráčů najednou*). Vyplní se jen
+osy, na kterých se kádr shoduje, a doplní se k poslednímu hodnocení hráče v daném
+období a šabloně; vzniká nový záznam, nic se nepřepisuje. Základ se bere **jen od
+přihlášeného trenéra** — cizí čísla se nepřebírají, jinak by se tiše smíchaly dva
+pohledy, které má rozsuzovat Shoda. Kdo v období hodnocení nemá, se nezaloží
+a vypíše se jmenovitě. Ukládá se až po potvrzení, které napřed řekne, koho se to týká.
+
+**Srovnání hráčů mezi sebou** (Porovnání, druhá karta) — tabulka osa × hráč,
+vyšší známka tučně, sloupec *Rozdíl* a zvýrazněné osy s rozdílem ≥ 3. Srovnávají
+se jen hodnocení od trenérů a vždy v rámci jedné šablony.
+
+**Příkazový řádek** nad obsahem. „Robin" → nabídne Hodnotit / Porovnat / Listy;
+„robin ferda" → srovnání; „listy robin", „porovnej robina a ferdu" jdou rovnou.
+**Rozřazení dělá prohlížeč** nad načteným kádrem — okamžité a bez tokenů; model
+se ptá teprve na větu, které místní rozřazení nerozumí.
+
+**Jazykový model je přepínač** (Nastavení): `vypnuto` (výchozí) / Workers AI
+zdarma / Claude přes oficiální `@anthropic-ai/sdk`. **Při vyčerpaném kreditu,
+limitu nebo výpadku Claude spadne volání na model zdarma**, dokončí se a důvod
+jde do logu i do odpovědi; chyba ve vlastním požadavku se ale zálohou nezakrývá.
+Kvůli SDK je zapnutý `nodejs_compat` (bundle 513 kB / 108 kB gzip).
+Vyřazený `llama-3.1-8b-instruct` (skončil 2026-05-30, chyba 5028) nahrazen
+`-fp8` variantou; seznam modelů je v kódu, ne z katalogu.
+
+**Mobil** — pod 720 px jdou záložky pod hamburger, který nese jméno otevřené
+záložky; známky mají 42 px na palec, vstupy 16 px kvůli iOS, široké tabulky se
+posouvají uvnitř karty.
+
+**Tisk opraven.** Pravidla pro tisk byla nahoře v souboru, ale `.page` se šířkou
+210 mm níž — při stejné specifičnosti vyhrálo pozdější, šířka se sečetla s okraji
+stránky, obsah přetekl vpravo a vylezl druhý prázdný list. Tisková sekce je teď
+na konci souboru. Podpis trenéra šel dolů (patička si bere zbylé místo).
+Ověřeno headless tiskem do PDF: 1 stránka, MediaBox 595 × 842 pt.
+
+**Export mluví lidsky** — místo `trener`, `pole`, `stredni_zaloznik` a 0/1 jsou
+v souboru popisky a ano/ne v jazyce aplikace; import bere zpátky obojí. Přibyl
+skutečný **sešit .xlsx** (telefon a chat id formátem Text, ověřeno Excelem přes
+COM); CSV už telefon nezabaluje do `="…"`. **České řazení** přes `Intl.Collator`.
+
+**Zbývá:** ověřit účet GoSMS a dobít kredit (ostrá SMS zatím neprojde, odesílatel
+je `GoSMS-test`); zadat první hodnocení; pozvánky pro Julka a Masa a pak
+`DELETE FROM auth`; případný klíč `ANTHROPIC_API_KEY`, pokud se má zkoušet Claude.
+
+---
+
 ## 2026-08-07 (12) — GoSMS místo Twilia, PIN se zámkem, export/import, dokumentace v appce
 
 **SMS přes GoSMS** (`SMS_PROVIDER: gosms`). Twilio je pro české SMS špatný nástroj: obě

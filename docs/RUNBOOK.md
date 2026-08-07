@@ -84,6 +84,12 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | GoSMS vrací `400` u ostrého odeslání | účet neověřený a bez kreditu (odesílatel `GoSMS-test`) | ověřit účet v portálu a dobít kredit; text chyby je v logu komunikace |
 | v Excelu je z telefonu `4,20605E+11` | otevřel se **CSV**, které formát buněk nenese | použít **Export do Excelu** (`.xlsx`), tam je sloupec Text |
 | import z Excelu udělal duplikáty | v souboru chyběl sloupec `id` a lišilo se jméno | v souboru nechat `id`; párování je id → login → jméno + role |
+| příkazový řádek hlásí, že nerozumí | jméno není v kádru, nebo je model vypnutý | zkus příjmení či přezdívku; volnější věty umí až model (Nastavení → Jazykový model) |
+| model hlásí vyčerpaný kredit u Claude | na účtu Anthropic není kredit | nic dělat nemusíš — povel dokončí model zdarma a důvod je v logu; trvale: dobít kredit, nebo přepnout na Workers AI |
+| model odpovídá `5028 … was deprecated` | Cloudflare model vyřadil | vybrat jiný v Nastavení; seznam v kódu (`AI_MODELY`) srovnat podle `npx wrangler ai models` |
+| hromadné hodnocení někoho vynechalo | ten hráč nemá od tebe v období hodnocení | vypíše se jmenovitě — ohodnoť ho jednotlivě, pak hromadné doplní zbytek |
+| srovnání hráčů je prázdné | vybraní nemají hodnocení tou šablonou v období | zkontroluj šablonu a období; kdo chybí, je vypsaný pod tabulkou |
+| tiskne se druhá prázdná stránka | slovní blok se přelil, nebo vlastní CSS přebilo tiskovou sekci | zkrátit text; tisková pravidla musí zůstat na **konci** `web/src/styl.css` |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
 

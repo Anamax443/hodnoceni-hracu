@@ -69,7 +69,7 @@ Frontend nikdy nesahá do D1 přímo a veškerá autorizace je ve Workeru. Žád
 
 | Cesta | Kdo | Co |
 |---|---|---|
-| `/` | trenér (jméno + heslo) | Lidé, Hodnotit, Listy, Porovnání, Odkazy, Nastavení |
+| `/` | trenér (jméno nebo e-mail + heslo) | příkazový řádek + Lidé, Hodnotit, Shoda, Listy, Porovnání, Odkazy, Nastavení, 📖 Dokumentace |
 | `/listy.html` | trenér | tiskové listy A4 sestavené z databáze |
 | `/h/<token>` | hráč | sebehodnocení přes jednorázový odkaz |
 | `/obnova/<token>` | trenér | nastavení nového hesla za jednorázovým odkazem |
@@ -90,6 +90,7 @@ Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 
 ## Dokumentace
 
+- [docs/STATUS.md](docs/STATUS.md) — **kde to stojí**: co běží, co je ověřené, co chybí
 - [docs/README.md](docs/README.md) — **uživatelská**: jak hodnotit, tisknout a vést rozhovor
 - [docs/TECHNICAL.md](docs/TECHNICAL.md) — architektura, datový model, API, funkční pravidla, backlog
 - [docs/BUILD.md](docs/BUILD.md) — jak postavit a nasadit od nuly (výrobní)
@@ -97,6 +98,12 @@ Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 - [docs/ZADANI.md](docs/ZADANI.md) — původní zadání projektu
 - [docs/vzor-list.html](docs/vzor-list.html) — referenční tiskový výstup (zmrazený vzor)
 - [HANDOFF.md](HANDOFF.md) — deník stavu
+- [known_good.md](known_good.md) — ověřené funkční stavy, bod návratu
+
+Anglicky: [docs/STATUS.en.md](docs/STATUS.en.md) a [docs/README.en.md](docs/README.en.md).
+Uživatelská dokumentace je i **uvnitř aplikace** (záložka 📖) v obou jazycích — ta se
+aktualizuje jako první, protože ji trenér čte tam, kde pracuje. Technické dokumenty
+(TECHNICAL, BUILD, RUNBOOK) jsou provozní a zůstávají česky.
 - [known_good.md](known_good.md) — ověřené funkční stavy
 
 ## Osobní údaje

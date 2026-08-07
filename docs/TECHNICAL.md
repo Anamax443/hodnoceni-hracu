@@ -258,6 +258,40 @@ i v exportu to vypadalo jako přeházená čísla.
 
 ---
 
+## 3d. Příkazový řádek a jazykový model
+
+**Rozřazení dělá prohlížeč, ne model.** Kádr je v `stav.lide`, takže hledání jména
+i klíčových slov (`hodnotit`, `porovnat`, `listy`, `odkaz`) je okamžité a nestojí ani
+token. `POST /api/ai/prikaz` se volá teprve tehdy, když si `rozeberPovel()` s větou
+neporadí — a jen když `settings.aiPoskytovatel` není `vypnuto`.
+
+**Model nikdy nic neprovede.** Vrací jen `{akce, hraci:[jména]}`; jména se párují na
+skutečný kádr na serveru, takže ID hráčů nevidí a vymyslet si je nemůže. Akci spouští
+aplikace.
+
+**Poskytovatel je přepínač** (`settings.aiPoskytovatel`, výchozí `vypnuto`):
+
+| Hodnota | Chování |
+|---|---|
+| `vypnuto` | model se nevolá vůbec |
+| `workers` | Cloudflare Workers AI přes binding `AI` (zdarma, denní limit) |
+| `claude` | Anthropic přes oficiální `@anthropic-ai/sdk`, secret `ANTHROPIC_API_KEY` |
+
+**Záloha zdarma při vyčerpaném kreditu.** `claudeNaZalohu()` rozlišuje provozní stav od
+chyby zadání: `billing_error`, 429, 402/403, 5xx a zprávu „credit balance is too low“
+(chodí jako 400) bere jako důvod dokončit povel na Workers AI; jiné 400 propadnou ven,
+protože chybu v požadavku nemá smysl zakrývat. Důvod jde do odpovědi i do logu komunikace.
+
+Seznam modelů (`AI_MODELY`) je **v kódu, ne z katalogu**: Cloudflare modely vyřazuje
+(`@cf/meta/llama-3.1-8b-instruct` skončil 2026-05-30 a volání padalo na `5028`), a
+vyřazený model má být vidět v commitu, ne až v runtime chybě. Aktuální nabídku účtu
+vypíše `npx wrangler ai models`.
+
+`@anthropic-ai/sdk` vyžaduje `"compatibility_flags": ["nodejs_compat"]`; bundle Workeru
+je s ním 513 kB / 108 kB gzip.
+
+---
+
 ## 4. Radar graf
 
 Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.html`.
@@ -292,7 +326,19 @@ Dřív se to pletlo do jedné kolonky `post`. Rozděleno:
 **Proč je šablona na hodnocení:** hráč, který chytá i hraje v poli, potřebuje obojí. Ferda
 může mít v jednom období hodnocení brankářskou i polní šablonou a každá řada žije samostatně —
 brankářské a polní osy se do jednoho grafu míchat nedají. `players.sablona` je jen výchozí
-volba ve formuláři.
+volba ve formuláři. Totéž platí pro šablonu `leader`: je to **druhý list vedle herního**,
+ne sedmá osa (viz kap. 5).
+
+**Hromadné hodnocení** (`POST /api/evaluations/hromadne`) doplní vyplněné osy k poslednímu
+hodnocení hráče v daném období a šabloně a uloží nový záznam. Základ se hledá **jen u
+přihlášeného trenéra** (`autor_id IS ?`) — cizí čísla se nepřebírají, jinak by hromadné
+zadání tiše smíchalo dva pohledy, které má rozsuzovat Shoda. Hráč bez základu se nezakládá
+(nešlo by doplnit chybějící osy a neúplný záznam nejde vykreslit) a vrací se v `ceka`.
+
+**Srovnání hráčů mezi sebou** (`GET /api/srovnani`) je jiná otázka než `/api/porovnani`:
+tam jde o rozdíl trenér vs. hráč u jednoho člověka, tady o to, jak si stojí dva brankáři
+vedle sebe. Bere jen hodnocení od trenérů a vždy v rámci jedné šablony; vrací i rozptyl
+na ose, aby šlo poznat, kde se ti dva skutečně liší.
 
 Důsledky, které musí platit všude:
 
@@ -444,7 +490,8 @@ platná a vykreslí se svou šablonou.
 
 Klíč–hodnota: `tolerance`, `obdobi`, `sezona`, `klub`, `kategorie`, `latka`, `cileNadpis`,
 notifikační `notifZapnuto`, `notifCas`, `notifDnyZmeny`, `notifDnyTicho`, `notifPosledni`
-a SMS `smsAktivni` (výchozí `0`) se `smsDenniStrop` (výchozí `50`).
+a SMS `smsAktivni` (výchozí `0`) se `smsDenniStrop` (výchozí `50`), jazykový model
+`aiPoskytovatel` (výchozí `vypnuto`) a `aiModel`.
 
 Server přijme **jen klíče, které zná** (`VYCHOZI_NASTAVENI`); `tolerance` navíc musí být
 celé číslo 0–9. Výchozí hodnoty jsou v kódu, ne v migraci — nový přepínač se tak nasadí
@@ -525,6 +572,12 @@ POST   /api/sms/test       {telefon, nanecisto?}  admin — zkušební SMS, nane
 GET    /api/prehled?obdobi=                       admin — kdo má hodnocení a kdo odkaz
 GET    /api/evaluations?player_id=&obdobi=        admin
 POST   /api/evaluations                           admin  (autor='trener')
+POST   /api/evaluations/hromadne                  admin — jedna známka pro víc hráčů
+GET    /api/srovnani?sablona=&obdobi=&ids=        admin — tabulka osa × hráč
+
+POST   /api/ai/prikaz     {text}                  admin — rozřazení povelu modelem
+GET    /api/ai/stav?model=                        admin — odpoví model? nic o hráčích
+GET    /api/ai/modely                             admin — nabídka pro Nastavení
 
 GET    /api/listy?obdobi=&porovnani=&ids=         admin — podklady pro tiskové listy
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč

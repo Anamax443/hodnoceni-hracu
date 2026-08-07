@@ -132,6 +132,18 @@ Aplikace se přizpůsobí úzké obrazovce: záložky se schovají pod tlačítk
 zároveň ukazuje, kde zrovna jsi. Známky mají větší tlačítka na palec a široké tabulky
 se posouvají do stran uvnitř karty, takže stránka nikam neuteče.
 
+### Příkazový řádek
+
+Nad záložkami je pruh, do kterého se píše jméno hráče nebo povel:
+
+- `Robin` → najde hráče a nabídne **Hodnotit / Porovnat / Listy**
+- `robin ferda` → nabídne srovnání obou
+- `listy robin`, `porovnej robina a ferdu`, `hodnotit ferda` → provede rovnou
+
+Hledání dělá **sama aplikace** nad kádrem, který už má načtený — je okamžité
+a nic nestojí. Jazykový model se ptá teprve na větu, které aplikace nerozumí,
+a jen když je zapnutý (Nastavení → Jazykový model).
+
 ### Hodnotit
 
 Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tři slovní bloky a cíle.
@@ -147,11 +159,27 @@ Pozor při rozesílání odkazů: **odkaz na sebehodnocení nese tu šablonu**, 
 známkoval. Když ho oznámkuješ jinou šesticí až po odeslání odkazu, vygeneruj mu nový —
 jinak vyplní jiné osy a porovnat to nepůjde (aplikace to pozná a řekne).
 
+**Šablona `leader`** je třetí sada os — vůdcovství: vedení na hřišti, příklad v tréninku,
+reakce na chybu a tlak, fair play, podpora spoluhráčů, spolehlivost. Je to **druhý list
+vedle herního**, stejně jako u brankáře; sedmá osa u všech by změnila tvar radaru a nešlo
+by porovnat se staršími hodnoceními. Osy popisují chování, které je vidět, ne povahu.
+
 **Cíle:** dva až tři, konkrétní a ověřitelné. Ne „zlepšit levou nohu", ale „levá noha: každý
 trénink 5 minut navíc, přihrávka do 10 metrů". Hráč musí poznat, jestli to splnil.
 
 Uložením vzniká nový záznam. Starší hodnocení se nikdy nepřepisuje, takže když se překlepneš,
 prostě ulož znovu — platí to poslední.
+
+#### Hodnotit víc hráčů najednou
+
+Když má víc hráčů stejnou úroveň v jedné disciplíně, nemusíš proklikat každého zvlášť.
+Dole v Hodnotit je **Hodnotit víc hráčů najednou**: vyplníš jen osy, na kterých se shodují,
+zaškrtneš hráče a aplikace napřed spočítá, koho se to týká — **zapisuje až po potvrzení**.
+
+Vyplněné osy se **doplní k poslednímu hodnocení** hráče v tomhle období a šabloně, ostatní
+osy zůstanou a vznikne nový záznam. Kdo od tebe v období hodnocení ještě nemá, se nezaloží
+(nebylo by co doplnit) a vypíše se jmenovitě. Základ se bere jen z **tvých** hodnocení, aby
+se tiše nesmíchaly dva pohledy — od toho je Shoda.
 
 ### Listy
 
@@ -184,6 +212,17 @@ do jednoho rozhovoru stejně nevejde.
 Pod tabulkou je vývoj v čase se šipkami. **Tenhle pohled je jen pro tebe** — na papír, který
 si hráč nese domů, se nedostane.
 
+#### Porovnat hráče mezi sebou
+
+Druhá karta v Porovnání. Vybereš šablonu, zaškrtneš dva a víc hráčů (dva brankáře, dva
+stopery) a dostaneš tabulku **osa × hráč**: vyšší známka tučně, sloupec *Rozdíl* říká, o kolik
+se nejlepší a nejhorší liší, a osy s rozdílem 3 a víc se zvýrazní — tam se ti hráči opravdu
+liší, jinde jsou na tom stejně. Poslední řádek je průměr, orientační souhrn, ne známka na
+vysvědčení.
+
+Srovnávají se **jen hodnocení od trenérů** a vždy v rámci jedné šablony; sebehodnocení hráče
+je jiná optika. Kdo tou šablonou v období hodnocení nemá, vypíše se pod tabulkou.
+
 ### Odkazy
 
 Vygenerují se odkazy na sebehodnocení pro všechny aktivní hráče na dané období. U každého
@@ -203,6 +242,25 @@ Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 - **Změna hesla** — svého vlastního
 - **Souhrnné notifikace** — viz níž
 - **Povolit odesílání SMS** — mimořádný kanál, výchozí vypnuto (viz níž)
+- **Jazykový model** — kdo obsluhuje příkazový řádek, viz níž
+
+### Jazykový model
+
+Příkazový řádek si s běžnými povely poradí sám a **nic nestojí**. Model se ptá teprve na
+větu, které aplikace nerozumí. V Nastavení se vybírá kdo:
+
+- **Vypnuto** (výchozí) — model se nevolá vůbec
+- **Cloudflare Workers AI** — zdarma, denní limit
+- **Claude** — placený, potřebuje klíč v secretu `ANTHROPIC_API_KEY`
+
+Tlačítko *Vyzkoušet spojení* pošle jednu holou větu **bez jediného údaje o hráčích** a
+řekne, jestli model odpověděl a jak dlouho to trvalo.
+
+Modelu jde jen napsaná věta a jména kádru — **ne známky a ne slovní posudky** — a sám nic
+neprovede: vrátí návrh akce, kterou spustí aplikace. Každé volání je v logu komunikace.
+
+**Když u Claude dojde kredit** nebo se vyčerpá limit, povel dokončí model zdarma a důvod se
+napíše. Aplikace kvůli fakturaci nepřestane fungovat.
 
 ### 📖 Dokumentace
 
