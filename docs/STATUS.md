@@ -46,6 +46,10 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 - jazykový model: Workers AI odpověděl za ~0,7 s
 - úprava hodnocení: 15 kontrol API + 23 proklikáním v prohlížeči (lokálně, čerstvá D1);
   živě zatím jen migrace a nasazení — ostrá data k proklikání nejsou
+- víc šablon u hráče: 15 kontrol API + 16 proklikáním; kumulovaný list vytištěný do PDF
+  na **jednu A4**, bez přepínače tři stránky
+- slovní bloky a cíle se mezi šablonami nepřenášejí: 5 kontrol (prázdný formulář přepne
+  bez ptaní, s rozepsaným textem se zeptá a text zůstane u své šablony)
 
 ## Co chybí
 
@@ -54,7 +58,9 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 2. **Zadat první reálná hodnocení.** Aplikace i kádr jsou připravené, hodnocení zatím žádné.
 3. **Julek a Maso nemají vlastní heslo ani kanál.** Až budou mít Telegram nebo ověřený
    e-mail, poslat pozvánku z Lidí; pak zrušit společné heslo (`DELETE FROM auth`).
-4. **Doplnit pozice zbylým hráčům** (má je zatím jen Ferda).
+4. **Doplnit pozice zbylým hráčům** (má je zatím jen Ferda) **a přiřadit šablony** —
+   po migraci má každý hráč jen `hráč v poli`. Komu se má tisknout brankářský nebo
+   leader list, tomu je potřeba šablonu zaškrtnout v Lidech.
 5. **Klíč `ANTHROPIC_API_KEY`**, pokud se má zkoušet placený model. Bez něj i s vyčerpaným
    kreditem jede příkazový řádek dál na modelu zdarma.
 

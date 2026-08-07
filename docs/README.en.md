@@ -92,14 +92,24 @@ midfielder`, `yes` / `no`) in the language you have switched on.
 Pick a player; the form appears below: six axes with ten scores each, three written blocks
 and the goals. Nothing is pre-filled and previous values are not shown — that is deliberate.
 
-The **set of axes** is chosen in the form. A player who keeps goal and plays outfield can
-have both in one period and gets two sheets. There is also a **leader** template —
-leadership: leading on the pitch, example in training, response to mistakes and pressure,
-fair play, supporting team-mates, reliability. It is a *second sheet* alongside the playing
-one, not a seventh axis, and it describes visible behaviour rather than personality.
+The **set of axes** is chosen in the form; the default is the first one ticked for that
+player in People, and everything they have assigned is listed under the selector. A player
+who keeps goal, plays outfield and leads the team is filled in as many times as they have
+templates — after saving, the app offers *Score: goalkeeper* and the rest straight away.
+They then get a sheet for each, and each series lives on its own; the sets cannot be merged
+into one chart, because a different set of six axes has a different shape.
 
-Careful when sending links: **a self-evaluation link carries the template** you scored the
-player with. If you later score them with a different set of axes, generate a new link.
+**Leader** is one of those sets — leading on the pitch, example in training, response to
+mistakes and pressure, fair play, supporting team-mates, reliability. It is a *sheet of its
+own* alongside the playing one, not a seventh axis, and it describes visible behaviour
+rather than personality.
+
+**The written notes and the goals belong to that template**, not to the person — “goal
+kicks” does not belong on a leader sheet. Switching the template therefore clears them; if
+you have anything typed, the app asks first so nothing is lost.
+
+Careful when sending links: **a self-evaluation link carries one set of axes**. A player
+with several templates gets a link for each of them.
 
 **Goals:** two or three, concrete and checkable. Not “improve the left foot” but “left foot:
 5 extra minutes every training, a 10-metre pass”. The player must be able to tell whether
@@ -171,6 +181,10 @@ one template.
 Single-use self-evaluation links for the active players in the period, with *Copy* and
 *Invalidate* and the state (waiting / filled in). Send the link **to the individual player**,
 not to a team group: whoever has it can fill the self-evaluation in for them.
+
+**A link carries one set of six axes**, so a player with several templates gets one link per
+template — the *Template* column says which is which. An unused link for the same template is
+not created twice; how many were skipped is reported after generating.
 
 ### Settings
 

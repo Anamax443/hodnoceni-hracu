@@ -21,7 +21,8 @@ tam, kde se pohled trenéra a hráče rozchází, je téma na rozhovor.</p>
 nebo za rodiči.</p>
 
 <h2>Lidé</h2>
-<p>Kartotéka kádru. U každého člověka se vede:</p>
+<p>Kartotéka kádru. <b>Kliknutím na jméno se otevře úprava</b> toho člověka; tlačítko
+<i>Upravit</i> na konci řádku dělá totéž. U každého člověka se vede:</p>
 <ul>
   <li><b>Jméno a přezdívka</b> — přezdívka se ukazuje všude, kde se jméno
       vypisuje. Hodí se, když jsou v kádru tři stejná příjmení.</li>
@@ -268,7 +269,8 @@ Where the coach and the player disagree, there is something to talk about.</p>
 <p>The output is a printable A4 sheet with a radar chart.</p>
 
 <h2>People</h2>
-<p>The squad register. For each person the app keeps:</p>
+<p>The squad register. <b>Clicking a name opens that person for editing</b>; the
+<i>Edit</i> button at the end of the row does the same. For each person the app keeps:</p>
 <ul>
   <li><b>Name and nickname</b> — the nickname appears wherever names are shown,
       which helps when three players share a surname.</li>

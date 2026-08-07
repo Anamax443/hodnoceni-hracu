@@ -1,4 +1,4 @@
-/* ===== TISK: jeden hráč = jedna A4 =====
+/* ===== TISK: jeden list = jedna A4 (kumulovaně jeden hráč) =====
    Samotná pravidla pro tisk jsou schválně až na KONCI souboru. Když byla
    nahoře, přebilo je pozdější `.page` se šířkou 210 mm (stejná specifičnost,
    rozhoduje pořadí) — na papíře se ta šířka sečetla s okraji stránky, obsah

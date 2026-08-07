@@ -7,8 +7,9 @@ Nový záznam nahoru.
 
 ## 2026-08-07 (12) — víc šablon u hráče a kumulovaný list
 
-**Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–013). V ostré databázi zatím
-žádné hodnocení není, takže naostro jde ověřit jen schéma a nasazení.
+**Commit:** `6dd0701` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–013).
+Živě: migrace `013` puštěná (23 řádků), `/api/version` = `6dd0701`, `cisto: true`.
+V ostré databázi zatím žádné hodnocení není, takže naostro jde ověřit jen schéma a nasazení.
 
 | Kontrola | Výsledek |
 |---|---|

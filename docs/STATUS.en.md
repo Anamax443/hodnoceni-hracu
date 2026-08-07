@@ -47,6 +47,10 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 - language model: Workers AI answered in ~0.7 s
 - editing an evaluation: 15 API checks + 23 browser click-through checks (locally, on a fresh
   D1); live only the migration and the deploy so far — there is no real data to click through
+- several templates per player: 15 API checks + 16 click-through checks; the combined sheet
+  printed to PDF fits **one A4**, three pages without the switch
+- written notes and goals do not travel between templates: 5 checks (an empty form switches
+  without asking; with text typed it asks, and the text stays with its own template)
 
 ## What is missing
 
@@ -56,7 +60,9 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 3. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
    or a verified e-mail, send them an invitation from People, then drop the shared password
    (`DELETE FROM auth`).
-4. **Add positions for the remaining players** (only Ferda has them so far).
+4. **Add positions for the remaining players** (only Ferda has them so far) **and assign
+   templates** — after the migration every player has just `outfield`. Anyone who should get
+   a goalkeeper or leader sheet needs that template ticked in People.
 5. **An `ANTHROPIC_API_KEY`**, if the paid model is to be used. Without it — and with an
    exhausted credit — the command bar keeps working on the free model.
 

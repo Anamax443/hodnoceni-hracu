@@ -107,7 +107,7 @@ const SLOVNIK = {
         'lide.jmeno': 'Jméno',
         'lide.post': 'Post',
         'lide.role': 'Role',
-        'lide.sablona': 'Šablona',
+        'lide.sablona': 'Šablony',
         'lide.hrac': 'hráč',
         'lide.trener': 'trenér',
         'lide.neaktivni': 'neaktivní',
@@ -320,7 +320,7 @@ const SLOVNIK = {
 
         /* --- Listy --- */
         'listy.nadpis': 'Tiskové listy',
-        'listy.popis': 'Jeden hráč = jedna A4. Listy se sestaví z databáze, otevřou se v nové záložce a odtud jdou na tiskárnu.',
+        'listy.popis': 'Jedna šablona = jedna A4; hráč s víc šablonami dostane list na každou. Kumulovaně se vejdou na jednu stránku. Listy se sestaví z databáze, otevřou se v nové záložce a odtud jdou na tiskárnu.',
         'listy.obdobi': 'Období',
         'listy.polygon': 'Druhý polygon v grafu',
         'listy.polygon.minule': 'trenér minule (vývoj)',
@@ -373,7 +373,7 @@ const SLOVNIK = {
 
         /* --- Odkazy --- */
         'odkazy.nadpis': 'Odkazy na sebehodnocení',
-        'odkazy.popis': 'Odkaz je jednorázový. Posílej ho konkrétnímu hráči, ne do týmové skupiny — kdo odkaz má, může sebehodnocení vyplnit za něj.',
+        'odkazy.popis': 'Odkaz je jednorázový a nese jednu šestici os — hráč s víc šablonami dostane odkaz na každou z nich. Posílej ho konkrétnímu hráči, ne do týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.',
         'odkazy.platnost': 'Platnost (dní)',
         'odkazy.generovat': 'Vygenerovat pro všechny hráče',
         'odkazy.generovat.tip': 'Vygeneruje odkaz pro každého aktivního hráče',
@@ -483,7 +483,7 @@ const SLOVNIK = {
 
         /* --- stránka tisku --- */
         'tisk.vytisknout': '🖨️ Vytisknout',
-        'tisk.tip': 'Otevře dialog tisku. Jeden hráč = jedna stránka A4. Zapni „Grafika na pozadí".',
+        'tisk.tip': 'Otevře dialog tisku. Jeden list = jedna stránka A4 (kumulovaně jeden hráč). Zapni „Grafika na pozadí".',
         'tisk.stav': '{0} — listů: {1}',
         'tisk.bez': ' (z toho {0} bez hodnocení)',
         'tisk.kumulovane': ' — kumulovaně, jeden hráč = jedna stránka se všemi šablonami',
@@ -633,7 +633,7 @@ const SLOVNIK = {
         'lide.jmeno': 'Name',
         'lide.post': 'Position',
         'lide.role': 'Role',
-        'lide.sablona': 'Template',
+        'lide.sablona': 'Templates',
         'lide.hrac': 'player',
         'lide.trener': 'coach',
         'lide.neaktivni': 'inactive',
@@ -839,7 +839,7 @@ const SLOVNIK = {
         'blok.parta': 'Social',
 
         'listy.nadpis': 'Printable sheets',
-        'listy.popis': 'One player = one A4. Sheets are built from the database, open in a new tab and print from there.',
+        'listy.popis': 'One template = one A4; a player with several templates gets a sheet for each. Combined, they fit on a single page. Sheets are built from the database, open in a new tab and print from there.',
         'listy.obdobi': 'Period',
         'listy.polygon': 'Second polygon in the chart',
         'listy.polygon.minule': 'coach, previous period (progress)',
@@ -889,7 +889,7 @@ const SLOVNIK = {
         'trend.pasmo': 'Only a difference of 2 points counts as a change; a 1-point shift in a subjective score is not a signal.',
 
         'odkazy.nadpis': 'Self-evaluation links',
-        'odkazy.popis': 'Each link works once. Send it to the individual player, not to the team group — whoever has the link can fill the self-evaluation in for them.',
+        'odkazy.popis': 'Each link works once and carries one set of six axes — a player with several templates gets a link for each. Send it to the individual player, not to the team group: whoever has the link can fill the self-evaluation in for them.',
         'odkazy.platnost': 'Valid for (days)',
         'odkazy.generovat': 'Generate for all players',
         'odkazy.generovat.tip': 'Generates a link for every active player',
@@ -995,7 +995,7 @@ const SLOVNIK = {
         'list.neznamaSablona': 'Player „{0}" has an unknown template: {1}',
 
         'tisk.vytisknout': '🖨️ Print',
-        'tisk.tip': 'Opens the print dialog. One player = one A4 page. Turn on „Background graphics".',
+        'tisk.tip': 'Opens the print dialog. One sheet = one A4 page (one player when combined). Turn on „Background graphics".',
         'tisk.stav': '{0} — sheets: {1}',
         'tisk.bez': ' ({0} of them without an evaluation)',
         'tisk.kumulovane': ' — combined, one player = one page with all their templates',

@@ -44,7 +44,11 @@ každou šablonu a nezdvojení, export popisků) a 16 + 5 proklikáním v headle
 včetně **tisku kumulovaného listu do PDF: 1 stránka**, bez přepínače 3 stránky,
 a nepřenášení textů mezi šablonami. Sada k úpravě hodnocení (23 kontrol) prošla beze změn.
 
-**Zbývá:** pustit migraci `013` na ostré D1 a nasadit.
+**Nasazeno.** Migrace `012` i `013` puštěné na ostré D1 (23 řádků, každý hráč má po
+migraci `["pole"]`), Worker nasazený — `/api/version` = `6dd0701`, `cisto: true`.
+
+**Zbývá:** zaškrtat šablony hráčům, kterým se má tisknout brankářský nebo leader list —
+po migraci mají všichni jen `hráč v poli`.
 
 ---
 
@@ -77,7 +81,7 @@ bloků, nahrazení varování „naslepo" vysvětlením úpravy, vznik nové ver
 značka *úprava verze z …* v historii, *Upravit* jen u trenérských verzí, zrušení úpravy
 vrátí prázdný formulář a varování zpět. Žádná chyba v konzoli prohlížeče.
 
-**Zbývá:** pustit migraci `012` na ostré D1 a nasadit; teprve pak to funguje živě.
+**Nasazeno** (commit `025d70d`), migrace `012` na ostré D1 puštěná.
 
 ---
 

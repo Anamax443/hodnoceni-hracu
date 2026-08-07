@@ -9,9 +9,13 @@
 ## Co to dělá
 
 Trenér hodnotí každého hráče 2× za sezónu na pevné škále 1–10. Hráč vyplní **sebehodnocení**
-stejných parametrů přes jednorázový odkaz. Výstupem je tištěný list A4 (jeden hráč = jedna
-stránka) s radar grafem a slovním komentářem, plus interní pohled trenéra na vývoj v čase
-a na rozdíly mezi oběma pohledy.
+stejných parametrů přes jednorázový odkaz. Výstupem je tištěný list A4 (jedna šestice os =
+jedna stránka) s radar grafem a slovním komentářem, plus interní pohled trenéra na vývoj
+v čase a na rozdíly mezi oběma pohledy.
+
+Hráč může mít **víc šablon** — kdo chytá, hraje v poli i vede mužstvo, má všechny tři.
+Každá je vlastní řada s vlastním listem; sloučit je do jednoho grafu nejde (jiných šest os
+má jiný tvar), ale vytisknout vedle sebe na jednu stránku ano.
 
 Hlavní hodnota nástroje je **rozdíl mezi sebehodnocením a hodnocením trenéra** — ukazuje, kde
 o sobě hráč neví. Řeší se jen osy, kde je rozdíl větší než nastavená **tolerance**.
@@ -24,13 +28,16 @@ se nikdy neznámkují.
 
 | | |
 |---|---|
-| **Lidé** | kádr a trenéři; u hráče **N pozic** (levý bek i křídlo i brankář), u trenéra účet a notifikační kanály |
-| **Hodnotit** | 6 os po 1–10, tři slovní bloky, 2–3 cíle; **šestice os se vybírá u hodnocení** |
-| **Listy** | tiskové A4 z databáze, druhý polygon volitelně (trenér minule / sebehodnocení / žádný) |
-| **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, vývoj v čase se šipkami |
-| **Odkazy** | jednorázové odkazy na sebehodnocení, nesou i šablonu os |
-| **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace |
-| **Notifikace** | souhrn na Telegram a e-mail; zvlášť interval „když se něco děje" a „když se nic neděje" |
+| **Lidé** | kádr a trenéři; u hráče **N pozic** a **N šablon** (brankář i hráč v poli i leader), u trenéra účet a notifikační kanály; klik na jméno otevře úpravu |
+| **Hodnotit** | 6 os po 1–10, tři slovní bloky, 2–3 cíle; **šestice os se vybírá u hodnocení**, hromadné hodnocení víc hráčů naráz |
+| **Úprava hodnocení** | starší hodnocení se načte, opraví a uloží jako **nová verze** — nic se nepřepisuje |
+| **Shoda** | matice osa × trenér, uzavření finálního znění pro list; povinný trenér nevidí cizí čísla, dokud neodevzdá |
+| **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně |
+| **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, srovnání hráčů mezi sebou, vývoj v čase, historie verzí |
+| **Odkazy** | jednorázové odkazy na sebehodnocení; odkaz nese jednu šestici os, takže hráč s víc šablonami dostane odkaz na každou |
+| **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace, jazykový model |
+| **Notifikace** | souhrn na Telegram, e-mail a SMS; zvlášť interval „když se něco děje" a „když se nic neděje" |
+| **Příkazový řádek** | „Robin" → Hodnotit / Porovnat / Listy; rozřazení dělá prohlížeč, model až na zapeklité věty |
 
 Účty jsou **po lidech**: každý trenér má přihlašovací jméno a vlastní heslo, obnova chodí
 na jeho vlastní kanál.
@@ -49,10 +56,13 @@ Tištěný list je vždy světlý, i když má aplikace tmavý vzhled — je to 
 | 3 | Odkazy + sebehodnocení + porovnání s tolerancí | **nasazeno** |
 | 4 | Historie a trendy | šipky u os hotové, plný pohled až s druhým obdobím |
 
-Nad rámec zadání: účty po lidech, obnova hesla, souhrnné notifikace, vlastní doména, CS/EN,
-tmavý vzhled. V backlogu SMS jako třetí kanál — viz [docs/TECHNICAL.md](docs/TECHNICAL.md) §9b.
+Nad rámec zadání: účty po lidech, obnova hesla, souhrnné notifikace i SMS, vlastní doména,
+CS/EN, tmavý vzhled, shoda mezi trenéry, hromadné hodnocení, úprava hodnocení jako nová
+verze, víc šablon u hráče s kumulovaným listem, příkazový řádek s přepínatelným jazykovým
+modelem.
 
-**Kádr je nahraný** (19 hráčů + 3 trenéři), hodnocení zatím žádné.
+**Kádr je nahraný** (19 hráčů + 3 trenéři), hodnocení zatím žádné. Co přesně běží,
+co je ověřené a co chybí, je v [docs/STATUS.md](docs/STATUS.md).
 
 ## Stack
 
@@ -104,7 +114,6 @@ Anglicky: [docs/STATUS.en.md](docs/STATUS.en.md) a [docs/README.en.md](docs/READ
 Uživatelská dokumentace je i **uvnitř aplikace** (záložka 📖) v obou jazycích — ta se
 aktualizuje jako první, protože ji trenér čte tam, kde pracuje. Technické dokumenty
 (TECHNICAL, BUILD, RUNBOOK) jsou provozní a zůstávají česky.
-- [known_good.md](known_good.md) — ověřené funkční stavy
 
 ## Osobní údaje
 

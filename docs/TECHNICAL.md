@@ -382,9 +382,12 @@ Důsledky, které musí platit všude:
 
 - `POST /api/evaluations` bere `sablona` z formuláře a ukládá ji do řádku hodnocení
 - **token na sebehodnocení nese šablonu** (`tokens.sablona`) — hráč musí vyplnit tytéž osy,
-  které známkoval trenér. Při generování se bere šablona posledního hodnocení trenéra pro
-  dané období, jinak výchozí šablona osoby.
-- `/api/listy` vrací **jeden list na kombinaci hráč × šablona** — Ferda dostane dva
+  které známkoval trenér. Generuje se **jeden token na každou přiřazenou šablonu**; nevyplněný
+  token na tutéž šablonu se nezakládá podruhé (vrací se v `preskoceno`).
+- `/api/listy` vrací **jeden list na kombinaci hráč × šablona** — Ferda dostane tři.
+  Kumulace na jednu stránku je až tisková volba ve frontendu.
+- **slovní bloky a cíle jsou na hodnocení**, takže vycházejí na každou šablonu vlastní;
+  formulář je při přepnutí šablony nepřenáší
 - `/api/porovnani` a `/api/trend` pracují vždy v rámci jedné šablony; když hráč vyplnil
   jinou, než jakou byl známkovaný, vrátí se `jinaSablona: true` a aplikace to řekne
   (není to totéž jako „ještě nevyplnil")

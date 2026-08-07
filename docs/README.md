@@ -93,7 +93,8 @@ Tištěný list je vždy světlý, i když máš aplikaci tmavou — je to papí
 
 ### Lidé
 
-Kdo je v týmu. U každého jméno, přezdívka, pozice, role a výchozí šablona os.
+Kdo je v týmu. U každého jméno, přezdívka, pozice, role a šablony os, kterými se známkuje.
+**Kliknutím na jméno se otevře jeho úprava** (tlačítko na konci řádku zůstává).
 
 **Pozic může být několik.** Hráč použitelný na levém beku, pravém křídle i v bráně má
 zaškrtnuté všechny tři. Je to popis toho, kde nastupuje — se známkováním to nesouvisí.
@@ -153,10 +154,15 @@ Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tř
 
 Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
 
-**Šestice os** se vybírá nahoře ve formuláři. Kdo chytá i hraje v poli, může mít v jednom
-období obojí — vyplníš ho dvakrát, jednou brankářskou a jednou polní šablonou. Dostane pak
-dva listy a každá řada v čase žije samostatně; brankářské a polní osy se do jednoho grafu
-míchat nedají. Přepnutí šablony ti nesmaže slovní bloky ani cíle, jen vymění osy.
+**Šestice os** se vybírá nahoře ve formuláři; předvolená je první, kterou má hráč v Lidech
+zaškrtnutou, a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli
+i vede mužstvo, se vyplňuje tolikrát, kolik má šablon — po uložení nabídne aplikace rovnou
+*Ohodnotit: brankář* a další. Dostane pak list na každou z nich a každá řada v čase žije
+samostatně; do jednoho grafu se sloučit nedají, protože jiných šest os má jiný tvar.
+
+**Slovní bloky a cíle patří k té šabloně**, ne k člověku — „výkopy od brány" na leader list
+nepatří. Přepnutím šablony se proto vyprázdní; když v nich něco máš, aplikace se napřed
+zeptá, ať o rozepsaný text nepřijdeš.
 
 Pozor při rozesílání odkazů: **odkaz na sebehodnocení nese tu šablonu**, kterou jsi hráče
 známkoval. Když ho oznámkuješ jinou šesticí až po odeslání odkazu, vygeneruj mu nový —
@@ -248,6 +254,10 @@ je jiná optika. Kdo tou šablonou v období hodnocení nemá, vypíše se pod t
 
 Vygenerují se odkazy na sebehodnocení pro všechny aktivní hráče na dané období. U každého
 tlačítko *Kopírovat* a *Zneplatnit*, plus stav (čeká / vyplněno).
+
+**Odkaz nese jednu šestici os**, takže hráč s víc šablonami dostane odkaz na každou z nich —
+brankářský i polní i leader. Ve sloupci *Šablona* je vidět, který je který. Nevyplněný odkaz
+na tutéž šablonu se podruhé nezakládá; kolik jich aplikace přeskočila, řekne po generování.
 
 Odkaz je jednorázový — po odeslání už podruhé nejde. Posílej ho **konkrétnímu hráči**, ne do
 týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.

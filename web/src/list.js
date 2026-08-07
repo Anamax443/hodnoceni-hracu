@@ -1,5 +1,6 @@
 /* =====================================================================
-   SESTAVENÍ TISKOVÉHO LISTU — jeden hráč = jedna A4
+   SESTAVENÍ TISKOVÉHO LISTU — jedna šablona = jedna A4
+   (kumulovaně: jeden hráč = jedna A4 se všemi svými šablonami vedle sebe)
 
    Rámec: FA Four Corner Model
      - technicko-taktický roh          -> radar graf (čísla)
