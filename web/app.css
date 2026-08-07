@@ -240,3 +240,12 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
     .login { margin: 24px auto; max-width: none; }
     .dokumentace p, .dokumentace li { max-width: none; }
 }
+
+/* Příkazový řádek nad obsahem — píše se do něj jméno hráče nebo povel. */
+.prikaz {
+    max-width: 980px; margin: 14px auto 0; padding: 0 14px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;
+}
+.prikaz input { flex: 1; min-width: 220px; }
+.prikaz #prikaz-vysledek { flex-basis: 100%; }
+@media (max-width: 720px) { .prikaz { padding: 0 10px; margin-top: 10px; } }

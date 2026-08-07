@@ -102,6 +102,13 @@ function prekresliShell() {
         b.title = t('nav.' + b.dataset.z + '.tip');
     });
 
+    const prikaz = $('#prikaz-vstup');
+    if (prikaz) {
+        prikaz.placeholder = t('prikaz.napoveda');
+        $('#prikaz-spustit').textContent = t('prikaz.spustit');
+        $('#prikaz-spustit').title = t('prikaz.spustit.tip');
+    }
+
     // Hamburger nese jméno otevřené záložky, ať je i po zavření menu vidět, kde jsi.
     const menuBtn = $('#menuBtn');
     if (menuBtn) {
@@ -600,6 +607,152 @@ async function lide(kam) {
             hlaska($('#formular-osoby'), 'chyba', e.message);
         }
     };
+}
+
+/* ===================== příkazový řádek =====================
+
+   Napíšeš „Robin" a aplikace nabídne, co s ním. Rozřazení dělá tenhle kód,
+   ne jazykový model: kádr je v prohlížeči, hledání jména je okamžité a
+   nestojí ani token. Model se volá teprve tehdy, když si tohle neporadí —
+   a jen když je v Nastavení zapnutý.                                        */
+
+const holyText = s => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+const AKCE_SLOVA = {
+    hodnotit: ['hodnotit', 'hodnoceni', 'znamkovat', 'oznamkovat', 'znamky'],
+    porovnat: ['porovnat', 'porovnej', 'porovnani', 'srovnat', 'srovnej', 'srovnani', 'vs', 'proti'],
+    listy: ['list', 'listy', 'tisk', 'tisknout', 'vytisknout', 'papir'],
+    odkaz: ['odkaz', 'odkazy', 'sebehodnoceni', 'token', 'poslat odkaz']
+};
+
+/** Najde v povelu hráče a zamýšlenou akci. Nic neodesílá. */
+function rozeberPovel(text) {
+    const slova = holyText(text).split(/[\s,;]+/).filter(Boolean);
+    const kadr = stav.lide.filter(o => o.role === 'hrac' && o.aktivni);
+
+    let akce = null;
+    const zbytek = [];
+    for (const slovo of slova) {
+        const nalezena = Object.keys(AKCE_SLOVA).find(a => AKCE_SLOVA[a].includes(slovo));
+        if (nalezena && !akce) akce = nalezena;
+        else if (!nalezena) zbytek.push(slovo);
+    }
+
+    // Hráč se hledá podle příjmení, jména i přezdívky — trenér píše, jak mluví.
+    const hraci = [];
+    for (const slovo of zbytek) {
+        if (slovo.length < 2) continue;
+        const nalezeni = kadr.filter(h => {
+            const casti = [...holyText(h.jmeno).split(/\s+/), holyText(h.prezdivka ?? '')].filter(Boolean);
+            return casti.some(c => c.startsWith(slovo));
+        });
+        if (nalezeni.length === 1 && !hraci.some(h => h.id === nalezeni[0].id)) hraci.push(nalezeni[0]);
+    }
+
+    return { akce, hraci, nerozpoznano: zbytek.length && !hraci.length };
+}
+
+/** Provede akci: přepne záložku a předvybere, co má. */
+async function provedPovel(akce, hraci) {
+    const cil = $('#prikaz-vysledek');
+    cil.innerHTML = '';
+
+    if (akce === 'listy') {
+        const ids = hraci.map(h => h.id).join(',');
+        location.href = `/listy.html?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`
+            + `&porovnani=hrac&ids=${ids || 'vse'}`;
+        return;
+    }
+
+    if (akce === 'hodnotit') {
+        stav.zalozka = 'hodnotit';
+        await prekresli();
+        if (hraci[0]) {
+            $('#h-hrac').value = String(hraci[0].id);
+            $('#h-hrac').dispatchEvent(new Event('change'));
+        }
+        return;
+    }
+
+    if (akce === 'odkaz') {
+        stav.zalozka = 'odkazy';
+        await prekresli();
+        return;
+    }
+
+    if (akce === 'porovnat') {
+        stav.zalozka = 'porovnani';
+        await prekresli();
+        if (hraci.length >= 2) {
+            // Dva a víc hráčů = srovnání mezi sebou, ne trenér vs. hráč.
+            for (const h of hraci) {
+                const volba = document.querySelector(`.s-hrac[value="${h.id}"]`);
+                if (volba) volba.checked = true;
+            }
+            $('#s-porovnat')?.click();
+        } else if (hraci[0]) {
+            $('#p-hrac').value = String(hraci[0].id);
+            $('#p-hrac').dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+/** Nabídka, co s nalezenými hráči — když povel akci neurčil. */
+function nabidkaPovelu(hraci, zdroj) {
+    const jmena = hraci.map(h => esc(jmenoText(h))).join(', ');
+    const akce = hraci.length >= 2
+        ? ['porovnat', 'listy']
+        : ['hodnotit', 'porovnat', 'listy'];
+
+    return `<div class="hlaska info">
+        ${t('prikaz.nasel', jmena)}
+        <div style="margin-top:6px">
+            ${akce.map(a => `<button class="vedlejsi" data-akce="${a}">${t('prikaz.akce.' + a)}</button>`).join(' ')}
+        </div>
+        <div class="popis" style="margin-top:4px">${t(zdroj === 'model' ? 'prikaz.zdroj.model' : 'prikaz.zdroj.lokalne')}</div>
+    </div>`;
+}
+
+async function spustPovel() {
+    const vstup = $('#prikaz-vstup');
+    const cil = $('#prikaz-vysledek');
+    const text = vstup.value.trim();
+    if (!text) { cil.innerHTML = ''; return; }
+
+    const { akce, hraci } = rozeberPovel(text);
+
+    // Rozumíme-li povelu sami, model se nevolá vůbec.
+    if (hraci.length && akce) { await provedPovel(akce, hraci); vstup.value = ''; return; }
+    if (hraci.length) {
+        cil.innerHTML = nabidkaPovelu(hraci, 'lokalne');
+        cil.querySelectorAll('[data-akce]').forEach(b => b.onclick = async () => {
+            vstup.value = '';
+            await provedPovel(b.dataset.akce, hraci);
+        });
+        return;
+    }
+
+    // Až teď má smysl ptát se modelu — a jen když je zapnutý.
+    cil.innerHTML = `<div class="hlaska info">${t('prikaz.ptamSe')}</div>`;
+    try {
+        const r = await api('/api/ai/prikaz', { telo: { text } });
+        if (!r.ok) {
+            cil.innerHTML = `<div class="hlaska pozor">${esc(r.popis || t('prikaz.nerozumim'))}</div>`;
+            return;
+        }
+        if (r.akce && r.hraci.length) { await provedPovel(r.akce, r.hraci); vstup.value = ''; return; }
+        if (r.hraci.length) {
+            cil.innerHTML = nabidkaPovelu(r.hraci, 'model');
+            cil.querySelectorAll('[data-akce]').forEach(b => b.onclick = async () => {
+                vstup.value = '';
+                await provedPovel(b.dataset.akce, r.hraci);
+            });
+            return;
+        }
+        cil.innerHTML = `<div class="hlaska pozor">${t('prikaz.nerozumim')}</div>`;
+    } catch (e) {
+        cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+    }
 }
 
 /* ===================== záložka: Dokumentace ===================== */
@@ -1433,6 +1586,25 @@ async function nastaveni(kam) {
             <div class="pole"><label><input type="checkbox" id="n-sms" style="width:auto"
                 ${stav.nastaveni.smsAktivni === '1' ? 'checked' : ''}> ${t('notif.smsAktivni')}</label>
                 <div class="popis">${t('notif.smsAktivni.napoveda')}</div></div>
+
+            <h3 style="margin:16px 0 4px;font-size:14px">${t('ai.nadpis')}</h3>
+            <p class="popis">${t('ai.popis')}</p>
+            <div class="radek">
+                <div class="pole"><label for="n-ai">${t('ai.poskytovatel')}</label>
+                    <select id="n-ai">
+                        <option value="vypnuto"${stav.nastaveni.aiPoskytovatel === 'vypnuto' ? ' selected' : ''}>${t('ai.vypnuto')}</option>
+                        <option value="workers"${stav.nastaveni.aiPoskytovatel === 'workers' ? ' selected' : ''}>${t('ai.workers')}</option>
+                        <option value="claude"${stav.nastaveni.aiPoskytovatel === 'claude' ? ' selected' : ''}>${t('ai.claude')}</option>
+                    </select>
+                    <div class="popis">${t('ai.poskytovatel.napoveda')}</div></div>
+                <div class="pole"><label for="n-aiModel">${t('ai.model')}</label>
+                    <select id="n-aiModel"></select>
+                    <div class="popis">${t('ai.model.napoveda')}</div></div>
+            </div>
+            <p>
+                <button class="vedlejsi" id="ai-zkouska" title="${t('ai.zkouska.tip')}">${t('ai.zkouska')}</button>
+            </p>
+            <div id="ai-vysledek"></div>
             <div id="notif-stav"></div>
             <button class="hl" id="ulozit-notif" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>
             <button class="vedlejsi" id="poslat-ted" title="${t('notif.poslatTed.tip')}">${t('notif.poslatTed')}</button>
@@ -1485,13 +1657,45 @@ async function nastaveni(kam) {
             </div>`);
     }).catch(() => { /* informativní */ });
 
+    // Nabídka modelů se plní podle poskytovatele — modely Workers AI a Claude
+    // se nesmí míchat, ID jednoho u druhého nefunguje.
+    api('/api/ai/modely').then(({ modely }) => {
+        const vyber = $('#n-aiModel');
+        if (!vyber) return;
+        const naplnit = () => {
+            const p = $('#n-ai').value === 'claude' ? 'claude' : 'workers';
+            const vhodne = modely.filter(m => m.poskytovatel === p);
+            vyber.innerHTML = vhodne.map(m =>
+                `<option value="${esc(m.id)}"${m.id === stav.nastaveni.aiModel ? ' selected' : ''}>${esc(m.popis)}</option>`
+            ).join('');
+            vyber.disabled = $('#n-ai').value === 'vypnuto';
+        };
+        naplnit();
+        $('#n-ai').onchange = naplnit;
+    }).catch(() => { /* informativní */ });
+
+    $('#ai-zkouska').onclick = async () => {
+        const cil = $('#ai-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            // Ověřuje spojení jednou holou větou — nic o hráčích neodchází.
+            const r = await api(`/api/ai/stav?model=${encodeURIComponent($('#n-aiModel').value)}`);
+            cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'pozor'}">${esc(r.popis)}`
+                + (r.trvaloMs ? ` <span class="popis">(${r.trvaloMs} ms)</span>` : '') + '</div>';
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
     $('#ulozit-notif').onclick = async () => {
         const telo = {
             notifZapnuto: $('#n-zapnuto').checked ? '1' : '0',
             notifCas: $('#n-cas').value,
             notifDnyZmeny: $('#n-dnyZmeny').value,
             notifDnyTicho: $('#n-dnyTicho').value,
-            smsAktivni: $('#n-sms').checked ? '1' : '0'
+            smsAktivni: $('#n-sms').checked ? '1' : '0',
+            aiPoskytovatel: $('#n-ai').value,
+            aiModel: $('#n-aiModel').value
         };
         try {
             stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });
@@ -1571,6 +1775,9 @@ function menu(otevrit) {
 }
 
 $('#menuBtn').onclick = () => menu(!$('#zalozky').classList.contains('otevreno'));
+
+$('#prikaz-spustit').onclick = spustPovel;
+$('#prikaz-vstup').onkeydown = e => { if (e.key === 'Enter') spustPovel(); };
 
 document.querySelectorAll('#zalozky button').forEach(b => b.onclick = () => {
     stav.zalozka = b.dataset.z;

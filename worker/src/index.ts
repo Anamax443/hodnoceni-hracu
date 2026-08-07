@@ -15,6 +15,7 @@ import { SABLONY, POZICE, MAX, klice, zkontrolujHodnoty, zkontrolujPozice, popis
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
 import { xlsxSoubor, type Sloupec } from './xlsx';
+import Anthropic from '@anthropic-ai/sdk';
 
 interface EmailBinding {
     send(zprava: { to: string; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown>;
@@ -155,6 +156,11 @@ async function nastavHeslo(env: Env, heslo: string): Promise<void> {
  * Kdyby se ztratilo i to: `DELETE FROM auth;` a secret zase platí.
  */
 /* ===================== zámek proti hádání hesla ===================== */
+
+/** Porovnání jmen bez ohledu na velikost písmen a diakritiku. */
+function holyText(text: string): string {
+    return String(text ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
 
 /** Kolik marných pokusů padlo na tenhle klíč za poslední okno. */
 async function pokusyZaOkno(env: Env, klic: string): Promise<number> {
@@ -315,11 +321,40 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
  * účtu vypíše `npx wrangler ai models`.
  */
 const AI_MODELY = [
-    { id: '@cf/meta/llama-3.1-8b-instruct-fp8', popis: 'Llama 3.1 8B — rychlý a levný, na pokyny stačí (výchozí)' },
-    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', popis: 'Llama 3.3 70B — silnější a lepší čeština, pomalejší' },
-    { id: '@cf/openai/gpt-oss-120b', popis: 'gpt-oss 120B — nejsilnější, latence kolísá' },
-    { id: '@cf/meta/llama-3.2-3b-instruct', popis: 'Llama 3.2 3B — nejlevnější, jen na jednoduché pokyny' }
+    { id: '@cf/meta/llama-3.1-8b-instruct-fp8', poskytovatel: 'workers', popis: 'Llama 3.1 8B — rychlý a levný, na pokyny stačí (výchozí)' },
+    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', poskytovatel: 'workers', popis: 'Llama 3.3 70B — silnější a lepší čeština, pomalejší' },
+    { id: '@cf/openai/gpt-oss-120b', poskytovatel: 'workers', popis: 'gpt-oss 120B — nejsilnější, latence kolísá' },
+    { id: '@cf/meta/llama-3.2-3b-instruct', poskytovatel: 'workers', popis: 'Llama 3.2 3B — nejlevnější, jen na jednoduché pokyny' },
+    // Placené modely. Bez kreditu na účtu spadne volání na zálohu zdarma.
+    { id: 'claude-opus-5', poskytovatel: 'claude', popis: 'Claude Opus 5 — nejlepší, placený' },
+    { id: 'claude-sonnet-5', poskytovatel: 'claude', popis: 'Claude Sonnet 5 — levnější než Opus, placený' },
+    { id: 'claude-haiku-4-5', poskytovatel: 'claude', popis: 'Claude Haiku 4.5 — nejlevnější Claude, na pokyny bohatě stačí' }
 ];
+
+/** Výchozí model, když je vybraný poskytovatel, ale ne konkrétní model. */
+function vychoziModel(poskytovatel: string): string {
+    return AI_MODELY.find(m => m.poskytovatel === poskytovatel)?.id ?? AI_MODELY[0].id;
+}
+
+/**
+ * Má se kvůli téhle chybě přepnout na zálohu zdarma?
+ *
+ * Vyčerpaný kredit i vyčerpaný limit jsou provozní stavy, ne chyba zadání —
+ * appka kvůli nim nesmí přestat fungovat. Chybu v požadavku (400) naopak
+ * zálohou zakrývat nemá; ta se má ukázat.
+ */
+function claudeNaZalohu(e: unknown): string | null {
+    if (e instanceof Anthropic.RateLimitError) return 'Claude hlásí vyčerpaný limit (429).';
+    if (e instanceof Anthropic.APIConnectionError) return 'Claude je nedostupný.';
+    if (e instanceof Anthropic.APIStatusError) {
+        if (e.type === 'billing_error') return 'Na účtu Anthropic došel kredit.';
+        if (e.status === 402 || e.status === 403) return 'Anthropic účet nemá kredit nebo oprávnění.';
+        if (e.status >= 500) return 'Anthropic má výpadek.';
+        // 400 „credit balance is too low" chodí jako invalid_request_error.
+        if (/credit balance|insufficient|quota/i.test(e.message)) return 'Na účtu Anthropic došel kredit.';
+    }
+    return null;
+}
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
     const { results } = await env.DB.prepare('SELECT klic, hodnota FROM settings').all<{ klic: string; hodnota: string }>();
@@ -2277,6 +2312,116 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- porovnání trenér vs. hráč (§7.3) ---------- */
+    /* ---------- rozřazení povelu jazykovým modelem ----------
+       Volá se teprve tehdy, když si s větou neporadí prohlížeč sám. Běžné
+       povely („Robin", „porovnej Robina a Ferdu") se rozřadí lokálně a
+       nestojí ani token — model je tu na věty, které se vymykají.          */
+    if (cesta === '/api/ai/prikaz' && metoda === 'POST') {
+        const { text } = await request.json<{ text?: string }>();
+        const veta = (text ?? '').trim().slice(0, 300);
+        if (!veta) return chyba('Prázdný povel.', 400);
+
+        const nas = await nastaveni(env);
+        if (nas.aiPoskytovatel === 'vypnuto') {
+            return json({ ok: false, duvod: 'vypnuto', popis: 'Jazykový model je v Nastavení vypnutý.' });
+        }
+        if (!env.AI) return json({ ok: false, duvod: 'binding', popis: 'Chybí binding AI.' });
+
+        const { results } = await env.DB.prepare(
+            `SELECT id, jmeno, prezdivka FROM players WHERE role = 'hrac' AND aktivni = 1`
+        ).all<{ id: number; jmeno: string; prezdivka: string | null }>();
+        const kadr = results ?? [];
+
+        // Krátký vstup i výstup: chceme rozřazení, ne vypravování. Modelu jdou
+        // jména kádru (aby poznal překlepy), ale žádné známky ani posudky.
+        const pokyn = 'Jsi rozřazovač povelů v aplikaci na hodnocení mládežnických fotbalistů. '
+            + 'Odpověz VÝHRADNĚ jedním JSON objektem bez dalšího textu, ve tvaru '
+            + '{"akce":"hodnotit|porovnat|listy|odkaz|nevim","hraci":["jméno",...]}. '
+            + 'Jména vybírej jen ze seznamu, který dostaneš. Když si nejsi jistý, vrať akci "nevim".';
+        const dotaz = `Kádr: ${kadr.map(h => h.jmeno).join('; ')}\nPovel: ${veta}`;
+
+        const pres_workers = async (m: string) => {
+            const r = await env.AI!.run(m, {
+                messages: [{ role: 'system', content: pokyn }, { role: 'user', content: dotaz }],
+                max_tokens: 120, temperature: 0
+            });
+            return String(r?.response ?? r?.result?.response ?? '');
+        };
+
+        /* Placený model. Když na účtu není kredit nebo je vyčerpaný limit, spadne
+           to na model zdarma — appka nesmí kvůli fakturaci přestat fungovat. */
+        const pres_claude = async (m: string) => {
+            if (!env.ANTHROPIC_API_KEY) throw new Error('Chybí secret ANTHROPIC_API_KEY.');
+            const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+            const odpoved = await anthropic.messages.create({
+                model: m, max_tokens: 200, system: pokyn,
+                messages: [{ role: 'user', content: dotaz }]
+            });
+            return odpoved.content.filter(b => b.type === 'text').map(b => (b as any).text).join('');
+        };
+
+        let model = nas.aiModel || vychoziModel(nas.aiPoskytovatel);
+        let poskytovatel = nas.aiPoskytovatel;
+        let zaloha: string | null = null;
+        const zacatek = Date.now();
+
+        try {
+            let syrove: string;
+            if (poskytovatel === 'claude') {
+                try {
+                    syrove = await pres_claude(model);
+                } catch (e) {
+                    const duvod = claudeNaZalohu(e);
+                    if (!duvod) throw e;                    // chyba zadání se zálohou nezakrývá
+                    zaloha = duvod;
+                    poskytovatel = 'workers';
+                    model = vychoziModel('workers');
+                    syrove = await pres_workers(model);
+                }
+            } else {
+                syrove = await pres_workers(model);
+            }
+
+            const zavorka = syrove.slice(syrove.indexOf('{'), syrove.lastIndexOf('}') + 1);
+            let navrh: any = null;
+            try { navrh = JSON.parse(zavorka); } catch { navrh = null; }
+
+            // Jména z modelu se párují na skutečný kádr tady — model ID hráčů
+            // nevidí a vymyslet si je tím pádem nemůže.
+            const najdi = (jmeno: string) => {
+                const h = holyText(jmeno);
+                return kadr.find(x => holyText(x.jmeno) === h)
+                    ?? kadr.find(x => holyText(x.jmeno).includes(h) || h.includes(holyText(x.jmeno)))
+                    ?? null;
+            };
+            const hraci = Array.isArray(navrh?.hraci)
+                ? navrh.hraci.map((j: unknown) => najdi(String(j))).filter(Boolean)
+                : [];
+
+            const akce = ['hodnotit', 'porovnat', 'listy', 'odkaz'].includes(navrh?.akce) ? navrh.akce : 'nevim';
+            const trvaloMs = Date.now() - zacatek;
+
+            await zalogujKomunikaci(env, {
+                kanal: 'ai', platforma: model, typ: 'prikaz', vysledek: akce === 'nevim' ? 'preskoceno' : 'ok',
+                kod: akce, poznamka: veta.slice(0, 120),
+                podrobnosti: `Rozřazeno za ${trvaloMs} ms; hráčů: ${hraci.length}.`
+                    + (zaloha ? ` Záloha zdarma: ${zaloha}` : '')
+            });
+
+            return json({
+                ok: akce !== 'nevim', zdroj: 'model', model, poskytovatel, zaloha, trvaloMs, akce,
+                hraci: hraci.map((h: any) => ({ id: h.id, jmeno: h.jmeno }))
+            });
+        } catch (e) {
+            const popis = e instanceof Error ? e.message : String(e);
+            await zalogujKomunikaci(env, {
+                kanal: 'ai', platforma: model, typ: 'prikaz', vysledek: 'chyba',
+                poznamka: veta.slice(0, 120), podrobnosti: popis
+            });
+            return json({ ok: false, zdroj: 'model', model, popis });
+        }
+    }
+
     /* ---------- nabídka modelů pro Nastavení ---------- */
     if (cesta === '/api/ai/modely' && metoda === 'GET') {
         const nas = await nastaveni(env);
@@ -2288,14 +2433,45 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
        Posílá se holá věta bez jediného údaje o komkoli z kádru.               */
     if (cesta === '/api/ai/stav' && metoda === 'GET') {
         const nas = await nastaveni(env);
-        const model = q.get('model') || nas.aiModel || '@cf/meta/llama-3.1-8b-instruct';
+        const zvoleny = q.get('model') || nas.aiModel || vychoziModel(nas.aiPoskytovatel);
+        const jeClaude = AI_MODELY.find(m => m.id === zvoleny)?.poskytovatel === 'claude';
+        const zacatek = Date.now();
+
+        // Zkušební věta neobsahuje nic o kádru — ověřuje se spojení, ne appka.
+        if (jeClaude) {
+            if (!env.ANTHROPIC_API_KEY) {
+                return json({ ok: false, poskytovatel: 'claude', model: zvoleny, popis: 'Chybí secret ANTHROPIC_API_KEY.' });
+            }
+            try {
+                const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+                const r = await anthropic.messages.create({
+                    model: zvoleny, max_tokens: 20,
+                    system: 'Odpovídej česky, jedním slovem.',
+                    messages: [{ role: 'user', content: 'Napiš slovo: funguje' }]
+                });
+                const odpoved = r.content.filter(b => b.type === 'text').map(b => (b as any).text).join('').trim();
+                return json({
+                    ok: !!odpoved, poskytovatel: 'claude', model: zvoleny,
+                    odpoved: odpoved.slice(0, 120), trvaloMs: Date.now() - zacatek,
+                    popis: 'Claude odpověděl, kredit na účtu je.'
+                });
+            } catch (e) {
+                const duvod = claudeNaZalohu(e);
+                return json({
+                    ok: false, poskytovatel: 'claude', model: zvoleny,
+                    zaloha: duvod,
+                    popis: duvod
+                        ? `${duvod} Povely proto poběží na modelu zdarma.`
+                        : (e instanceof Error ? e.message : String(e))
+                });
+            }
+        }
 
         if (!env.AI) {
-            return json({ ok: false, poskytovatel: 'workers', model, popis: 'Chybí binding AI ve wrangler.jsonc.' });
+            return json({ ok: false, poskytovatel: 'workers', model: zvoleny, popis: 'Chybí binding AI ve wrangler.jsonc.' });
         }
         try {
-            const zacatek = Date.now();
-            const r = await env.AI.run(model, {
+            const r = await env.AI.run(zvoleny, {
                 messages: [
                     { role: 'system', content: 'Odpovídej česky, jedním slovem.' },
                     { role: 'user', content: 'Napiš slovo: funguje' }
@@ -2304,7 +2480,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             });
             const odpoved = String(r?.response ?? r?.result?.response ?? '').trim();
             return json({
-                ok: !!odpoved, poskytovatel: nas.aiPoskytovatel, model,
+                ok: !!odpoved, poskytovatel: 'workers', model: zvoleny,
                 odpoved: odpoved.slice(0, 120), trvaloMs: Date.now() - zacatek,
                 popis: odpoved
                     ? 'Model odpověděl. Volání z Workeru funguje.'
@@ -2313,7 +2489,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         } catch (e) {
             // Nejčastěji: model neexistuje, nebo je vyčerpaný denní limit free tieru.
             return json({
-                ok: false, poskytovatel: nas.aiPoskytovatel, model,
+                ok: false, poskytovatel: 'workers', model: zvoleny,
                 popis: e instanceof Error ? e.message : String(e)
             });
         }

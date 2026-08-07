@@ -5,6 +5,9 @@
     "name": "hodnoceni-hracu",
     "main": "worker/src/index.ts",
     "compatibility_date": "2026-08-01",
+    // Vyžaduje Anthropic SDK (@anthropic-ai/sdk) — bez toho by volání Claude
+    // padalo za běhu na chybějících modulech Node.
+    "compatibility_flags": ["nodejs_compat"],
 
     "assets": {
         "directory": "./web",
