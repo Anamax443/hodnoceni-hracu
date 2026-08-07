@@ -30,10 +30,19 @@ všechny jeho šablony vedle sebe, každý podepsaný. Slovní bloky a cíle se 
 všech šablon a je u nich uvedeno, ze které jsou, takže se nic neztratí. Radary se ani
 tady neslučují. Bez přepínače platí dosavadní stav: každá šablona vlastní stránka.
 
+**Slovní bloky a cíle patří k šabloně, ne k člověku.** Formulář je při přepnutí šablony
+dřív přenášel („mění se osy, ne text"), což u hráče s víc šablonami znamenalo, že
+brankářské cíle („výkopy od brány") propadly i na leader list. Teď se vyprázdní a když
+je něco rozepsané, formulář se předtím zeptá. Na kumulovaném listu se skládají
+s uvedením šablony; stejná věta u dvou šablon se vypíše jednou.
+
+**Klik na jméno v kartotéce** otevře úpravu té osoby; tlačítko na konci řádku zůstává.
+
 **Ověřeno lokálně:** 15 kontrol API (uložení tří šablon, odmítnutí prázdného
 i neznámého seznamu, stav po šablonách v přehledu, list na každou šablonu, odkaz na
-každou šablonu a nezdvojení, export popisků) a 16 proklikáním v headless Edge —
-včetně **tisku kumulovaného listu do PDF: 1 stránka**, a bez přepínače 3 stránky.
+každou šablonu a nezdvojení, export popisků) a 16 + 5 proklikáním v headless Edge —
+včetně **tisku kumulovaného listu do PDF: 1 stránka**, bez přepínače 3 stránky,
+a nepřenášení textů mezi šablonami. Sada k úpravě hodnocení (23 kontrol) prošla beze změn.
 
 **Zbývá:** pustit migraci `013` na ostré D1 a nasadit.
 

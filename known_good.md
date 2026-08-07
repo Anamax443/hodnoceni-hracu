@@ -25,6 +25,9 @@ Nový záznam nahoru.
 | kumulovaný list | 1 stránka, 3 radary, každý podepsaný šablonou; slovní bloky složené |
 | **tisk kumulovaného listu do PDF** | **1 stránka** (`Page.printToPDF`, `preferCSSPageSize`) |
 | bez přepínače | 3 stránky = 3 šablony, jak to bylo dosud |
+| přepnutí šablony u prázdného formuláře | projde bez ptaní, texty zůstanou prázdné |
+| přepnutí šablony s rozepsaným textem | zeptá se; po potvrzení se text **nepřenese** (5/5 kontrol) |
+| sada k úpravě hodnocení po těchto změnách | 23/23 beze změny |
 | konzole prohlížeče | žádná chyba |
 
 **Co ověřeno NEBYLO:** kumulovaný list proti ostrým datům (v produkci není hodnocení)

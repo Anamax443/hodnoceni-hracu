@@ -336,6 +336,12 @@ na sebehodnocení na každou šablonu zvlášť (token nese jednu šestici os) a
 ve formuláři. `players.sablona` zůstává jako zrcadlo první položky, aby ruční SQL a starší
 klient nevraceli nesmysl; pravda je `sablony` a čte se přes `sablonyOsoby()`.
 
+**Slovní bloky a cíle jsou na hodnocení, ne na osobě** (`evaluations.fyzicky`, `hlavou`,
+`parta`, `cile`) — takže vycházejí na každou šablonu vlastní. Formulář je proto při
+přepnutí šablony **nepřenáší**; dřív je nesl s sebou (mění se osy, ne text), což u hráče
+s víc šablonami znamenalo, že se brankářské cíle propsaly i na leader list. Když je něco
+rozepsané, formulář se před přepnutím zeptá.
+
 **Kumulovaný list** (`listy.html?…&kumulovane=1`) skládá stránku ze všech listů téhož
 hráče. Dělá to **frontend** (`list.js: vykresli()` seskupí podle `player_id`), server dál
 vrací jeden záznam na kombinaci hráč × šablona — kumulace je tisková volba, ne jiný dotaz.

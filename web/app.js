@@ -1074,14 +1074,8 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
         return h;
     };
 
-    // Slovní bloky a cíle přežijí přepnutí šablony — mění se osy, ne text.
-    // Známky přežijí jen tam, kde se osa v nové šabloně jmenuje stejně; jiná
-    // šestice os žádnou stejnou nemá, takže se zadávají znovu (a formulář to řekne).
-    const texty = () => ({
-        fyzicky: $('#h-fyzicky').value, hlavou: $('#h-hlavou').value, parta: $('#h-parta').value,
-        cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value],
-        hodnoty: zadaneHodnoty()
-    });
+    const neprazdneTexty = () => ['h-fyzicky', 'h-hlavou', 'h-parta', 'h-cil1', 'h-cil2', 'h-cil3']
+        .some(id => $('#' + id).value.trim());
     if (predvyplneno) {
         $('#h-fyzicky').value = predvyplneno.fyzicky;
         $('#h-hlavou').value = predvyplneno.hlavou;
@@ -1093,10 +1087,19 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
         }
     }
 
-    $('#h-sablona').onchange = e => formularHodnoceni(kam, hracId, e.target.value, texty(), uprava);
+    // Přepnutí šablony = jiný list, jiná řada, jiný záznam. Slovní bloky a cíle
+    // patří k té šabloně („výkopy od brány" na leader list nepatří), takže se
+    // NEpřenášejí. Rozepsaný text by ale zmizel bez varování — na to se ptáme.
+    $('#h-sablona').onchange = e => {
+        if (neprazdneTexty() && !confirm(t('hodnotit.sablona.prepnout'))) {
+            e.target.value = vybranaSablona;
+            return;
+        }
+        formularHodnoceni(kam, hracId, e.target.value, null, uprava);
+    };
 
     const zrusit = $('#h-zrusit-upravu');
-    if (zrusit) zrusit.onclick = () => { formularHodnoceni(kam, hracId); nabidniUpravu(); };
+    if (zrusit) zrusit.onclick = () => { formularHodnoceni(kam, hracId, vybranaSablona); nabidniUpravu(); };
 
     $('#ulozit-hodnoceni').onclick = async () => {
         const hodnoty = zadaneHodnoty();

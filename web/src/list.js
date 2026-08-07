@@ -116,7 +116,9 @@ function slozeny(hraci, pole) {
         .map(h => ({ sablona: h.sablona, text: String(h[pole] ?? '').trim() }))
         .filter(c => c.text);
     if (!casti.length) return '&mdash;';
-    if (casti.length === 1) return esc(casti[0].text);
+    // Stejná věta u dvou šablon se na papír píše jednou. Podepisovat ji dvakrát
+    // by vypadalo jako dvě různá zjištění.
+    if (new Set(casti.map(c => c.text)).size === 1) return esc(casti[0].text);
     return casti.map(c => `<b>${t('sablona.' + c.sablona)}:</b> ${esc(c.text)}`).join('<br>');
 }
 

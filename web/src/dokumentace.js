@@ -76,6 +76,12 @@ fair play, podpora spoluhráčů, spolehlivost). Je to <i>druhý list</i> vedle
 herního, ne sedmá osa: sedm vrcholů by změnilo tvar radaru a nešlo by porovnat
 se staršími hodnoceními. Osy popisují chování, které je vidět, ne povahu.</p>
 
+<p><b>Slovní bloky a cíle patří k šabloně</b>, ne k člověku. Brankářský list má „výkopy
+od brány", leader list něco úplně jiného — proto se při přepnutí šablony ve formuláři
+vyprázdní a píšou se ke každé řadě zvlášť (aplikace se předtím zeptá, ať se nezahodí
+rozepsaný text). Na kumulovaném listu se pak složí a je u nich uvedeno, ze které
+šablony jsou; když je věta u dvou šablon stejná, napíše se jednou.</p>
+
 <h3>Oprava a úprava hodnocení</h3>
 <p>Když v hodnocení něco nesedí, nemusíš vyplňovat celý formulář znovu. Existující
 hodnocení se dá <b>načíst, upravit a uložit</b> — a uložením vzniká <b>nová verze</b>.
@@ -313,6 +319,12 @@ mistakes and pressure, fair play, supporting team-mates, reliability). It is a
 <i>second sheet</i> alongside the playing one, not a seventh axis: seven vertices
 would change the radar's shape and break comparison with older evaluations. The
 axes describe visible behaviour, not personality.</p>
+
+<p><b>The written notes and the goals belong to the template</b>, not to the person. A
+goalkeeper sheet says “goal kicks”, a leader sheet says something entirely different — so
+switching the template in the form clears them and they are written per series (the app
+asks first, so nothing typed is thrown away silently). On a combined sheet they are merged
+and say which template they came from; a sentence shared by two templates is printed once.</p>
 
 <h3>Correcting and editing an evaluation</h3>
 <p>When something in an evaluation is wrong, you don't have to fill the whole form
