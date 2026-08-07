@@ -1,16 +1,9 @@
-/* ===== TISK: jeden hráč = jedna A4 ===== */
+/* ===== TISK: jeden hráč = jedna A4 =====
+   Samotná pravidla pro tisk jsou schválně až na KONCI souboru. Když byla
+   nahoře, přebilo je pozdější `.page` se šířkou 210 mm (stejná specifičnost,
+   rozhoduje pořadí) — na papíře se ta šířka sečetla s okraji stránky, obsah
+   přetekl vpravo a vylezl druhý, prázdný list.                              */
 @page { size: A4 portrait; margin: 12mm; }
-@media print {
-    body { margin: 0; padding: 0; background: #fff; }
-    /* Šířku a výšku na papíře řídí @page, ne CSS listu — jinak by se 210 mm
-       sečetlo s okraji stránky a obsah by přetekl na druhý list. */
-    .page {
-        page-break-after: always; box-shadow: none; margin: 0; padding: 0;
-        max-width: none; width: auto; min-height: 0;
-    }
-    .page:last-child { page-break-after: auto; }
-    .noprint { display: none; }
-}
 
 body {
     font-family: Arial, Helvetica, sans-serif;
@@ -34,6 +27,10 @@ body {
     margin: 0 auto 20px;
     max-width: 100%;
     box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    /* Sloupec kvůli patičce: podpis trenéra patří dolů ke kraji papíru,
+       ne hned pod škálu. Zbylé místo si vezme .footer přes margin-top: auto. */
+    display: flex;
+    flex-direction: column;
 }
 
 /* Na úzké obrazovce se milimetry nevejdou — telefon dostane list přes celou
@@ -124,7 +121,10 @@ body {
 
 /* ===== PATIČKA ===== */
 .footer {
-    margin-top: 10px;
+    /* Sedne až na spodek listu; nad podpisem tak zůstane místo na poznámky
+       od ruky, které si trenér při rozhovoru dopisuje. */
+    margin-top: auto;
+    padding-top: 16mm;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -154,4 +154,29 @@ body {
     max-width: 820px; margin: 0 auto 14px; padding: 10px 14px;
     background: #ffebee; border: 1px solid #c62828; border-radius: 4px;
     color: #b71c1c;
+}
+
+/* ===== TISK — musí zůstat na konci souboru (viz poznámka nahoře) ===== */
+@media print {
+    body { margin: 0; padding: 0; background: #fff; max-width: none; }
+
+    /* Rozměr stránky řídí @page, ne CSS listu. Papír má svoje okraje,
+       takže list nesmí mít ani vlastní šířku, ani vlastní odsazení. */
+    /* Výška 273 mm = A4 (297) mínus horní a dolní okraj stránky (2 × 12 mm).
+       Bez ní by sloupec neměl kam roztáhnout patičku a podpis by zůstal
+       viset hned pod textem uprostřed papíru. */
+    .page {
+        width: auto; max-width: none; min-height: 273mm;
+        margin: 0; padding: 0; box-shadow: none;
+        page-break-after: always; break-after: page;
+        display: flex; flex-direction: column;
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+
+    /* Radar se nesmí nechat roztáhnout přes celou šířku papíru — na výšku
+       by pak na list nezbylo místo na slovní bloky a cíle. */
+    .chart-wrap svg { max-width: 150mm; }
+
+    /* Co patří na obrazovku, ne na papír. */
+    .noprint { display: none; }
 }
