@@ -227,8 +227,9 @@ async function lide(kam) {
             </table>
             <p>
                 <button class="vedlejsi" id="export-lide" title="${t('lide.export.tip')}">${t('lide.export')}</button>
+                <button class="vedlejsi" id="export-lide-csv" title="${t('lide.exportCsv.tip')}">${t('lide.exportCsv')}</button>
                 <button class="vedlejsi" id="import-lide" title="${t('lide.import.tip')}">${t('lide.import')}</button>
-                <input type="file" id="import-soubor" accept=".csv,text/csv" hidden>
+                <input type="file" id="import-soubor" accept=".xlsx,.csv,text/csv" hidden>
             </p>
             <div id="import-vysledek"></div>
         </div>
@@ -304,6 +305,95 @@ async function lide(kam) {
             <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
         </div>`;
 
+    /* ===== čtení nahraného souboru =====
+       Sešit .xlsx se rozbalí a převede na CSV už tady v prohlížeči: má
+       DecompressionStream i DOMParser, takže server zůstává jednoduchý
+       a umí pořád jen jeden formát.                                       */
+
+    /** Vyzobne ze ZIPu jmenovaný soubor. XLSX je ZIP, položky bývají deflate. */
+    const zeZipu = async (bajty, jmenoSouboru) => {
+        const dv = new DataView(bajty.buffer, bajty.byteOffset, bajty.byteLength);
+        // Konec centrálního adresáře se hledá od konce — může za ním být komentář.
+        let konec = -1;
+        for (let i = bajty.length - 22; i >= 0 && i > bajty.length - 65558; i--) {
+            if (dv.getUint32(i, true) === 0x06054b50) { konec = i; break; }
+        }
+        if (konec < 0) throw new Error(t('lide.import.nenizip'));
+
+        const pocet = dv.getUint16(konec + 10, true);
+        let pos = dv.getUint32(konec + 16, true);
+        const dekoder = new TextDecoder('utf-8');
+
+        for (let i = 0; i < pocet; i++) {
+            const delkaJmena = dv.getUint16(pos + 28, true);
+            const delkaExtra = dv.getUint16(pos + 30, true);
+            const delkaKomentare = dv.getUint16(pos + 32, true);
+            const metoda = dv.getUint16(pos + 10, true);
+            const velikost = dv.getUint32(pos + 20, true);
+            const posunHlavicky = dv.getUint32(pos + 42, true);
+            const jmeno = dekoder.decode(bajty.subarray(pos + 46, pos + 46 + delkaJmena));
+
+            if (jmeno === jmenoSouboru) {
+                // Lokální hlavička má vlastní délky jména a extra pole.
+                const lokJmeno = dv.getUint16(posunHlavicky + 26, true);
+                const lokExtra = dv.getUint16(posunHlavicky + 28, true);
+                const zacatek = posunHlavicky + 30 + lokJmeno + lokExtra;
+                const data = bajty.subarray(zacatek, zacatek + velikost);
+                if (metoda === 0) return dekoder.decode(data);
+                const proud = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+                return dekoder.decode(new Uint8Array(await new Response(proud).arrayBuffer()));
+            }
+            pos += 46 + delkaJmena + delkaExtra + delkaKomentare;
+        }
+        return null;
+    };
+
+    /** Sešit → řádky textů. Bere sdílené i vložené řetězce, díry doplní prázdnem. */
+    const xlsxNaRadky = async (soubor) => {
+        const bajty = new Uint8Array(await soubor.arrayBuffer());
+        const listXml = await zeZipu(bajty, 'xl/worksheets/sheet1.xml');
+        if (!listXml) throw new Error(t('lide.import.nenilist'));
+        const sdileneXml = await zeZipu(bajty, 'xl/sharedStrings.xml');
+
+        const parser = new DOMParser();
+        const sdilene = sdileneXml
+            ? [...parser.parseFromString(sdileneXml, 'application/xml').getElementsByTagName('si')]
+                .map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''))
+            : [];
+
+        const cisloSloupce = (adresa) => {
+            const pismena = (adresa.match(/^[A-Z]+/) ?? [''])[0];
+            let n = 0;
+            for (const z of pismena) n = n * 26 + (z.charCodeAt(0) - 64);
+            return n - 1;
+        };
+
+        const list = parser.parseFromString(listXml, 'application/xml');
+        return [...list.getElementsByTagName('row')].map(radek => {
+            const bunky = [];
+            for (const c of radek.getElementsByTagName('c')) {
+                const i = cisloSloupce(c.getAttribute('r') ?? '');
+                const typ = c.getAttribute('t');
+                let hodnota = '';
+                if (typ === 's') {
+                    hodnota = sdilene[Number(c.getElementsByTagName('v')[0]?.textContent ?? -1)] ?? '';
+                } else if (typ === 'inlineStr') {
+                    hodnota = [...c.getElementsByTagName('t')].map(t => t.textContent).join('');
+                } else {
+                    hodnota = c.getElementsByTagName('v')[0]?.textContent ?? '';
+                }
+                while (bunky.length < i) bunky.push('');
+                bunky[i] = hodnota ?? '';
+            }
+            return bunky;
+        });
+    };
+
+    /** Řádky → CSV, protože import na serveru čte jediný formát. */
+    const radkyNaCsv = (radky) => radky
+        .map(r => r.map(b => /[";\r\n]/.test(b) ? `"${b.replace(/"/g, '""')}"` : b).join(';'))
+        .join('\r\n');
+
     /* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
        Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
        Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
@@ -318,7 +408,8 @@ async function lide(kam) {
 
     // Stažení přes odkaz, ne fetch — session cookie se pošle sama a soubor
     // skončí rovnou ve Staženém, bez blobů v paměti.
-    $('#export-lide').onclick = () => { location.href = '/api/players/export.csv'; };
+    $('#export-lide').onclick = () => { location.href = '/api/players/export.xlsx'; };
+    $('#export-lide-csv').onclick = () => { location.href = '/api/players/export.csv'; };
 
     $('#import-lide').onclick = () => $('#import-soubor').click();
 
@@ -328,7 +419,8 @@ async function lide(kam) {
         const cil = $('#import-vysledek');
         cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
         try {
-            const csv = await textSouboru(soubor);
+            const jeXlsx = /\.xlsx$/i.test(soubor.name);
+            const csv = jeXlsx ? radkyNaCsv(await xlsxNaRadky(soubor)) : await textSouboru(soubor);
             // Nejdřív nanečisto: řekne, co by se stalo, a teprve po potvrzení se zapisuje.
             const zkouska = await api('/api/players/import', { telo: { csv, nanecisto: true } });
             const shrnuti = t('lide.import.shrnuti', zkouska.radku, zkouska.pridano, zkouska.upraveno);

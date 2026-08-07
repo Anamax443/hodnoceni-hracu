@@ -14,6 +14,7 @@
 import { SABLONY, klice, zkontrolujHodnoty, zkontrolujPozice } from '../../web/src/sablony.js';
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
+import { xlsxSoubor, type Sloupec } from './xlsx';
 
 interface EmailBinding {
     send(zprava: { to: string; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown>;
@@ -1688,6 +1689,39 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- lidé ---------- */
+    /* ---------- export kádru do Excelu (.xlsx) ----------
+       Na rozdíl od CSV nese sešit i formát buněk, takže telefon zůstane
+       textem a Excel z něj neudělá 4,20605E+11.                          */
+    if (cesta === '/api/players/export.xlsx' && metoda === 'GET') {
+        const { results } = await env.DB.prepare(
+            `SELECT ${CSV_SLOUPCE.join(', ')} FROM players`
+        ).all<Record<string, unknown>>();
+        const lide = (results ?? []).slice().sort(porovnejLidi);
+
+        const sloupce: Sloupec[] = CSV_SLOUPCE.map(s => ({
+            nazev: s,
+            text: CSV_JAKO_TEXT.includes(s),
+            sirka: s === 'jmeno' ? 26 : (s.startsWith('notif') || s === 'hodnoceni_povinne' ? 18 : 14)
+        }));
+
+        const radky = lide.map(o => CSV_SLOUPCE.map(s => {
+            if (s === 'pozice') {
+                try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
+                catch { return ''; }
+            }
+            return o[s] === null || o[s] === undefined ? '' : String(o[s]);
+        }));
+
+        const datum = new Date().toISOString().slice(0, 10);
+        return new Response(xlsxSoubor('lide', sloupce, radky), {
+            headers: {
+                'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'content-disposition': `attachment; filename="lide-${datum}.xlsx"`,
+                'cache-control': 'no-store'
+            }
+        });
+    }
+
     /* ---------- export kádru do CSV ---------- */
     if (cesta === '/api/players/export.csv' && metoda === 'GET') {
         const { results } = await env.DB.prepare(
