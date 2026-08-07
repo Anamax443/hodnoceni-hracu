@@ -106,6 +106,21 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 
 ---
 
+## 4b. Hráč, který chytá i hraje v poli (i vede mužstvo)
+
+Lidé → Upravit → v **Šablony os** zaškrtni všechny, které se ho týkají. Každá je
+vlastní řada, vlastní odkaz na sebehodnocení i vlastní list — v Listech pak má řádek
+na každou z nich a je vidět, která ještě hodnocení nemá.
+
+Chceš to na jednom papíru? Listy → **Kumulovaný list** — radary vedle sebe na jedné
+stránce, slovní bloky a cíle složené ze všech šablon. Ověřeno tiskem do PDF: jedna A4.
+
+Odkazy na sebehodnocení se generují na každou šablonu zvlášť (odkaz nese jednu šestici
+os), takže takový hráč dostane víc odkazů. Nevyplněný odkaz na tutéž šablonu se
+podruhé nezakládá — kolik se jich přeskočilo, hlásí zpráva po generování.
+
+---
+
 ## 5. Změna os
 
 **Nedělat uprostřed sezóny.** Jiný počet vrcholů = jiný tvar polygonu, hodnocení už nejde

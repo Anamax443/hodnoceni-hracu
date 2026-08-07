@@ -412,11 +412,29 @@ async function posledni(env: Env, playerId: number, obdobi: string, autor: strin
     return r ? rozbal(r) : null;
 }
 
-/** Řádek osoby z D1 → objekt pro API (pozice jako pole, ne JSON řetězec). */
+/**
+ * Šablony osoby jako pole. Hráč, který chytá, hraje v poli a je kapitán, má
+ * všechny tři — každá je vlastní řada, vlastní odkaz a vlastní list.
+ * Bere i starší tvar (jediná `sablona`), ať projdou i data před migrací 013.
+ */
+function sablonyOsoby(r: any): string[] {
+    try {
+        const s = JSON.parse(r?.sablony ?? 'null');
+        if (Array.isArray(s)) {
+            const ciste = [...new Set(s.map(String))].filter(x => x in SABLONY);
+            if (ciste.length) return ciste;
+        }
+    } catch { /* padáme na jedinou šablonu níž */ }
+    return [r?.sablona && r.sablona in SABLONY ? r.sablona : 'pole'];
+}
+
+/** Řádek osoby z D1 → objekt pro API (pozice a šablony jako pole, ne JSON řetězec). */
 function osobaVen(r: any) {
     let pozice: string[] = [];
     try { pozice = JSON.parse(r.pozice ?? '[]'); } catch { pozice = []; }
-    return { ...r, pozice, aktivni: !!r.aktivni };
+    const sablony = sablonyOsoby(r);
+    // `sablona` zůstává = první ze seznamu; starší klienti a ruční SQL tak dál sedí.
+    return { ...r, pozice, sablony, sablona: sablony[0], aktivni: !!r.aktivni };
 }
 
 /** Poslední trenérské hodnocení z JINÉHO (dřívějšího) období, stejnou šablonou. */
@@ -1383,7 +1401,7 @@ async function posliTelegram(env: Env, chatId: string, text: string): Promise<{ 
 /* Sloupce kádru v pořadí, v jakém jdou do souboru i zpátky z něj.
    Heslo tu schválně není: export by ho vynesl ven a import přepsal. */
 const CSV_SLOUPCE = [
-    'id', 'jmeno', 'prezdivka', 'role', 'pozice', 'post', 'sablona', 'aktivni',
+    'id', 'jmeno', 'prezdivka', 'role', 'pozice', 'post', 'sablony', 'aktivni',
     'login', 'email', 'telegram_chat_id', 'telefon',
     'notif_email', 'notif_telegram', 'notif_sms', 'hodnoceni_povinne'
 ] as const;
@@ -1422,6 +1440,11 @@ function hodnotaVen(sloupec: string, o: Record<string, unknown>, jazyk: string):
             return (JSON.parse(String(o.pozice ?? '[]')) as string[])
                 .map(p => popis('pozice', p, jazyk)).join(', ');
         } catch { return ''; }
+    }
+    // Šablon může být víc (brankář i hráč v poli i leader) — jdou do jedné buňky
+    // oddělené čárkou, stejně jako pozice.
+    if (sloupec === 'sablony') {
+        return sablonyOsoby(o).map(s => popis('sablona', s, jazyk)).join(', ');
     }
     if (sloupec === 'role' || sloupec === 'sablona') return popis(sloupec, h, jazyk);
     if (CSV_ANO_NE.includes(sloupec)) {
@@ -1855,13 +1878,21 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     return POZICE.includes(klic) ? [klic] : cast.split(/\s+/).filter(Boolean);
                 });
 
+            // Šablon může být víc, oddělené čárkou. Soubory vyexportované dřív
+            // mají sloupec `sablona` s jedinou hodnotou — bereme obojí.
+            const sablonyText = sloupec(r, 'sablony') || sloupec(r, 'sablona');
+            const sablony = [...new Set(sablonyText.split(',').map(c => c.trim()).filter(Boolean)
+                .map(c => klicZPopisu('sablona', c)))];
+            if (!sablony.length) sablony.push('pole');
+
             const osoba = {
                 jmeno: sloupec(r, 'jmeno'),
                 prezdivka: sloupec(r, 'prezdivka') || null,
                 post: sloupec(r, 'post') || null,
                 pozice,
                 role: klicZPopisu('role', sloupec(r, 'role')) || 'hrac',
-                sablona: klicZPopisu('sablona', sloupec(r, 'sablona')) || 'pole',
+                sablony,
+                sablona: sablony[0],
                 aktivni: hlavicka.includes('aktivni') ? csvAno(sloupec(r, 'aktivni')) : 1,
                 email: sloupec(r, 'email') || null,
                 telegram_chat_id: sloupec(r, 'telegram_chat_id') || null,
@@ -1901,26 +1932,28 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             if (stavajici) {
                 await env.DB.prepare(
                     `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?, role = ?,
-                                        sablona = ?, aktivni = ?, email = ?, telegram_chat_id = ?,
+                                        sablona = ?, sablony = ?, aktivni = ?, email = ?, telegram_chat_id = ?,
                                         telefon = ?, notif_email = ?, notif_telegram = ?, notif_sms = ?,
                                         login = ?, hodnoceni_povinne = ?
                       WHERE id = ?`
                 ).bind(
                     osoba.jmeno, osoba.prezdivka, osoba.post, JSON.stringify(osoba.pozice),
-                    osoba.role, osoba.sablona, osoba.aktivni, osoba.email, osoba.telegram_chat_id,
+                    osoba.role, osoba.sablona, JSON.stringify(osoba.sablony),
+                    osoba.aktivni, osoba.email, osoba.telegram_chat_id,
                     osoba.telefon, osoba.notif_email, osoba.notif_telegram, osoba.notif_sms,
                     osoba.login, osoba.hodnoceni_povinne, stavajici.id
                 ).run();
                 upraveno++;
             } else {
                 await env.DB.prepare(
-                    `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                    `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, sablony, aktivni,
                                           email, telegram_chat_id, telefon,
                                           notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
                 ).bind(
                     osoba.jmeno, osoba.prezdivka, osoba.post, JSON.stringify(osoba.pozice),
-                    osoba.role, osoba.sablona, osoba.aktivni, osoba.email, osoba.telegram_chat_id,
+                    osoba.role, osoba.sablona, JSON.stringify(osoba.sablony),
+                    osoba.aktivni, osoba.email, osoba.telegram_chat_id,
                     osoba.telefon, osoba.notif_email, osoba.notif_telegram, osoba.notif_sms,
                     osoba.login, osoba.hodnoceni_povinne
                 ).run();
@@ -1938,7 +1971,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     if (cesta === '/api/players') {
         if (metoda === 'GET') {
             const { results } = await env.DB.prepare(
-                `SELECT id, jmeno, prezdivka, post, pozice, role, sablona, aktivni, created_at,
+                `SELECT id, jmeno, prezdivka, post, pozice, role, sablona, sablony, aktivni, created_at,
                         email, telegram_chat_id, telefon,
                         notif_email, notif_telegram, notif_sms, login,
                         hodnoceni_povinne, heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
@@ -1952,18 +1985,19 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             const p = await request.json<any>();
             const problem = zkontrolujOsobu(p);
             if (problem) return chyba(problem, 400);
+            const sablony = sablonyZTela(p);
             const r = await env.DB.prepare(
-                `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, sablony, aktivni,
                                       email, telegram_chat_id, telefon,
                                       notif_email, notif_telegram, notif_sms, login,
                                       hodnoceni_povinne)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
-                 RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
+                 RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, sablony, aktivni,
                            email, telegram_chat_id, telefon,
                            notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne`
             ).bind(
                 p.jmeno.trim(), p.prezdivka || null, p.post || null,
-                JSON.stringify(p.pozice ?? []), p.role, p.sablona,
+                JSON.stringify(p.pozice ?? []), p.role, sablony[0], JSON.stringify(sablony),
                 (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
                 (p.telefon ?? '').trim() || null,
                 p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0, p.notif_sms ? 1 : 0,
@@ -1979,19 +2013,20 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const p = await request.json<any>();
         const problem = zkontrolujOsobu(p);
         if (problem) return chyba(problem, 400);
+        const sablony = sablonyZTela(p);
         const r = await env.DB.prepare(
             `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?,
-                                role = ?, sablona = ?, aktivni = ?,
+                                role = ?, sablona = ?, sablony = ?, aktivni = ?,
                                 email = ?, telegram_chat_id = ?, telefon = ?,
                                 notif_email = ?, notif_telegram = ?, notif_sms = ?,
                                 login = ?, hodnoceni_povinne = ?
               WHERE id = ?
-          RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+          RETURNING id, jmeno, prezdivka, post, pozice, role, sablona, sablony, aktivni,
                     email, telegram_chat_id, telefon,
                     notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne`
         ).bind(
             p.jmeno.trim(), p.prezdivka || null, p.post || null, JSON.stringify(p.pozice ?? []),
-            p.role, p.sablona, p.aktivni ? 1 : 0,
+            p.role, sablony[0], JSON.stringify(sablony), p.aktivni ? 1 : 0,
             (p.email ?? '').trim() || null, (p.telegram_chat_id ?? '').trim() || null,
             (p.telefon ?? '').trim() || null,
             p.notif_email ? 1 : 0, p.notif_telegram ? 1 : 0, p.notif_sms ? 1 : 0,
@@ -2003,11 +2038,14 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json(osobaVen(r));
     }
 
-    /* ---------- přehled stavu za období ---------- */
+    /* ---------- přehled stavu za období ----------
+       Hráč může mít víc šablon a každá je vlastní list, vlastní odkaz a vlastní
+       řada. Přehled proto říká stav **po šablonách**; souhrnné `ma_trener`
+       a `ma_hrac` zůstávají (platí, když je hotová aspoň jedna šablona).       */
     if (cesta === '/api/prehled' && metoda === 'GET') {
         const obdobi = q.get('obdobi') || (await nastaveni(env)).obdobi;
         const { results } = await env.DB.prepare(
-            `SELECT p.id, p.jmeno, p.prezdivka, p.post, p.role, p.sablona, p.aktivni,
+            `SELECT p.id, p.jmeno, p.prezdivka, p.post, p.role, p.sablona, p.sablony, p.aktivni,
                     EXISTS(SELECT 1 FROM evaluations e
                             WHERE e.player_id = p.id AND e.obdobi = ? AND e.autor = 'trener') AS ma_trener,
                     EXISTS(SELECT 1 FROM evaluations e
@@ -2018,7 +2056,29 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
               WHERE p.role = 'hrac'
               ORDER BY p.aktivni DESC, p.jmeno`
         ).bind(obdobi, obdobi, obdobi).all();
-        return json({ obdobi, hraci: results ?? [] });
+
+        const { results: hotove } = await env.DB.prepare(
+            `SELECT player_id, sablona, autor FROM evaluations
+              WHERE obdobi = ? AND autor IN ('trener', 'hrac')
+              GROUP BY player_id, sablona, autor`
+        ).bind(obdobi).all<{ player_id: number; sablona: string; autor: string }>();
+
+        const { results: cekajiciOdkazy } = await env.DB.prepare(
+            `SELECT player_id, sablona FROM tokens
+              WHERE obdobi = ? AND pouzit = 0 GROUP BY player_id, sablona`
+        ).bind(obdobi).all<{ player_id: number; sablona: string }>();
+
+        const hraci = (results ?? []).map((h: any) => ({
+            ...osobaVen(h),
+            stavSablon: sablonyOsoby(h).map(sablona => ({
+                sablona,
+                maTrener: (hotove ?? []).some(x => x.player_id === h.id && x.sablona === sablona && x.autor === 'trener'),
+                maHrac: (hotove ?? []).some(x => x.player_id === h.id && x.sablona === sablona && x.autor === 'hrac'),
+                maOdkaz: (cekajiciOdkazy ?? []).some(x => x.player_id === h.id && x.sablona === sablona)
+            }))
+        }));
+
+        return json({ obdobi, hraci });
     }
 
     /* ---------- hodnocení ---------- */
@@ -2043,11 +2103,11 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             if (!playerId) return chyba('Chybí player_id.', 400);
 
             const hrac = await env.DB.prepare('SELECT * FROM players WHERE id = ?')
-                .bind(playerId).first<{ sablona: string; role: string }>();
+                .bind(playerId).first<{ sablona: string; sablony: string; role: string }>();
             if (!hrac) return chyba('Hráč nenalezen.', 404);
             if (hrac.role !== 'hrac') return chyba('Hodnotí se jen hráči, ne trenéři.', 400);
 
-            const sablona = h.sablona || hrac.sablona;
+            const sablona = h.sablona || sablonyOsoby(hrac)[0];
             const problem = zkontrolujHodnoty(sablona, h.hodnoty);
             if (problem) return chyba(problem, 400);
 
@@ -2308,9 +2368,10 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             : null;
 
         const { results: hraci } = await env.DB.prepare(
-            `SELECT id, jmeno, prezdivka, post, pozice, sablona FROM players
+            `SELECT id, jmeno, prezdivka, post, pozice, sablona, sablony FROM players
               WHERE role = 'hrac' AND aktivni = 1 ORDER BY jmeno`
-        ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null; pozice: string; sablona: string }>();
+        ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null;
+                pozice: string; sablona: string; sablony: string }>();
 
         const vybrani = (hraci ?? []).filter(h => !filtr || filtr.includes(h.id));
         const listy = [];
@@ -2324,8 +2385,14 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                   WHERE player_id = ? AND obdobi = ? AND autor = 'trener'`
             ).bind(h.id, obdobi).all<{ sablona: string }>();
 
-            const kVykresleni = (sablony ?? []).map(s => s.sablona);
-            if (!kVykresleni.length) kVykresleni.push(h.sablona);   // prázdný list jako podklad
+            // Co se vykreslí: šablony, které v období hodnocení mají, PLUS ty,
+            // které má hráč přiřazené v kartotéce. Přiřazená šablona bez hodnocení
+            // dá prázdný list jako podklad — jinak by chybějící brankářská řada
+            // z tisku tiše zmizela a nikdo by si jí nevšiml.
+            const kVykresleni = [...new Set([
+                ...(sablony ?? []).map(s => s.sablona),
+                ...sablonyOsoby(h)
+            ])];
 
             for (const sablona of kVykresleni) {
                 // Na list jde uzavřená shoda trenérů, když existuje. Teprve když
@@ -2712,29 +2779,46 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             const platnyDo = new Date(Date.now() + dni * 86400_000).toISOString();
 
             const cile = telo.player_id
-                ? ((await env.DB.prepare('SELECT id, sablona FROM players WHERE id = ?')
-                    .bind(Number(telo.player_id)).all<{ id: number; sablona: string }>()).results ?? [])
+                ? ((await env.DB.prepare('SELECT id, sablona, sablony FROM players WHERE id = ?')
+                    .bind(Number(telo.player_id)).all<{ id: number; sablona: string; sablony: string }>()).results ?? [])
                 : ((await env.DB.prepare(
-                      `SELECT id, sablona FROM players WHERE role = 'hrac' AND aktivni = 1`
-                  ).all<{ id: number; sablona: string }>()).results ?? []);
+                      `SELECT id, sablona, sablony FROM players WHERE role = 'hrac' AND aktivni = 1`
+                  ).all<{ id: number; sablona: string; sablony: string }>()).results ?? []);
+
+            // Odkaz je na jednu šesticí os. Hráč s víc šablonami (chytá i hraje
+            // v poli) dostane odkaz na každou — jeden formulář by se jinak ptal
+            // jen na jednu řadu a zbytek by tiše chyběl.
+            const { results: uzJsou } = await env.DB.prepare(
+                'SELECT player_id, sablona FROM tokens WHERE obdobi = ? AND pouzit = 0'
+            ).bind(obdobi).all<{ player_id: number; sablona: string }>();
 
             const nove = [];
+            let preskoceno = 0;
             for (const c of cile) {
-                // Přednost má šablona, kterou trenér pro tohle období použil.
-                // Až pak výchozí šablona osoby (nebo to, co si vyžádal volající).
-                const hodnoceni = await posledni(env, c.id, obdobi, 'trener');
-                const sablona = (telo.sablona && telo.sablona in SABLONY)
-                    ? telo.sablona
-                    : (hodnoceni?.sablona ?? c.sablona);
-                nove.push({ player_id: c.id, token: novyToken(), obdobi, platny_do: platnyDo, sablona });
+                const sablony = (telo.sablona && telo.sablona in SABLONY)
+                    ? [telo.sablona]
+                    : sablonyOsoby(c);
+                for (const sablona of sablony) {
+                    // Nevyplněný odkaz na tutéž šablonu už visí — druhý by jen
+                    // zmátl, který z nich platí.
+                    if ((uzJsou ?? []).some(t => t.player_id === c.id && t.sablona === sablona)) {
+                        preskoceno++;
+                        continue;
+                    }
+                    nove.push({ player_id: c.id, token: novyToken(), obdobi, platny_do: platnyDo, sablona });
+                }
             }
-            if (!nove.length) return chyba('Není komu odkaz vygenerovat.', 400);
+            if (!nove.length) {
+                return preskoceno
+                    ? json({ vytvoreno: 0, preskoceno, tokeny: [] })
+                    : chyba('Není komu odkaz vygenerovat.', 400);
+            }
 
             await env.DB.batch(nove.map(n => env.DB.prepare(
                 'INSERT INTO tokens (token, player_id, obdobi, platny_do, sablona) VALUES (?, ?, ?, ?, ?)'
             ).bind(n.token, n.player_id, n.obdobi, n.platny_do, n.sablona)));
 
-            return json({ vytvoreno: nove.length, tokeny: nove }, 201);
+            return json({ vytvoreno: nove.length, preskoceno, tokeny: nove }, 201);
         }
     }
 
@@ -2753,8 +2837,26 @@ function zkontrolujOsobu(p: any): string | null {
     if (!p || typeof p.jmeno !== 'string' || !p.jmeno.trim()) return 'Jméno je povinné.';
     if (p.jmeno.length > 80) return 'Jméno je moc dlouhé.';
     if (p.role !== 'hrac' && p.role !== 'trener') return "Role musí být 'hrac' nebo 'trener'.";
-    if (!(p.sablona in SABLONY)) return `Neznámá šablona: ${p.sablona}`;
+    const problem = zkontrolujSablonySeznam(sablonyZTela(p));
+    if (problem) return problem;
     return zkontrolujPozice(p.pozice ?? []);
+}
+
+/**
+ * Šablony z těla požadavku. Bere nový tvar (`sablony: [...]`) i starý
+ * (`sablona: "pole"`), aby starší klient nebo import bez nového sloupce prošel.
+ */
+function sablonyZTela(p: any): string[] {
+    if (Array.isArray(p?.sablony)) return [...new Set(p.sablony.map((s: unknown) => String(s)))];
+    return [String(p?.sablona ?? 'pole')];
+}
+
+function zkontrolujSablonySeznam(sablony: string[]): string | null {
+    if (!sablony.length) return 'Vyber aspoň jednu šablonu.';
+    if (sablony.length > Object.keys(SABLONY).length) return 'Příliš mnoho šablon.';
+    const nezname = sablony.filter(s => !(s in SABLONY));
+    if (nezname.length) return `Neznámé šablony: ${nezname.join(', ')}`;
+    return null;
 }
 
 /** Kryptograficky náhodný token, 43 znaků. Nikdy ne pořadové ID hráče. */

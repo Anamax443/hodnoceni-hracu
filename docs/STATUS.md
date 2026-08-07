@@ -12,7 +12,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 
 | Oblast | Stav | Poznámka |
 |---|---|---|
-| Kádr a kartotéka (Lidé) | ✅ | 22 osob nahráno, pozice, přezdívky, role |
+| Kádr a kartotéka (Lidé) | ✅ | 22 osob nahráno, pozice, přezdívky, role; klik na jméno = úprava |
+| Víc šablon u hráče | ✅ | brankář i hráč v poli i leader; každá vlastní řada, odkaz i list |
 | Export / import kádru | ✅ | `.xlsx` s formátem Text, CSV, import nanečisto |
 | Hodnocení trenérem | ✅ | 6 os 1–10, append-only, šablony `pole` / `brankar` / `leader` |
 | Hromadné hodnocení | ✅ | jedna známka pro víc hráčů, doplní se k poslednímu záznamu |
@@ -21,7 +22,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Porovnání trenér × hráč | ✅ | tolerance, znaménko, trend, historie verzí |
 | Srovnání hráčů mezi sebou | ✅ | tabulka osa × hráč, rozptyl |
 | Shoda mezi trenéry | ✅ | matice osa × trenér, finální znění na list |
-| Tiskové listy A4 | ✅ | 1 hráč = 1 stránka, ověřeno headless tiskem do PDF |
+| Tiskové listy A4 | ✅ | 1 list = 1 stránka, ověřeno headless tiskem do PDF |
+| Kumulovaný list | ✅ | volitelně všechny šablony hráče na jedné A4, ověřeno tiskem do PDF |
 | Účty a hesla | ✅ | login i e-mail, PIN od 4 znaků, zámek po 5 pokusech |
 | Obnova hesla | ✅ | jednorázový odkaz, 15 minut, Telegram i e-mail |
 | Notifikace — Telegram | ✅ | ověřeno doručením |

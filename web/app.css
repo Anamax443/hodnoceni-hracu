@@ -107,6 +107,11 @@ th { color: var(--seda); font-weight: normal; font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
 td.cisla, th.cisla { text-align: center; width: 70px; }
 
+/* Jméno v kartotéce otevírá úpravu. Tlačítko na konci řádku zůstává, ale
+   trefit se do jména je rychlejší a čeká se to tak. */
+td.klik-jmeno { cursor: pointer; }
+td.klik-jmeno:hover { text-decoration: underline; }
+
 button.hl {
     background: var(--modra); color: #fff; border: 0; padding: 8px 14px;
     border-radius: 4px; cursor: pointer; font-size: 14px;

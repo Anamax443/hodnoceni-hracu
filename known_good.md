@@ -5,6 +5,34 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-07 (12) — víc šablon u hráče a kumulovaný list
+
+**Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–013). V ostré databázi zatím
+žádné hodnocení není, takže naostro jde ověřit jen schéma a nasazení.
+
+| Kontrola | Výsledek |
+|---|---|
+| uložení tří šablon u hráče | `["pole","brankar","leader"]`, `sablona` = první z nich (15/15 kontrol API) |
+| neznámá šablona / prázdný seznam | `400` v obou případech |
+| přehled po šablonách | `stavSablon` má řádek na každou; hotová `pole` ✓, chybějící `brankar` — |
+| `/api/listy` | vrátí 3 záznamy; šablona bez hodnocení má `hodnoceni: null` (prázdný podklad) |
+| odkazy na sebehodnocení | 3 (na každou šablonu); druhé generování `vytvoreno 0, preskoceno 3` |
+| export kádru | sloupec `sablony`, v buňce `hráč v poli, brankář, leader` |
+| Lidé v prohlížeči | šablony jsou zaškrtávátka (žádný `select`), úprava je předvyplní (16/16 kontrol UI) |
+| klik na jméno v kartotéce | otevře úpravu té osoby (`Úprava: Test Trenér`, id ve formuláři) |
+| Hodnotit | výchozí je první přiřazená; formulář vypíše, co má hráč přiřazeno |
+| Listy | řádek na každou šablonu, přepínač kumulovaného listu |
+| kumulovaný list | 1 stránka, 3 radary, každý podepsaný šablonou; slovní bloky složené |
+| **tisk kumulovaného listu do PDF** | **1 stránka** (`Page.printToPDF`, `preferCSSPageSize`) |
+| bez přepínače | 3 stránky = 3 šablony, jak to bylo dosud |
+| konzole prohlížeče | žádná chyba |
+
+**Co ověřeno NEBYLO:** kumulovaný list proti ostrým datům (v produkci není hodnocení)
+a čitelnost tří radarů vedle sebe na papíře — v PDF se vejdou, na tiskárně to zatím
+nikdo neviděl.
+
+---
+
 ## 2026-08-07 (11) — úprava hodnocení jako nová verze
 
 **Commit:** `025d70d` · **Ověřeno** lokálně (`wrangler dev` + čerstvá D1 s migracemi 001–012);

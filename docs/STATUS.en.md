@@ -13,7 +13,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 
 | Area | State | Note |
 |---|---|---|
-| Squad register (People) | ✅ | 22 people loaded; positions, nicknames, roles |
+| Squad register (People) | ✅ | 22 people loaded; positions, nicknames, roles; click a name to edit |
+| Several templates per player | ✅ | goalkeeper + outfield + leader; each its own series, link and sheet |
 | Squad export / import | ✅ | `.xlsx` with Text formatting, CSV, dry-run import |
 | Coach evaluation | ✅ | 6 axes 1–10, append-only, templates `pole` / `brankar` / `leader` |
 | Bulk evaluation | ✅ | one score for several players, merged into the latest record |
@@ -22,7 +23,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Coach × player comparison | ✅ | tolerance, sign, trend, version history |
 | Player × player comparison | ✅ | axis × player table with the gap |
 | Agreement between coaches | ✅ | axis × coach matrix, final wording for the sheet |
-| Printable A4 sheets | ✅ | 1 player = 1 page, verified by headless print to PDF |
+| Printable A4 sheets | ✅ | 1 sheet = 1 page, verified by headless print to PDF |
+| Combined sheet | ✅ | optionally all of a player’s templates on one A4, verified by print to PDF |
 | Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts |
 | Password recovery | ✅ | single-use link, 15 minutes, Telegram or e-mail |
 | Notifications — Telegram | ✅ | delivery confirmed |

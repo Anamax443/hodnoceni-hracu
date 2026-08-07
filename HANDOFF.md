@@ -2,6 +2,43 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-07 (15) — víc šablon u jednoho hráče a kumulovaný list
+
+**Hráč má šablon kolik potřebuje** (migrace `013`, `players.sablony` jako JSON pole).
+Ferda chytá, hraje v poli a vede mužstvo — zaškrtnou se mu všechny tři. Doteď měl
+u sebe jednu „výchozí" a zbylé dvě si musel trenér u každého hodnocení vybrat ručně;
+nikde přitom nebylo vidět, že mu dvě řady chybí. `players.sablona` zůstal jako zrcadlo
+první šablony, aby ruční SQL nevracelo nesmysl.
+
+**Leader zůstal samostatnou šesticí os, ne sedmou osou u všech** — sedm vrcholů mění
+tvar radaru a rozbilo by porovnání se staršími hodnoceními (viz zápis 13). Nově ale
+nepůsobí jako cizí těleso: přiřadí se zaškrtnutím vedle brankáře a polního hráče,
+po uložení hodnocení nabídne formulář rovnou *Ohodnotit: leader* a na papíře jde mít
+všechno vedle sebe (viz kumulovaný list).
+
+**Co z toho plyne jinde:**
+- **Listy** mají řádek na každou přiřazenou šablonu a je v nich vidět, která ještě
+  hodnocení nemá. Přiřazená šablona bez hodnocení dá **prázdný list jako podklad** —
+  jinak by chybějící brankářská řada z tisku tiše zmizela.
+- **Odkazy** se generují **na každou šablonu zvlášť** (odkaz nese jednu šestici os).
+  Nevyplněný odkaz na tutéž šablonu se už nezakládá podruhé a přeskočené se spočítají.
+- **Export/import** má místo sloupce `sablona` sloupec `sablony` s popisky oddělenými
+  čárkou; starší soubory s `sablona` dál projdou.
+
+**Kumulovaný list** (Listy → přepínač). Jeden hráč = jedna stránka, na ní radary za
+všechny jeho šablony vedle sebe, každý podepsaný. Slovní bloky a cíle se skládají ze
+všech šablon a je u nich uvedeno, ze které jsou, takže se nic neztratí. Radary se ani
+tady neslučují. Bez přepínače platí dosavadní stav: každá šablona vlastní stránka.
+
+**Ověřeno lokálně:** 15 kontrol API (uložení tří šablon, odmítnutí prázdného
+i neznámého seznamu, stav po šablonách v přehledu, list na každou šablonu, odkaz na
+každou šablonu a nezdvojení, export popisků) a 16 proklikáním v headless Edge —
+včetně **tisku kumulovaného listu do PDF: 1 stránka**, a bez přepínače 3 stránky.
+
+**Zbývá:** pustit migraci `013` na ostré D1 a nasadit.
+
+---
+
 ## 2026-08-07 (14) — úprava hodnocení: načíst, opravit, uložit jako novou verzi
 
 **Oprava překlepu už neznamená vyplnit formulář znovu.** Existující hodnocení se dá

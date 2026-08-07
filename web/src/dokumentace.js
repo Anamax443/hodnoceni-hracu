@@ -29,8 +29,13 @@ nebo za rodiči.</p>
   <li><b>Pozice</b> — může jich být víc (brankář i střední záložník).
       Tisknou se na list.</li>
   <li><b>Funkce</b> — volný text, třeba „Kapitán“.</li>
-  <li><b>Šablona</b> — sada os. Polní hráč a brankář mají jiné. U osoby je
-      to jen výchozí volba, skutečná šablona se vybírá až u hodnocení.</li>
+  <li><b>Šablony</b> — sady os, kterými se hráč známkuje. Zaškrtnout jich jde
+      víc: Ferda chytá, hraje v poli i vede mužstvo, takže má brankáře, hráče
+      v poli i leadera. <b>Každá šablona je vlastní řada, vlastní odkaz na
+      sebehodnocení a vlastní list</b> — do jednoho grafu se sloučit nedají,
+      protože jiných šest os má jiný tvar a nešlo by porovnávat v čase.
+      Vytisknout je vedle sebe na jednu stránku ale jde (Listy → kumulovaný
+      list). První zaškrtnutá je výchozí ve formuláři hodnocení.</li>
   <li><b>Aktivní</b> — vyřazení hráči se nemažou, jen se odškrtnou. Zůstávají
       i s historií a se svým číslem, které se už nikdy nepřidělí nikomu jinému.</li>
   <li><b>Kanály</b> — e-mail, Telegram chat id, telefon a k nim přepínače,
@@ -143,6 +148,14 @@ dostanou jen informaci, že se čeká na něj.</p>
 trenéra, sebehodnocení hráče, nebo žádný. Vytisknout jde i konkrétní starší
 verze — v Porovnání je historie všech verzí s datem a autorem a dá se mezi
 dvěma vybranými posouvat šipkami.</p>
+<p><b>Hráč s víc šablonami dostane list na každou z nich</b> — brankářský,
+polní i leader zvlášť. V tabulce <i>Kdo se vytiskne</i> je proto řádek na
+každou šablonu a je v něm vidět, která ještě hodnocení nemá; prázdná se
+vytiskne jako podklad, aby nezmizela z dohledu.</p>
+<p>Přepínač <b>Kumulovaný list</b> to složí na <b>jednu stránku</b>: radary
+vedle sebe, každý podepsaný svou šablonou, slovní bloky a cíle poskládané ze
+všech šablon (a je u nich napsáno, ze které jsou). Radary zůstávají oddělené
+i tady — sloučit dvanáct os do jednoho obrazce by nedávalo smysl.</p>
 
 <h2>Notifikace</h2>
 <p>Aplikace posílá <b>souhrn</b>, ne zprávu za každou událost. Zpráva nese jen
@@ -256,8 +269,13 @@ Where the coach and the player disagree, there is something to talk about.</p>
   <li><b>Role</b> — player or coach. Coaches sign in, players do not.</li>
   <li><b>Positions</b> — there can be several (goalkeeper and midfielder).</li>
   <li><b>Function</b> — free text, e.g. “Captain”.</li>
-  <li><b>Template</b> — the set of axes. Outfield players and goalkeepers differ.
-      On a person it is only the default; the real template is chosen per evaluation.</li>
+  <li><b>Templates</b> — the sets of axes the player is scored with. Several can be
+      ticked: Ferda keeps goal, plays outfield and leads the team, so he has all
+      three. <b>Each template is its own series, its own self-evaluation link and
+      its own sheet</b> — they cannot be merged into one chart, because a different
+      set of six axes has a different shape and could no longer be compared over
+      time. Printing them side by side on one page is possible though (Sheets →
+      combined sheet). The first ticked one is the default in the form.</li>
   <li><b>Active</b> — players are never deleted, only unticked. They keep their
       history and their number, which is never given to anybody else.</li>
   <li><b>Channels</b> — e-mail, Telegram chat id, phone, and switches for digests.</li>
@@ -373,6 +391,14 @@ one being waited for.</p>
 the coach's previous evaluation, the player's self-evaluation, or none. Older
 versions can be printed too — Comparison lists every version with date and
 author and lets you step between two of them.</p>
+<p><b>A player with several templates gets a sheet for each of them</b> —
+goalkeeper, outfield and leader separately. The <i>Who gets printed</i> table
+therefore has a row per template and shows which one still has no evaluation;
+an empty one is printed as a blank form so it does not drop out of sight.</p>
+<p>The <b>Combined sheet</b> switch puts them on <b>one page</b>: the radars side
+by side, each captioned with its template, and the written notes and goals merged
+from all templates (saying which one each part came from). The radars stay
+separate here too — merging twelve axes into one shape would mean nothing.</p>
 
 <h2>Notifications</h2>
 <p>The app sends a <b>digest</b>, not one message per event, and the message

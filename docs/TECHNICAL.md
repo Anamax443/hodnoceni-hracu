@@ -325,9 +325,22 @@ Dřív se to pletlo do jedné kolonky `post`. Rozděleno:
 
 **Proč je šablona na hodnocení:** hráč, který chytá i hraje v poli, potřebuje obojí. Ferda
 může mít v jednom období hodnocení brankářskou i polní šablonou a každá řada žije samostatně —
-brankářské a polní osy se do jednoho grafu míchat nedají. `players.sablona` je jen výchozí
-volba ve formuláři. Totéž platí pro šablonu `leader`: je to **druhý list vedle herního**,
-ne sedmá osa (viz kap. 5).
+brankářské a polní osy se do jednoho grafu míchat nedají. Totéž platí pro šablonu `leader`:
+je to **druhý list vedle herního**, ne sedmá osa (viz kap. 5).
+
+**Kartotéka drží seznam** (`players.sablony`, JSON pole, migrace `013`): kterými šesticemi
+os se ten hráč známkuje. Není to duplikát `evaluations.sablona` — ta říká, čím hodnocení
+**bylo** pořízeno, tohle říká, co **má být** hotové. Z toho pak plyne: řádek na každou
+šablonu v Listech a v přehledu, prázdný list jako podklad u šablony bez hodnocení, odkaz
+na sebehodnocení na každou šablonu zvlášť (token nese jednu šestici os) a výchozí volba
+ve formuláři. `players.sablona` zůstává jako zrcadlo první položky, aby ruční SQL a starší
+klient nevraceli nesmysl; pravda je `sablony` a čte se přes `sablonyOsoby()`.
+
+**Kumulovaný list** (`listy.html?…&kumulovane=1`) skládá stránku ze všech listů téhož
+hráče. Dělá to **frontend** (`list.js: vykresli()` seskupí podle `player_id`), server dál
+vrací jeden záznam na kombinaci hráč × šablona — kumulace je tisková volba, ne jiný dotaz.
+Radary zůstávají oddělené i tady; slévají se jen slovní bloky a cíle, a to s podpisem
+šablony, ze které jsou.
 
 **Hromadné hodnocení** (`POST /api/evaluations/hromadne`) doplní vyplněné osy k poslednímu
 hodnocení hráče v daném období a šabloně a uloží nový záznam. Základ se hledá **jen u
@@ -482,6 +495,7 @@ Migrace, které přibyly:
 | `010_komunikace_platforma.sql` | sloupce `platforma` a `podrobnosti` v logu komunikace |
 | `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (viz kap. 3) |
 | `012_uprava.sql` | `evaluations.uprava_id` — ze které verze nová vznikla |
+| `013_sablony.sql` | `players.sablony` — víc šablon u jednoho hráče (JSON pole) |
 
 ### Čísla osob se nerecyklují
 
@@ -589,7 +603,7 @@ GET    /api/sms/ucet                              admin — ověří klíče br�
 GET    /api/sms/kanaly                            admin — výpis kanálů (GoSMS v1 ho nemá → 404)
 POST   /api/sms/test       {telefon, nanecisto?}  admin — zkušební SMS, nanečisto zdarma
 
-GET    /api/prehled?obdobi=                       admin — kdo má hodnocení a kdo odkaz
+GET    /api/prehled?obdobi=                       admin — stav po šablonách (`stavSablon[]`)
 GET    /api/evaluations?player_id=&obdobi=        admin
 POST   /api/evaluations    {…, uprava_id?}        admin  (autor='trener'); uprava_id = nová verze
 GET    /api/evaluations/predloha?player_id=…      admin — vlastní hodnocení k úpravě, nebo null
@@ -600,12 +614,13 @@ POST   /api/ai/prikaz     {text}                  admin — rozřazení povelu m
 GET    /api/ai/stav?model=                        admin — odpoví model? nic o hráčích
 GET    /api/ai/modely                             admin — nabídka pro Nastavení
 
-GET    /api/listy?obdobi=&porovnani=&ids=         admin — podklady pro tiskové listy
+GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč
 GET    /api/trend?player_id=                      admin — vývoj v čase
 
 GET    /api/tokens?obdobi=                        admin
-POST   /api/tokens         {player_id?, obdobi, dni}   admin
+POST   /api/tokens         {player_id?, obdobi, dni}   admin — na každou šablonu hráče,
+                                                  nevyplněný odkaz se nezdvojí (`preskoceno`)
 DELETE /api/tokens/:token                         admin
 
 GET    /api/self/:token                           veřejné — jméno + klíče os, NIC od trenéra

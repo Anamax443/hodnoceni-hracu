@@ -106,8 +106,123 @@ export function list(h, nas) {
     </div>`;
 }
 
-/** Vykreslí listy více hráčů za sebou (jeden hráč = jedna stránka). */
-export function vykresli(listy, nastaveni, cil) {
-    cil.innerHTML = listy.map(h => list(h, nastaveni)).join('');
-    return listy.length;
+/**
+ * Slovní blok složený z několika šablon. Když ho vyplnil jen jeden list,
+ * nechá se holý text; když víc, každý kus se podepíše svou šablonou, aby
+ * bylo poznat, odkud je — a nic se cestou nezahodí.
+ */
+function slozeny(hraci, pole) {
+    const casti = hraci
+        .map(h => ({ sablona: h.sablona, text: String(h[pole] ?? '').trim() }))
+        .filter(c => c.text);
+    if (!casti.length) return '&mdash;';
+    if (casti.length === 1) return esc(casti[0].text);
+    return casti.map(c => `<b>${t('sablona.' + c.sablona)}:</b> ${esc(c.text)}`).join('<br>');
+}
+
+/**
+ * Kumulovaný list: jeden hráč, všechny jeho šablony na JEDNÉ stránce.
+ * Radary zůstávají oddělené — brankářské a polní osy se do jednoho grafu
+ * míchat nedají (jiný tvar, jiná řada). Slovní bloky a cíle se skládají
+ * ze všech šablon, ať se nic neztratí.
+ *
+ * @param {Object[]} hraci  listy TÉHOŽ hráče, každý s jinou šablonou
+ */
+export function listKumulovany(hraci, nas) {
+    if (hraci.length === 1) return list(hraci[0], nas);
+
+    const prvni = hraci[0];
+    const datum = new Date().toLocaleDateString(locale());
+    const cile = hraci.flatMap(h => (h.cile || []).map(c => ({ sablona: h.sablona, text: c })));
+    const vicCilu = new Set(cile.map(c => c.sablona)).size > 1;
+
+    return `
+    <div class="page kumul">
+        <div class="header">
+            <div>
+                <div class="club">${esc(nas.klub)}</div>
+                <h1>${t('list.nadpis')}</h1>
+            </div>
+            <div class="meta">
+                ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
+                ${esc(nas.obdobi)}<br>
+                ${t('list.vystaveno')}: ${datum}
+            </div>
+        </div>
+
+        <div class="playerbar">
+            <span class="name">${esc(prvni.jmeno)}${prvni.prezdivka ? ' &bdquo;' + esc(prvni.prezdivka) + '&ldquo;' : ''}</span>
+            <span class="role">${esc(popisPostu(prvni))}</span>
+        </div>
+
+        <div class="charts">
+            ${hraci.map(h => {
+                const seznamOs = osy(h.sablona);
+                if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
+                return `
+                <div class="chart-one">
+                    <div class="chart-title">${t('sablona.' + h.sablona)}</div>
+                    <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
+                    ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="legend">
+            <span><i class="swatch" style="background:#2196F3;opacity:.6"></i> ${t('list.trener')}</span>
+            ${hraci.some(h => h.porovnani)
+                ? `<span><i class="swatch" style="background:#9e9e9e;opacity:.5"></i> ${
+                    esc(popisekPorovnani(hraci.find(h => h.porovnani)))}</span>`
+                : ''}
+        </div>
+
+        <div class="blocks">
+            <div class="block fyz">
+                <h4>${t('blok.fyzicky')}</h4>
+                <p>${slozeny(hraci, 'fyzicky')}</p>
+            </div>
+            <div class="block hlava">
+                <h4>${t('blok.hlavou')}</h4>
+                <p>${slozeny(hraci, 'hlavou')}</p>
+            </div>
+            <div class="block parta">
+                <h4>${t('blok.parta')}</h4>
+                <p>${slozeny(hraci, 'parta')}</p>
+            </div>
+        </div>
+
+        <div class="goals">
+            <h4>&#127919; ${esc(nas.cileNadpis)}</h4>
+            <ol>${cile.map(c => `<li>${vicCilu
+                ? `<b>${t('sablona.' + c.sablona)}:</b> ` : ''}${esc(c.text)}</li>`).join('')}</ol>
+        </div>
+
+        <div class="scale">
+            <b>${t('list.jakCist')}</b>
+            ${kotvy().map(k => `<span><b>${k[0]}</b> &ndash; ${k[1]}</span>`).join('')}
+        </div>
+
+        <div class="footer">
+            <div>${t('list.paticka', esc(nas.latka))}</div>
+            <div class="sign">${t('list.podpis')}</div>
+        </div>
+    </div>`;
+}
+
+/**
+ * Vykreslí listy. Bez `kumulovane` platí jeden list = jedna stránka (hráč ×
+ * šablona); s ním má hráč jednu stránku se všemi svými šablonami.
+ */
+export function vykresli(listy, nastaveni, cil, kumulovane = false) {
+    if (!kumulovane) {
+        cil.innerHTML = listy.map(h => list(h, nastaveni)).join('');
+        return listy.length;
+    }
+
+    const podleHrace = new Map();
+    for (const h of listy) {
+        if (!podleHrace.has(h.player_id)) podleHrace.set(h.player_id, []);
+        podleHrace.get(h.player_id).push(h);
+    }
+    cil.innerHTML = [...podleHrace.values()].map(g => listKumulovany(g, nastaveni)).join('');
+    return podleHrace.size;
 }

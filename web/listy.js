@@ -24,13 +24,16 @@ function popisky() {
     $('#jazykBtn').title = t('shell.jazyk.tip');
 }
 
+const kumulovane = p.get('kumulovane') === '1';
+
 function nakresli() {
     popisky();
     if (!data) return;
-    const pocet = vykresli(data.listy, data.nastaveni, $('#output'));
+    const pocet = vykresli(data.listy, data.nastaveni, $('#output'), kumulovane);
     const bez = data.listy.filter(h => !h.hodnoceni).length;
     $('#stav').textContent = t('tisk.stav', data.nastaveni.obdobi, pocet)
-        + (bez ? t('tisk.bez', bez) : '');
+        + (bez ? t('tisk.bez', bez) : '')
+        + (kumulovane ? t('tisk.kumulovane') : '');
 }
 
 $('#tisk').onclick = () => window.print();

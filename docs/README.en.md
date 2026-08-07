@@ -67,7 +67,13 @@ resolve, and only if it is switched on (Settings → Language model).
 
 ### People
 
-Who is in the team: name, nickname, positions, role and the default template.
+Who is in the team: name, nickname, positions, role and the templates they are scored with.
+Clicking a name opens that person for editing.
+
+A player can have **several templates** ticked — outfield, goalkeeper and leader all at
+once. Each one is its own series, its own self-evaluation link and its own sheet; they
+cannot be merged into a single chart, but they can be printed on one page (Sheets →
+combined sheet). The first ticked one is the default in the evaluation form.
 
 A player can hold **several positions**. **Function** is free text (“Captain”) and is
 printed on the sheet. **Active** is unticked instead of deleting — the history stays, and
@@ -127,6 +133,14 @@ evaluations only.
 
 Printable A4 sheets. Pick the period, the second polygon (coach's previous evaluation,
 the player's self-evaluation, or none) and who to print.
+
+A player with several templates gets **a sheet for each of them**. The *Who gets printed*
+table therefore has a row per template and shows which one still has no evaluation; an empty
+one is printed as a blank form so it does not drop out of sight.
+
+The **Combined sheet** tick box puts them on **one page**: the radars side by side, each
+captioned, with the written notes and goals merged from all templates (each part says which
+template it came from). Unticked, every template gets its own page.
 
 Sheets open in a new tab. **In the print dialogue enable “Background graphics”** — without
 it you get a white page with no blue name bar and no coloured blocks. Leave margins on

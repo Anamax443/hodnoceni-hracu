@@ -105,7 +105,10 @@ vybíráš až u konkrétního hodnocení.
 
 - **role hráč** — hodnotí se, tiskne se mu list
 - **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil
-- **šablona** — `pole` pro hráče v poli, `brankar` pro brankáře (jiných šest os)
+- **šablony** — zaškrtni všechny, kterými se hráč známkuje: `pole` (hráč v poli),
+  `brankar` (brankář), `leader` (vůdcovství). Ferda může mít klidně všechny tři.
+  Každá je vlastní řada, vlastní odkaz na sebehodnocení a vlastní list; do jednoho
+  grafu se sloučit nedají, ale na jednu stránku vytisknout ano (Listy → kumulovaný list)
 - **aktivní** — vypni místo mazání, když hráč odejde. Historie hodnocení má zůstat.
   Číslo, které hráč dostal, si drží napořád a nikomu jinému se už nepřidělí.
 
@@ -200,6 +203,14 @@ Druhý polygon:
 - **trenér minule** — vývoj proti předchozímu období
 - **sebehodnocení hráče** — pro rozhovor; tohle je ta zajímavá varianta
 - **žádný** — jen aktuální hodnocení
+
+Hráč, který má víc šablon, dostane **list na každou z nich**. V tabulce *Kdo se vytiskne*
+je proto řádek na každou šablonu a je vidět, která ještě hodnocení nemá — prázdná se
+vytiskne jako podklad, ať nezmizí z dohledu.
+
+**Kumulovaný list** (zaškrtávátko nahoře) to složí na **jednu stránku**: radary za všechny
+šablony vedle sebe, každý podepsaný, slovní bloky a cíle poskládané ze všech (u každého
+kusu je napsáno, ze které šablony je). Bez zaškrtnutí má každá šablona vlastní stránku.
 
 Listy se otevřou v nové záložce, odtud jdou na tiskárnu. **V dialogu tisku zapni „Grafika na
 pozadí" / „Background graphics"** — jinak se vytiskne bílý list bez modrého pruhu se jménem
