@@ -2258,6 +2258,52 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- porovnání trenér vs. hráč (§7.3) ---------- */
+    /* ---------- srovnání hráčů mezi sebou ----------
+       Jiná otázka než /api/porovnani: tam jde o rozdíl trenér vs. hráč u jednoho
+       člověka, tady o to, jak si stojí dva brankáři vedle sebe. Srovnávají se
+       jen hodnocení od trenérů (sebehodnocení hráčů by míchalo dvě různé optiky)
+       a vždy v rámci jedné šablony — brankářské a polní osy nemají co porovnávat. */
+    if (cesta === '/api/srovnani' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        const obdobi = q.get('obdobi') || nas.obdobi;
+        const sablona = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : 'pole';
+        const ids = (q.get('ids') ?? '').split(',').map(Number).filter(Boolean).slice(0, 8);
+        if (ids.length < 2) return chyba('Vyber aspoň dva hráče.', 400);
+
+        const osyKlice = klice(sablona);
+        const hraci: { id: number; jmeno: string; hodnoty: Record<string, number> | null; prumer: number | null }[] = [];
+
+        for (const id of ids) {
+            const osoba = await env.DB.prepare('SELECT id, jmeno, prezdivka FROM players WHERE id = ?')
+                .bind(id).first<{ id: number; jmeno: string; prezdivka: string | null }>();
+            if (!osoba) continue;
+            const h = await posledni(env, id, obdobi, 'trener', sablona);
+            const hodnoty = h?.hodnoty ?? null;
+            const cisla = hodnoty ? osyKlice.map(k => hodnoty[k]).filter(x => typeof x === 'number') : [];
+            hraci.push({
+                id, jmeno: osoba.jmeno,
+                hodnoty,
+                // Průměr je orientační souhrn, ne známka na vysvědčení — proto
+                // se posílá vedle jednotlivých os, ne místo nich.
+                prumer: cisla.length ? Math.round((cisla.reduce((a, b) => a + b, 0) / cisla.length) * 10) / 10 : null
+            });
+        }
+
+        // Rozptyl na ose ukáže, kde se ti dva opravdu liší a kde jsou stejní.
+        const osy = osyKlice.map(klic => {
+            const cisla = hraci.map(h => h.hodnoty?.[klic]).filter((x): x is number => typeof x === 'number');
+            return {
+                klic,
+                hodnoty: Object.fromEntries(hraci.map(h => [h.id, h.hodnoty?.[klic] ?? null])),
+                nejlepe: cisla.length ? Math.max(...cisla) : null,
+                nejhure: cisla.length ? Math.min(...cisla) : null,
+                rozptyl: cisla.length > 1 ? Math.max(...cisla) - Math.min(...cisla) : null
+            };
+        });
+
+        return json({ obdobi, sablona, osy, hraci });
+    }
+
     if (cesta === '/api/porovnani' && metoda === 'GET') {
         const playerId = Number(q.get('player_id'));
         if (!playerId) return chyba('Chybí player_id.', 400);

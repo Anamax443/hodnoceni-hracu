@@ -1081,7 +1081,41 @@ async function porovnani(kam) {
                     ${hraci.map(h => `<option value="${h.id}">${esc(jmenoText(h))}</option>`).join('')}
                 </select></div>
         </div>
-        <div id="vysledek"></div>`;
+        <div id="vysledek"></div>
+
+        <div class="karta">
+            <h2>${t('srovnani.nadpis')}</h2>
+            <p class="popis">${t('srovnani.popis')}</p>
+            <div class="pole" style="max-width:320px">
+                <label for="s-sablona">${t('hodnotit.sablona')}</label>
+                <select id="s-sablona">${Object.keys(SABLONY)
+                    .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select>
+            </div>
+            <div class="pozice-vyber" id="s-hraci">
+                ${hraci.map(h => `
+                    <label class="volba"><input type="checkbox" class="s-hrac" value="${h.id}"> ${esc(jmenoText(h))}</label>
+                `).join('') || `<span class="popis">${t('lide.prazdno')}</span>`}
+            </div>
+            <p><button class="hl" id="s-porovnat" title="${t('srovnani.porovnat.tip')}">${t('srovnani.porovnat')}</button></p>
+            <div id="s-vysledek"></div>
+        </div>`;
+
+    $('#s-porovnat').onclick = async () => {
+        const cil = $('#s-vysledek');
+        const ids = [...kam.querySelectorAll('.s-hrac:checked')].map(c => Number(c.value));
+        if (ids.length < 2) {
+            cil.innerHTML = `<div class="hlaska pozor">${t('srovnani.malo')}</div>`;
+            return;
+        }
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const s = await api(`/api/srovnani?sablona=${$('#s-sablona').value}`
+                + `&obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}&ids=${ids.join(',')}`);
+            cil.innerHTML = tabulkaSrovnani(s);
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
 
     $('#p-hrac').onchange = async () => {
         const id = Number($('#p-hrac').value);
@@ -1099,6 +1133,45 @@ async function porovnani(kam) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
     };
+}
+
+/**
+ * Tabulka osa × hráč. Nejvyšší číslo v řádku je zvýrazněné, poslední sloupec
+ * říká rozptyl — tam, kde je nula, se ti dva neliší a není o čem mluvit.
+ */
+function tabulkaSrovnani(s) {
+    const maData = s.hraci.filter(h => h.hodnoty);
+    if (maData.length < 2) {
+        return `<div class="hlaska pozor">${t('srovnani.nikdo', esc(t('sablona.' + s.sablona)), esc(s.obdobi))}</div>`;
+    }
+
+    const chybi = s.hraci.filter(h => !h.hodnoty);
+    const radek = o => `
+        <tr class="${o.rozptyl >= 3 ? 'resit' : ''}">
+            <td>${esc(t('osa.' + o.klic))}</td>
+            ${maData.map(h => {
+                const v = o.hodnoty[h.id];
+                if (v === null || v === undefined) return `<td class="cisla">—</td>`;
+                const nej = o.nejlepe !== null && v === o.nejlepe && o.rozptyl > 0;
+                return `<td class="cisla">${nej ? `<b class="ano">${v}</b>` : v}</td>`;
+            }).join('')}
+            <td class="cisla">${o.rozptyl === null ? '—' : o.rozptyl}</td>
+        </tr>`;
+
+    return `
+        <table>
+            <thead><tr><th>${t('porovnani.osa')}</th>
+                ${maData.map(h => `<th class="cisla">${esc(h.jmeno)}</th>`).join('')}
+                <th class="cisla">${t('srovnani.rozptyl')}</th></tr></thead>
+            <tbody>
+                ${s.osy.map(radek).join('')}
+                <tr><td><b>${t('srovnani.prumer')}</b></td>
+                    ${maData.map(h => `<td class="cisla"><b>${h.prumer ?? '—'}</b></td>`).join('')}
+                    <td class="cisla"></td></tr>
+            </tbody>
+        </table>
+        <p class="popis">${t('srovnani.legenda')}</p>
+        ${chybi.length ? `<div class="hlaska pozor">${t('srovnani.chybi', esc(chybi.map(h => h.jmeno).join(', ')))}</div>` : ''}`;
 }
 
 /* ===================== historie verzí ===================== */
