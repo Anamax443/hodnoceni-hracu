@@ -335,6 +335,25 @@ přihlášeného trenéra** (`autor_id IS ?`) — cizí čísla se nepřebíraj�
 zadání tiše smíchalo dva pohledy, které má rozsuzovat Shoda. Hráč bez základu se nezakládá
 (nešlo by doplnit chybějící osy a neúplný záznam nejde vykreslit) a vrací se v `ceka`.
 
+**Úprava hodnocení** (`GET /api/evaluations/predloha` + `uprava_id` v `POST /api/evaluations`,
+migrace `012`) je jediné místo, kde formulář ukazuje dřívější čísla — a je to **výjimka
+z hodnocení naslepo**, ne její zrušení:
+
+- předvyplní se **jen vlastní** hodnocení. Když má session `id` (trenér s vlastním heslem),
+  server hledá výhradně jeho řádky a volbu v nabídce *Hodnotí* ignoruje; u přechodného
+  společného hesla (session bez `id`) platí `autor_id` z dotazu, stejně jako u ukládání.
+  Cizí čísla se tudy nedají vytáhnout.
+- uložení je **nový řádek** (append-only platí dál), `uprava_id` drží nit na upravovanou
+  verzi. Bez ní by v historii ležely dva záznamy vedle sebe a nešlo by poznat opravu
+  překlepu od druhého, samostatně pořízeného hodnocení.
+- server odmítne `uprava_id`, které neexistuje (404), patří jinému hráči nebo není od
+  trenéra (400) — sebehodnocení hráče se trenérským formulářem nepřepisuje ani novou verzí
+  a uzavřená shoda patří do `POST /api/shoda`.
+- nová verze se ukládá do **období upravované verze**, ne do právě nastaveného; jinak by
+  oprava starého hodnocení tiše přeskočila do letošní řady.
+- nabídka nad formulářem nese jen datum a šablonu, žádné známky. Existence hodnocení není
+  kotva, hodnota ano.
+
 **Srovnání hráčů mezi sebou** (`GET /api/srovnani`) je jiná otázka než `/api/porovnani`:
 tam jde o rozdíl trenér vs. hráč u jednoho člověka, tady o to, jak si stojí dva brankáři
 vedle sebe. Bere jen hodnocení od trenérů a vždy v rámci jedné šablony; vrací i rozptyl
@@ -462,6 +481,7 @@ Migrace, které přibyly:
 | `009_sms.sql` | telefon, přepínač `notif_sms`, tabulka `komunikace`, denní strop |
 | `010_komunikace_platforma.sql` | sloupce `platforma` a `podrobnosti` v logu komunikace |
 | `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (viz kap. 3) |
+| `012_uprava.sql` | `evaluations.uprava_id` — ze které verze nová vznikla |
 
 ### Čísla osob se nerecyklují
 
@@ -571,7 +591,8 @@ POST   /api/sms/test       {telefon, nanecisto?}  admin — zkušební SMS, nane
 
 GET    /api/prehled?obdobi=                       admin — kdo má hodnocení a kdo odkaz
 GET    /api/evaluations?player_id=&obdobi=        admin
-POST   /api/evaluations                           admin  (autor='trener')
+POST   /api/evaluations    {…, uprava_id?}        admin  (autor='trener'); uprava_id = nová verze
+GET    /api/evaluations/predloha?player_id=…      admin — vlastní hodnocení k úpravě, nebo null
 POST   /api/evaluations/hromadne                  admin — jedna známka pro víc hráčů
 GET    /api/srovnani?sablona=&obdobi=&ids=        admin — tabulka osa × hráč
 

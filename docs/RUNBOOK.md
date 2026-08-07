@@ -126,8 +126,17 @@ historie nerozbije — ale porovnávat napříč šablonami stejně nejde.
 
 ## 7. Oprava překlepu v hodnocení
 
-Ulož hodnocení znovu se správnými hodnotami. Databáze je append-only — vznikne nový záznam
-a aplikace pracuje s tím posledním. Původní zůstane v historii, což je záměr.
+Hodnocení se dá načíst do formuláře, opravit a uložit — vznikne **nová verze**, původní
+zůstane v historii. Databáze je dál append-only, nic se nepřepisuje a aplikace pracuje
+s tou poslední verzí.
+
+- **Hodnotit** → vyber hráče a sebe v *Hodnotí* → nad formulářem se ukáže, že v tomhle
+  období od tebe hodnocení už je, a nabídne *Upravit ho*.
+- **Porovnání** → *Historie hodnocení* → *Upravit* u konkrétní verze. Takhle jde opravit
+  i hodnocení ze staršího období — nová verze se uloží do období té upravované.
+
+Nabízejí se jen vlastní hodnocení. Sebehodnocení hráče tudy upravit nejde (server to
+odmítne) a uzavřená shoda trenérů se řeší v záložce Shoda.
 
 ---
 

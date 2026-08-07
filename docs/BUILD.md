@@ -54,6 +54,7 @@ Migrace se pouštějí **v pořadí**; `db:init` aplikuje jen `001`. Zbytek ruč
 | `009_sms.sql` | telefon u osoby, tabulka `komunikace`, denní strop SMS |
 | `010_komunikace_platforma.sql` | sloupce `platforma` a `podrobnosti` v logu komunikace |
 | `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (nutný ke 4místnému PINu) |
+| `012_uprava.sql` | `evaluations.uprava_id` — úprava hodnocení jako nová verze |
 
 ```powershell
 foreach ($f in Get-ChildItem migrations\*.sql | Sort-Object Name) {

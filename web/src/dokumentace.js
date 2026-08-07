@@ -71,6 +71,25 @@ fair play, podpora spoluhráčů, spolehlivost). Je to <i>druhý list</i> vedle
 herního, ne sedmá osa: sedm vrcholů by změnilo tvar radaru a nešlo by porovnat
 se staršími hodnoceními. Osy popisují chování, které je vidět, ne povahu.</p>
 
+<h3>Oprava a úprava hodnocení</h3>
+<p>Když v hodnocení něco nesedí, nemusíš vyplňovat celý formulář znovu. Existující
+hodnocení se dá <b>načíst, upravit a uložit</b> — a uložením vzniká <b>nová verze</b>.
+Původní se nemaže ani nepřepisuje, zůstává v historii a dá se k němu vrátit i vytisknout.</p>
+<p>Vede k tomu dvojí cesta:</p>
+<ul>
+  <li><b>V Hodnotit</b> — když v tomhle období od tebe hodnocení už je, aplikace to
+      nad formulářem řekne a nabídne <i>Upravit ho</i>. Nabídka ukazuje jen datum
+      a šablonu, <b>žádná čísla</b>.</li>
+  <li><b>V Porovnání → Historie hodnocení</b> — tlačítko <i>Upravit</i> u konkrétní
+      verze. Takhle jde opravit i hodnocení ze staršího období; nová verze se uloží
+      do období té upravované, ne do právě nastaveného.</li>
+</ul>
+<p>Nabízejí se jen <b>tvoje</b> hodnocení. Sebehodnocení hráče takhle upravit nejde
+a uzavřená shoda trenérů se řeší v Shodě. V historii je u nové verze poznámka,
+ze které verze vznikla — jinak by úprava vypadala stejně jako druhé samostatné hodnocení.</p>
+<p>Známkuje se dál naslepo: dokud si úpravu sám nevyžádáš, formulář žádná dřívější
+čísla neukáže. Předvyplnění je nástroj na opravu, ne na hodnocení.</p>
+
 <h3>Hromadné hodnocení</h3>
 <p>Když má víc hráčů stejnou úroveň v jedné disciplíně, nemusíš proklikat každého
 zvlášť. Dole v Hodnotit otevřeš <b>Hodnotit víc hráčů najednou</b>, vyplníš jen
@@ -276,6 +295,27 @@ mistakes and pressure, fair play, supporting team-mates, reliability). It is a
 <i>second sheet</i> alongside the playing one, not a seventh axis: seven vertices
 would change the radar's shape and break comparison with older evaluations. The
 axes describe visible behaviour, not personality.</p>
+
+<h3>Correcting and editing an evaluation</h3>
+<p>When something in an evaluation is wrong, you don't have to fill the whole form
+again. An existing evaluation can be <b>loaded, edited and saved</b> — and saving
+creates a <b>new version</b>. The original is neither deleted nor overwritten; it
+stays in the history and can still be opened and printed.</p>
+<p>There are two ways in:</p>
+<ul>
+  <li><b>In Evaluate</b> — if you already have an evaluation in this period, the app
+      says so above the form and offers <i>Edit it</i>. The offer shows only the date
+      and the template, <b>no scores</b>.</li>
+  <li><b>In Comparison → Evaluation history</b> — the <i>Edit</i> button on a given
+      version. This also works for an older period; the new version is saved into the
+      period of the edited one, not into the currently configured period.</li>
+</ul>
+<p>Only <b>your own</b> evaluations are offered. A player's self-evaluation cannot be
+edited this way and a closed coach consensus belongs in Consensus. In the history the
+new version carries a note saying which version it came from — otherwise an edit would
+look exactly like a second, independent evaluation.</p>
+<p>Scoring stays blind: unless you ask for an edit yourself, the form shows no earlier
+numbers. Pre-filling is a tool for corrections, not for scoring.</p>
 
 <h3>Bulk evaluation</h3>
 <p>When several players are at the same level in one discipline, you don't have to

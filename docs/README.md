@@ -167,8 +167,18 @@ by porovnat se staršími hodnoceními. Osy popisují chování, které je vidě
 **Cíle:** dva až tři, konkrétní a ověřitelné. Ne „zlepšit levou nohu", ale „levá noha: každý
 trénink 5 minut navíc, přihrávka do 10 metrů". Hráč musí poznat, jestli to splnil.
 
-Uložením vzniká nový záznam. Starší hodnocení se nikdy nepřepisuje, takže když se překlepneš,
-prostě ulož znovu — platí to poslední.
+Uložením vzniká nový záznam. Starší hodnocení se nikdy nepřepisuje.
+
+**Když se překlepneš**, nemusíš vyplňovat všechno znovu. Hodnocení se dá načíst, opravit
+a uložit — vznikne **nová verze**, ta původní zůstane v historii. Vede tam dvojí cesta:
+
+- v **Hodnotit** se nad formulářem ukáže, že v tomhle období od tebe hodnocení už je
+  (jen datum a šablona, **žádná čísla**), s tlačítkem *Upravit ho*;
+- v **Porovnání → Historie hodnocení** je *Upravit* u konkrétní verze — takhle jde opravit
+  i hodnocení ze staršího období.
+
+Nabízejí se jen **tvoje** hodnocení; sebehodnocení hráče takhle upravit nejde. Známkuje se
+dál naslepo — dokud si úpravu sám nevyžádáš, formulář žádná dřívější čísla neukáže.
 
 #### Hodnotit víc hráčů najednou
 

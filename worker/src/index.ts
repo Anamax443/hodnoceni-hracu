@@ -367,8 +367,10 @@ async function nastaveni(env: Env): Promise<Record<string, string>> {
 
 interface RadekHodnoceni {
     id: number; player_id: number; datum: string; obdobi: string; autor: string;
-    sablona: string; hodnoty: string; fyzicky: string | null; hlavou: string | null;
+    autor_id: number | null; sablona: string; hodnoty: string;
+    fyzicky: string | null; hlavou: string | null;
     parta: string | null; cile: string | null; poznamka: string | null;
+    uprava_id: number | null;
 }
 
 function rozbal(r: RadekHodnoceni) {
@@ -378,6 +380,8 @@ function rozbal(r: RadekHodnoceni) {
         datum: r.datum,
         obdobi: r.obdobi,
         autor: r.autor,
+        autorId: r.autor_id ?? null,
+        upravaId: r.uprava_id ?? null,
         sablona: r.sablona,
         hodnoty: JSON.parse(r.hodnoty) as Record<string, number>,
         fyzicky: r.fyzicky,
@@ -2053,21 +2057,71 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 : [];
 
             const autorId = h.autor_id ? Number(h.autor_id) : null;
+
+            // Úprava staršího hodnocení. Původní řádek zůstává, tenhle je jeho
+            // další verze — `uprava_id` drží nit, aby v historii šlo poznat
+            // opravu od druhého, samostatně pořízeného hodnocení.
+            const upravaId = h.uprava_id ? Number(h.uprava_id) : null;
+            if (upravaId) {
+                const zdroj = await env.DB.prepare(
+                    'SELECT player_id, autor FROM evaluations WHERE id = ?'
+                ).bind(upravaId).first<{ player_id: number; autor: string }>();
+                if (!zdroj) return chyba('Upravovaná verze hodnocení neexistuje.', 404);
+                if (zdroj.player_id !== playerId) return chyba('Upravovaná verze patří jinému hráči.', 400);
+                // Sebehodnocení hráče trenér nepřepisuje ani formou nové verze
+                // a uzavřená shoda se dělá v Shodě, ne tady.
+                if (zdroj.autor !== 'trener') return chyba('Upravovat jde jen hodnocení od trenéra.', 400);
+            }
+
             const r = await env.DB.prepare(
                 `INSERT INTO evaluations
-                    (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile)
-                 VALUES (?, ?, 'trener', ?, ?, ?, ?, ?, ?, ?) RETURNING id, datum`
+                    (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile, uprava_id)
+                 VALUES (?, ?, 'trener', ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, datum`
             ).bind(
                 playerId, obdobi, autorId, sablona,
                 JSON.stringify(h.hodnoty),
                 (h.fyzicky ?? '').trim() || null,
                 (h.hlavou ?? '').trim() || null,
                 (h.parta ?? '').trim() || null,
-                JSON.stringify(cile)
+                JSON.stringify(cile),
+                upravaId
             ).first();
             await zapisUdalost(env, 'hodnoceni', playerId, obdobi, autorId);
             return json({ ulozeno: true, ...r }, 201);
         }
+    }
+
+    /* ---------- předloha pro úpravu hodnocení ----------
+       Vrátí poslední VLASTNÍ hodnocení hráče v období, aby se dalo načíst do
+       formuláře, opravit a uložit jako další verze. Nic nemaže a nepřepisuje.
+
+       Známkování naslepo tím netrpí: vrací se jen to, co ten člověk sám
+       napsal — vlastní čísla nemají co ukotvovat. Když je přihlášený konkrétní
+       trenér, dostane výhradně své řádky, ať v nabídce autora vybere kohokoli.
+       U přechodného společného hesla (session bez id) platí volba z formuláře,
+       stejně jako u samotného ukládání — víc se v tom režimu poznat nedá.     */
+    if (cesta === '/api/evaluations/predloha' && metoda === 'GET') {
+        const playerId = Number(q.get('player_id'));
+        if (!playerId) return chyba('Chybí player_id.', 400);
+
+        const obdobi = q.get('obdobi') || (await nastaveni(env)).obdobi;
+        const sablona = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : null;
+        const autorId = kdo.id ?? (q.get('autor_id') ? Number(q.get('autor_id')) : null);
+
+        const r = sablona
+            ? await env.DB.prepare(
+                `SELECT * FROM evaluations
+                  WHERE player_id = ? AND obdobi = ? AND autor = 'trener'
+                    AND sablona = ? AND autor_id IS ?
+                  ORDER BY id DESC LIMIT 1`
+            ).bind(playerId, obdobi, sablona, autorId).first<RadekHodnoceni>()
+            : await env.DB.prepare(
+                `SELECT * FROM evaluations
+                  WHERE player_id = ? AND obdobi = ? AND autor = 'trener' AND autor_id IS ?
+                  ORDER BY id DESC LIMIT 1`
+            ).bind(playerId, obdobi, autorId).first<RadekHodnoceni>();
+
+        return json({ obdobi, predloha: r ? rozbal(r) : null });
     }
 
     /* ---------- hromadné hodnocení ----------
@@ -2200,15 +2254,16 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const playerId = Number(q.get('player_id'));
         if (!playerId) return chyba('Chybí player_id.', 400);
         const { results } = await env.DB.prepare(
-            `SELECT e.id, e.datum, e.obdobi, e.autor, e.sablona, e.hodnoty,
+            `SELECT e.id, e.datum, e.obdobi, e.autor, e.autor_id, e.sablona, e.hodnoty,
                     e.fyzicky, e.hlavou, e.parta, e.cile, e.poznamka, e.poznamka_shody,
-                    a.jmeno AS autor_jmeno
+                    e.uprava_id, a.jmeno AS autor_jmeno
                FROM evaluations e LEFT JOIN players a ON a.id = e.autor_id
               WHERE e.player_id = ?
               ORDER BY e.id DESC`
         ).bind(playerId).all<any>();
         return json((results ?? []).map(r => ({
             id: r.id, datum: r.datum, obdobi: r.obdobi, autor: r.autor,
+            autorId: r.autor_id ?? null, upravaId: r.uprava_id ?? null,
             autorJmeno: r.autor_jmeno, sablona: r.sablona,
             hodnoty: JSON.parse(r.hodnoty),
             fyzicky: r.fyzicky, hlavou: r.hlavou, parta: r.parta,

@@ -14,7 +14,9 @@ import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18
 import { dokumentaceHtml } from './src/dokumentace.js';
 
 const $ = s => document.querySelector(s);
-const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null };
+/* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
+   kterou chce trenér opravit, a Hodnotit ji hned po překreslení vybere. */
+const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null };
 
 /* ===================== komunikace ===================== */
 
@@ -802,6 +804,7 @@ async function hodnotit(kam) {
                         ${treneri.map(x => `<option value="${x.id}">${esc(x.jmeno)}</option>`).join('')}
                     </select></div>
             </div>
+            <div id="h-predloha"></div>
         </div>
         <div id="formular"></div>
 
@@ -812,8 +815,70 @@ async function hodnotit(kam) {
             <div id="hromadne"></div>
         </div>`;
 
-    $('#h-hrac').onchange = () => formularHodnoceni($('#formular'), Number($('#h-hrac').value));
+    $('#h-hrac').onchange = () => {
+        formularHodnoceni($('#formular'), Number($('#h-hrac').value));
+        nabidniUpravu();
+    };
+    $('#h-autor').onchange = () => nabidniUpravu();
     $('#hromadne-otevrit').onclick = () => formularHromadny($('#hromadne'));
+
+    // Příchod z Historie tlačítkem „Upravit" — rovnou načíst tu verzi.
+    const zHistorie = stav.uprava;
+    stav.uprava = null;
+    if (zHistorie) {
+        $('#h-hrac').value = String(zHistorie.player_id);
+        upravVerzi(zHistorie);
+    }
+}
+
+/**
+ * Nabídne úpravu hodnocení, které v tomhle období od tebe už je.
+ * Ukazuje jen datum a šablonu — **žádná čísla**. Známkování naslepo tím
+ * netrpí: kdo hodnotí, nabídku nepoužije; kdo opravuje překlep, nevyplňuje
+ * šest známek a tři slovní bloky znovu jen kvůli jedné číslici.
+ */
+async function nabidniUpravu() {
+    const box = $('#h-predloha');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const hracId = Number($('#h-hrac').value);
+    if (!hracId) return;
+
+    const autor = $('#h-autor').value;
+    try {
+        const { predloha } = await api(`/api/evaluations/predloha?player_id=${hracId}`
+            + `&obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`
+            + (autor ? `&autor_id=${autor}` : ''));
+        if (!predloha) return;   // nic tu není = běžný stav, ne chyba
+
+        box.innerHTML = `
+            <div class="hlaska info" style="margin-top:10px">
+                ${t('uprava.nabidka', esc(new Date(predloha.datum + 'Z').toLocaleString(locale())),
+                    esc(t('sablona.' + predloha.sablona)))}
+                <button class="vedlejsi" id="h-nacist" title="${t('uprava.nacist.tip')}"
+                        style="margin-left:8px">${t('uprava.nacist')}</button>
+            </div>`;
+        $('#h-nacist').onclick = () => upravVerzi({ ...predloha, player_id: hracId });
+    } catch (e) {
+        // Ať je poznat rozdíl mezi „nic tu není" a „nepodařilo se to zjistit".
+        box.innerHTML = `<p class="popis">${t('uprava.nabidka.chyba', esc(e.message))}</p>`;
+    }
+}
+
+/** Načte konkrétní verzi hodnocení do formuláře jako úpravu. */
+function upravVerzi(v) {
+    const box = $('#h-predloha');
+    if (box) box.innerHTML = '';
+    if (v.autorId) $('#h-autor').value = String(v.autorId);
+
+    formularHodnoceni($('#formular'), v.player_id, v.sablona, {
+        fyzicky: v.fyzicky ?? '', hlavou: v.hlavou ?? '', parta: v.parta ?? '',
+        cile: v.cile ?? [], hodnoty: v.hodnoty
+    }, {
+        id: v.id, datum: v.datum, obdobi: v.obdobi, sablona: v.sablona,
+        autor: v.autorJmeno ?? stav.lide.find(o => o.id === v.autorId)?.jmeno ?? null
+    });
 }
 
 /**
@@ -918,16 +983,37 @@ function formularHromadny(kam) {
     vykresli('pole');
 }
 
-function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {
+/**
+ * Formulář hodnocení. S `uprava` se z něj stane úprava existující verze:
+ * hodnoty se předvyplní a uložení založí **další verzi** — původní řádek
+ * zůstává, databáze je append-only.
+ */
+function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, uprava = null) {
     if (!hracId) { kam.innerHTML = ''; return; }
     const hrac = stav.lide.find(o => o.id === hracId);
     const vybranaSablona = sablona ?? hrac.sablona;
     const seznamOs = osy(vybranaSablona);
     const pozice = (hrac.pozice ?? []).map(p => t('pozice.' + p)).join(' · ');
+    const obdobiZapisu = uprava?.obdobi || stav.nastaveni.obdobi;
+
+    // Při úpravě se varování o známkování naslepo nehodí — čísla na obrazovce
+    // jsou tvoje vlastní a jsou tam schválně. Místo něj musí být vidět, co se
+    // upravuje a že se tím nic nepřepíše.
+    const zahlavi = uprava
+        ? `<div class="hlaska info">
+                ${t('uprava.upozorneni', esc(new Date(uprava.datum + 'Z').toLocaleString(locale())),
+                    esc(obdobiZapisu))}
+                ${uprava.autor ? ` ${t('uprava.autor', esc(uprava.autor))}` : ''}
+                <button class="vedlejsi" id="h-zrusit-upravu" title="${t('uprava.zrusit.tip')}"
+                        style="margin-left:8px">${t('uprava.zrusit')}</button>
+           </div>`
+        : `<div class="hlaska pozor">${t('hodnotit.naslepo')}</div>`;
 
     kam.innerHTML = `
         <div class="karta">
-            <div class="hlaska pozor">${t('hodnotit.naslepo')}</div>
+            ${zahlavi}
+            ${uprava && uprava.sablona !== vybranaSablona
+                ? `<div class="hlaska pozor">${t('uprava.jinaSablona')}</div>` : ''}
             <h2>${jmenoHtml(hrac)}${pozice ? ` <span class="popis">— ${esc(pozice)}</span>` : ''}</h2>
             <div class="pole" style="max-width:320px">
                 <label for="h-sablona">${t('hodnotit.sablona')}</label>
@@ -959,54 +1045,77 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null) {
             <div class="pole"><input type="text" id="h-cil1" placeholder="${t('hodnotit.cil', 1)}"></div>
             <div class="pole"><input type="text" id="h-cil2" placeholder="${t('hodnotit.cil', 2)}"></div>
             <div class="pole"><input type="text" id="h-cil3" placeholder="${t('hodnotit.cil', 3)}"></div>
-            <button class="hl" id="ulozit-hodnoceni" title="${t('hodnotit.ulozit.tip')}">${t('hodnotit.ulozit')}</button>
+            <button class="hl" id="ulozit-hodnoceni"
+                    title="${uprava ? t('uprava.ulozit.tip') : t('hodnotit.ulozit.tip')}">${
+                        uprava ? t('uprava.ulozit') : t('hodnotit.ulozit')}</button>
         </div>`;
 
+    const zadaneHodnoty = () => {
+        const h = {};
+        for (const o of seznamOs) {
+            const vybrano = kam.querySelector(`input[name="osa-${o.klic}"]:checked`);
+            if (vybrano) h[o.klic] = Number(vybrano.value);
+        }
+        return h;
+    };
+
     // Slovní bloky a cíle přežijí přepnutí šablony — mění se osy, ne text.
+    // Známky přežijí jen tam, kde se osa v nové šabloně jmenuje stejně; jiná
+    // šestice os žádnou stejnou nemá, takže se zadávají znovu (a formulář to řekne).
     const texty = () => ({
         fyzicky: $('#h-fyzicky').value, hlavou: $('#h-hlavou').value, parta: $('#h-parta').value,
-        cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value]
+        cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value],
+        hodnoty: zadaneHodnoty()
     });
     if (predvyplneno) {
         $('#h-fyzicky').value = predvyplneno.fyzicky;
         $('#h-hlavou').value = predvyplneno.hlavou;
         $('#h-parta').value = predvyplneno.parta;
         predvyplneno.cile.forEach((c, i) => { $('#h-cil' + (i + 1)).value = c; });
+        for (const [klic, hodnota] of Object.entries(predvyplneno.hodnoty ?? {})) {
+            const prvek = kam.querySelector(`#osa-${klic}-${hodnota}`);
+            if (prvek) prvek.checked = true;
+        }
     }
 
-    $('#h-sablona').onchange = e => formularHodnoceni(kam, hracId, e.target.value, texty());
+    $('#h-sablona').onchange = e => formularHodnoceni(kam, hracId, e.target.value, texty(), uprava);
+
+    const zrusit = $('#h-zrusit-upravu');
+    if (zrusit) zrusit.onclick = () => { formularHodnoceni(kam, hracId); nabidniUpravu(); };
 
     $('#ulozit-hodnoceni').onclick = async () => {
-        const hodnoty = {};
-        const chybi = [];
-        for (const o of seznamOs) {
-            const vybrano = kam.querySelector(`input[name="osa-${o.klic}"]:checked`);
-            if (!vybrano) chybi.push(o.popis);
-            else hodnoty[o.klic] = Number(vybrano.value);
-        }
+        const hodnoty = zadaneHodnoty();
+        const chybi = seznamOs.filter(o => hodnoty[o.klic] === undefined).map(o => o.popis);
         if (chybi.length) { hlaska(kam, 'chyba', t('hodnotit.chybi', chybi.join(', '))); return; }
 
         const telo = {
             player_id: hracId,
-            obdobi: stav.nastaveni.obdobi,
+            obdobi: obdobiZapisu,
             sablona: vybranaSablona,
             autor_id: $('#h-autor').value || null,
             hodnoty,
             fyzicky: $('#h-fyzicky').value,
             hlavou: $('#h-hlavou').value,
             parta: $('#h-parta').value,
-            cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value]
+            cile: [$('#h-cil1').value, $('#h-cil2').value, $('#h-cil3').value],
+            uprava_id: uprava?.id ?? null
         };
 
         try {
             await api('/api/evaluations', { telo });
             kam.innerHTML = `
                 <div class="karta">
-                    <div class="hlaska ok">${t('hodnotit.ulozeno', esc(hrac.jmeno), esc(stav.nastaveni.obdobi))}</div>
+                    <div class="hlaska ok">${uprava
+                        ? t('uprava.ulozeno', esc(hrac.jmeno), esc(obdobiZapisu))
+                        : t('hodnotit.ulozeno', esc(hrac.jmeno), esc(obdobiZapisu))}</div>
                     <button class="vedlejsi" id="na-list" title="${t('hodnotit.naList.tip')}">${t('hodnotit.naList')}</button>
                     <button class="vedlejsi" id="dalsi" title="${t('hodnotit.dalsi.tip')}">${t('hodnotit.dalsi')}</button>
                 </div>`;
-            $('#na-list').onclick = () => otevriListy({ ids: String(hracId), porovnani: 'zadne' });
+            // Období z uloženého záznamu, ne z Nastavení — úprava starší verze
+            // se ukládá do svého období a list musí ukázat právě ji.
+            $('#na-list').onclick = () => otevriListy({
+                ids: String(hracId), porovnani: 'zadne', obdobi: obdobiZapisu
+            });
             $('#dalsi').onclick = () => { stav.zalozka = 'hodnotit'; prekresli(); };
         } catch (e) {
             hlaska(kam, 'chyba', e.message);
@@ -1336,6 +1445,18 @@ async function pripojHistorii(kam, hracId) {
         : v.autor === 'shoda' ? t('historie.autor.shoda')
         : `${t('historie.autor.trener')}${v.autorJmeno ? ' — ' + v.autorJmeno : ''}`;
 
+    const cas = d => new Date(d + 'Z').toLocaleString(locale());
+
+    // Úprava vypadá v seznamu stejně jako druhé samostatné hodnocení. Bez téhle
+    // značky by nešlo poznat opravu překlepu od skutečně nového pohledu.
+    const znackaUpravy = v => {
+        if (!v.upravaId) return '';
+        const zdroj = verze.find(x => x.id === v.upravaId);
+        return `<div class="popis">${zdroj
+            ? t('historie.uprava', esc(cas(zdroj.datum)))
+            : t('historie.uprava.neznama')}</div>`;
+    };
+
     kam.insertAdjacentHTML('beforeend', `
         <div class="karta" id="historie">
             <h2>${t('historie.nadpis')}</h2>
@@ -1347,12 +1468,14 @@ async function pripojHistorii(kam, hracId) {
                 <tbody>${verze.length ? verze.map(v => `
                     <tr>
                         <td class="cisla"><input type="checkbox" class="verze" value="${v.id}"
-                            data-sablona="${v.sablona}" data-popis="${esc(new Date(v.datum + 'Z').toLocaleString(locale()))}"></td>
-                        <td>${esc(new Date(v.datum + 'Z').toLocaleString(locale()))}</td>
+                            data-sablona="${v.sablona}" data-popis="${esc(cas(v.datum))}"></td>
+                        <td>${esc(cas(v.datum))}${znackaUpravy(v)}</td>
                         <td>${esc(v.obdobi)}</td>
                         <td>${esc(jmenoAutora(v))}</td>
                         <td>${t('sablona.' + v.sablona)}</td>
-                        <td><button class="vedlejsi" data-tisk="${v.id}" title="${t('historie.tisk.tip')}">${t('historie.tisk')}</button></td>
+                        <td>${v.autor === 'trener'
+                                ? `<button class="vedlejsi" data-upravit="${v.id}" title="${t('historie.upravit.tip')}">${t('historie.upravit')}</button> `
+                                : ''}<button class="vedlejsi" data-tisk="${v.id}" title="${t('historie.tisk.tip')}">${t('historie.tisk')}</button></td>
                     </tr>`).join('') : `<tr><td colspan="6">${t('historie.prazdno')}</td></tr>`}</tbody>
             </table>
             ${verze.length > 1 ? `<p style="margin-top:12px">
@@ -1362,6 +1485,15 @@ async function pripojHistorii(kam, hracId) {
 
     kam.querySelectorAll('[data-tisk]').forEach(b => b.onclick = () =>
         window.open(`listy.html?verze=${b.dataset.tisk}`, '_blank'));
+
+    // Úprava se dělá tam, kde se hodnotí — formulář je jeden, jen předvyplněný.
+    kam.querySelectorAll('[data-upravit]').forEach(b => b.onclick = () => {
+        const v = verze.find(x => x.id === Number(b.dataset.upravit));
+        if (!v) return;
+        stav.uprava = { ...v, player_id: hracId };
+        stav.zalozka = 'hodnotit';
+        prekresli();
+    });
 
     const tlacitko = $('#porovnat-verze');
     if (!tlacitko) return;

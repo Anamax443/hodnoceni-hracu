@@ -2,6 +2,39 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-07 (14) — úprava hodnocení: načíst, opravit, uložit jako novou verzi
+
+**Oprava překlepu už neznamená vyplnit formulář znovu.** Existující hodnocení se dá
+načíst do formuláře, upravit a uložit — a vzniká **nová verze**. Zápis zůstává
+append-only: původní řádek se nemaže ani nepřepisuje, zůstává v historii a jde ho
+vytisknout. Migrace `012` přidává `evaluations.uprava_id` = ze které verze ta nová
+vznikla; bez toho by v historii ležely dva záznamy vedle sebe a nešlo by poznat opravu
+od druhého, samostatně pořízeného hodnocení.
+
+**Dvě cesty k úpravě.** V *Hodnotit* se nad formulářem ukáže, že v tomhle období od tebe
+hodnocení už je (**jen datum a šablona, žádná čísla**), s tlačítkem *Upravit ho*.
+V *Porovnání → Historie hodnocení* je *Upravit* u konkrétní verze — takhle jde opravit
+i hodnocení ze staršího období a nová verze se uloží **do období té upravované**, ne do
+právě nastaveného.
+
+**Známkování naslepo zůstává v platnosti.** Předvyplnění je výjimka na opravu, ne zrušení
+principu: dokud si úpravu sám nevyžádáš, formulář žádná dřívější čísla neukáže, a nabízejí
+se **jen vlastní** hodnocení. Když má session `id` (trenér s vlastním heslem), server
+hledá výhradně jeho řádky a volbu v *Hodnotí* ignoruje; u přechodného společného hesla
+platí `autor_id` z formuláře, stejně jako u ukládání. Cizí čísla se tudy vytáhnout nedají.
+Server odmítne `uprava_id`, které neexistuje (404), patří jinému hráči nebo není od trenéra
+(400) — sebehodnocení hráče se trenérským formulářem nepřepisuje ani novou verzí.
+
+**Ověřeno lokálně** (`wrangler dev` + čerstvá D1 s migracemi 001–012): 15 kontrol API
+a 23 kontrol proklikáním v headless Edge přes CDP — předvyplnění všech šesti os i slovních
+bloků, nahrazení varování „naslepo" vysvětlením úpravy, vznik nové verze místo přepisu,
+značka *úprava verze z …* v historii, *Upravit* jen u trenérských verzí, zrušení úpravy
+vrátí prázdný formulář a varování zpět. Žádná chyba v konzoli prohlížeče.
+
+**Zbývá:** pustit migraci `012` na ostré D1 a nasadit; teprve pak to funguje živě.
+
+---
+
 ## 2026-08-07 (13) — leader, hromadné hodnocení, srovnání hráčů, příkazový řádek s AI
 
 **Šablona `leader`** — vůdcovství jako třetí sada os (vedení na hřišti, příklad

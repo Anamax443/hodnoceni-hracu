@@ -99,6 +99,19 @@ player with. If you later score them with a different set of axes, generate a ne
 5 extra minutes every training, a 10-metre pass”. The player must be able to tell whether
 they did it.
 
+**If you make a mistake**, you don't have to fill everything in again. An evaluation can be
+loaded, corrected and saved — that creates a **new version** and the original stays in the
+history. There are two ways in:
+
+- in **Evaluate**, the app says above the form that you already have an evaluation in this
+  period (date and template only, **no scores**) and offers *Edit it*;
+- in **Comparison → Evaluation history**, the *Edit* button on a given version — this also
+  works for an older period.
+
+Only **your own** evaluations are offered; a player's self-evaluation cannot be edited this
+way. Scoring stays blind — unless you ask for an edit yourself, the form shows no earlier
+numbers.
+
 #### Evaluate several players at once
 
 When several players are at the same level in one discipline, open **Evaluate several
