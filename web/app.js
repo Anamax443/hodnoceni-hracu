@@ -225,6 +225,12 @@ async function lide(kam) {
                     <th>${t('lide.sablona')}</th><th></th><th></th></tr></thead>
                 <tbody>${stav.lide.map(radek).join('') || `<tr><td colspan="6">${t('lide.prazdno')}</td></tr>`}</tbody>
             </table>
+            <p>
+                <button class="vedlejsi" id="export-lide" title="${t('lide.export.tip')}">${t('lide.export')}</button>
+                <button class="vedlejsi" id="import-lide" title="${t('lide.import.tip')}">${t('lide.import')}</button>
+                <input type="file" id="import-soubor" accept=".csv,text/csv" hidden>
+            </p>
+            <div id="import-vysledek"></div>
         </div>
 
         <div class="karta" id="formular-osoby">
@@ -297,6 +303,62 @@ async function lide(kam) {
             <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
             <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
         </div>`;
+
+    /* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
+       Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
+       Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
+    const textSouboru = async (soubor) => {
+        const bajty = new Uint8Array(await soubor.arrayBuffer());
+        if (bajty[0] === 0xEF && bajty[1] === 0xBB && bajty[2] === 0xBF) {
+            return new TextDecoder('utf-8').decode(bajty.subarray(3));
+        }
+        try { return new TextDecoder('utf-8', { fatal: true }).decode(bajty); }
+        catch { return new TextDecoder('windows-1250').decode(bajty); }
+    };
+
+    // Stažení přes odkaz, ne fetch — session cookie se pošle sama a soubor
+    // skončí rovnou ve Staženém, bez blobů v paměti.
+    $('#export-lide').onclick = () => { location.href = '/api/players/export.csv'; };
+
+    $('#import-lide').onclick = () => $('#import-soubor').click();
+
+    $('#import-soubor').onchange = async (e) => {
+        const soubor = e.target.files?.[0];
+        if (!soubor) return;
+        const cil = $('#import-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const csv = await textSouboru(soubor);
+            // Nejdřív nanečisto: řekne, co by se stalo, a teprve po potvrzení se zapisuje.
+            const zkouska = await api('/api/players/import', { telo: { csv, nanecisto: true } });
+            const shrnuti = t('lide.import.shrnuti', zkouska.radku, zkouska.pridano, zkouska.upraveno);
+            const vypisChyb = zkouska.chyby.length
+                ? `<br>${t('lide.import.chyby')}:<br>` + zkouska.chyby
+                    .map(ch => `${t('lide.import.radek', ch.radek)} ${esc(ch.jmeno || '—')}: ${esc(ch.duvod)}`).join('<br>')
+                : '';
+
+            if (!confirm(`${shrnuti}\n\n${zkouska.chyby.length ? t('lide.import.chybyStrucne', zkouska.chyby.length) + '\n\n' : ''}${t('lide.import.potvrdit')}`)) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('lide.import.zruseno')}${vypisChyb}</div>`;
+                e.target.value = '';
+                return;
+            }
+
+            const r = await api('/api/players/import', { telo: { csv } });
+            stav.lide = await api('/api/players');
+            const zprava = `<div class="hlaska ${r.chyby.length ? 'pozor' : 'ok'}">`
+                + t('lide.import.hotovo', r.pridano, r.upraveno)
+                + (r.chyby.length
+                    ? `<br>${t('lide.import.chyby')}:<br>` + r.chyby
+                        .map(ch => `${t('lide.import.radek', ch.radek)} ${esc(ch.jmeno || '—')}: ${esc(ch.duvod)}`).join('<br>')
+                    : '')
+                + '</div>';
+            await prekresli();                          // tabulka musí ukázat nový stav
+            $('#import-vysledek').innerHTML = zprava;   // až po překreslení, jinak zmizí
+        } catch (chyba) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(chyba.message)}</div>`;
+        }
+        e.target.value = '';   // ať jde nahrát tentýž soubor znovu
+    };
 
     const vyprazdni = () => {
         $('#osoba-id').value = '';

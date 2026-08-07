@@ -1319,6 +1319,69 @@ async function posliTelegram(env: Env, chatId: string, text: string): Promise<{ 
     return r.ok ? { ok: true } : { ok: false, popis: r.popis };
 }
 
+/* ===================== CSV pro Excel ===================== */
+
+/* Sloupce kádru v pořadí, v jakém jdou do souboru i zpátky z něj.
+   Heslo tu schválně není: export by ho vynesl ven a import přepsal. */
+const CSV_SLOUPCE = [
+    'id', 'jmeno', 'prezdivka', 'role', 'pozice', 'post', 'sablona', 'aktivni',
+    'login', 'email', 'telegram_chat_id', 'telefon',
+    'notif_email', 'notif_telegram', 'notif_sms', 'hodnoceni_povinne'
+] as const;
+
+/** Jedno pole do CSV. Uvozovky se zdvojují, jinak by rozsekaly řádek. */
+function csvPole(h: unknown): string {
+    const s = h === null || h === undefined ? '' : String(h);
+    return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/**
+ * Sestaví CSV pro Excel. Středník místo čárky (české Excely mají středník jako
+ * oddělovač seznamu), CRLF a BOM — bez BOM Excel čte UTF-8 jako svoji starou
+ * kódovou stránku a z háčků udělá patvary.
+ */
+function csvSoubor(radky: string[][]): string {
+    return '﻿' + radky.map(r => r.map(csvPole).join(';')).join('\r\n') + '\r\n';
+}
+
+/**
+ * Rozebere CSV. Oddělovač si vezme z hlavičky (Excel podle nastavení počítače
+ * uloží středník i čárku), umí uvozovky i konce řádků uvnitř nich.
+ */
+function csvRozeber(text: string): string[][] {
+    const bezBom = text.replace(/^﻿/, '');
+    const prvni = bezBom.split(/\r?\n/, 1)[0] ?? '';
+    const oddelovac = (prvni.split(';').length >= prvni.split(',').length) ? ';' : ',';
+
+    const radky: string[][] = [];
+    let pole: string[] = [];
+    let bunka = '';
+    let vUvozovkach = false;
+
+    for (let i = 0; i < bezBom.length; i++) {
+        const z = bezBom[i];
+        if (vUvozovkach) {
+            if (z === '"' && bezBom[i + 1] === '"') { bunka += '"'; i++; }
+            else if (z === '"') vUvozovkach = false;
+            else bunka += z;
+            continue;
+        }
+        if (z === '"') { vUvozovkach = true; continue; }
+        if (z === oddelovac) { pole.push(bunka); bunka = ''; continue; }
+        if (z === '\r') continue;
+        if (z === '\n') { pole.push(bunka); radky.push(pole); pole = []; bunka = ''; continue; }
+        bunka += z;
+    }
+    if (bunka !== '' || pole.length) { pole.push(bunka); radky.push(pole); }
+    return radky.filter(r => r.some(b => b.trim() !== ''));
+}
+
+/** „ano", „1", „x", „true" — lidi to v Excelu píšou různě, ber to všechno. */
+function csvAno(h: string | undefined): number {
+    const s = (h ?? '').trim().toLowerCase();
+    return ['1', 'ano', 'a', 'x', 'true', 'yes', 'ja'].includes(s) ? 1 : 0;
+}
+
 /* ===================== admin část (trenér) ===================== */
 
 async function admin(request: Request, env: Env, url: URL, kdo: Session): Promise<Response> {
@@ -1594,6 +1657,142 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- lidé ---------- */
+    /* ---------- export kádru do CSV ---------- */
+    if (cesta === '/api/players/export.csv' && metoda === 'GET') {
+        const { results } = await env.DB.prepare(
+            `SELECT ${CSV_SLOUPCE.join(', ')} FROM players
+              ORDER BY role DESC, aktivni DESC, jmeno`
+        ).all<Record<string, unknown>>();
+
+        // Hlavička jde do souboru vždycky, i když kádr ještě nikdo nezaložil —
+        // prázdný export je tím pádem rovnou šablona pro import.
+        const radky: string[][] = [[...CSV_SLOUPCE]];
+        for (const o of results ?? []) {
+            radky.push(CSV_SLOUPCE.map(s => {
+                if (s === 'pozice') {
+                    try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
+                    catch { return ''; }
+                }
+                return o[s] === null || o[s] === undefined ? '' : String(o[s]);
+            }));
+        }
+
+        const datum = new Date().toISOString().slice(0, 10);
+        return new Response(csvSoubor(radky), {
+            headers: {
+                'content-type': 'text/csv; charset=utf-8',
+                'content-disposition': `attachment; filename="lide-${datum}.csv"`,
+                'cache-control': 'no-store'
+            }
+        });
+    }
+
+    /* ---------- import kádru z CSV ---------- */
+    if (cesta === '/api/players/import' && metoda === 'POST') {
+        const { csv, nanecisto } = await request.json<{ csv?: string; nanecisto?: boolean }>();
+        if (!csv || !csv.trim()) return chyba('Soubor je prázdný.', 400);
+
+        const radky = csvRozeber(csv);
+        if (!radky.length) return chyba('V souboru není ani hlavička.', 400);
+
+        const hlavicka = radky[0].map(h => h.trim().toLowerCase());
+        if (!hlavicka.includes('jmeno')) {
+            return chyba('V hlavičce chybí sloupec „jmeno". Vyexportuj si prázdný soubor '
+                + 'tlačítkem Export — má přesně ty sloupce, které import čeká.', 400);
+        }
+        const sloupec = (r: string[], nazev: string) => {
+            const i = hlavicka.indexOf(nazev);
+            return i >= 0 ? (r[i] ?? '').trim() : '';
+        };
+
+        let pridano = 0, upraveno = 0;
+        const chyby: { radek: number; jmeno: string; duvod: string }[] = [];
+
+        for (let i = 1; i < radky.length; i++) {
+            const r = radky[i];
+            const cislo = i + 1;   // číslo řádku tak, jak ho vidí Excel
+            const osoba = {
+                jmeno: sloupec(r, 'jmeno'),
+                prezdivka: sloupec(r, 'prezdivka') || null,
+                post: sloupec(r, 'post') || null,
+                // Pozice se v tabulce píšou oddělené mezerou nebo čárkou — středník
+                // by se pral s oddělovačem sloupců.
+                pozice: sloupec(r, 'pozice').split(/[\s,]+/).filter(Boolean),
+                role: sloupec(r, 'role') || 'hrac',
+                sablona: sloupec(r, 'sablona') || 'polni',
+                aktivni: hlavicka.includes('aktivni') ? csvAno(sloupec(r, 'aktivni')) : 1,
+                email: sloupec(r, 'email') || null,
+                telegram_chat_id: sloupec(r, 'telegram_chat_id') || null,
+                telefon: sloupec(r, 'telefon') || null,
+                notif_email: csvAno(sloupec(r, 'notif_email')),
+                notif_telegram: csvAno(sloupec(r, 'notif_telegram')),
+                notif_sms: csvAno(sloupec(r, 'notif_sms')),
+                login: sloupec(r, 'login').toLowerCase() || null,
+                hodnoceni_povinne: csvAno(sloupec(r, 'hodnoceni_povinne'))
+            };
+
+            const problem = zkontrolujOsobu(osoba);
+            if (problem) { chyby.push({ radek: cislo, jmeno: osoba.jmeno, duvod: problem }); continue; }
+
+            // Koho řádek popisuje: id > login > jméno a role. Bez toho by import
+            // udělal z každé opravy nového člověka.
+            const id = Number(sloupec(r, 'id')) || null;
+            let stavajici: { id: number } | null = null;
+            if (id) {
+                stavajici = await env.DB.prepare('SELECT id FROM players WHERE id = ?')
+                    .bind(id).first<{ id: number }>();
+                if (!stavajici) {
+                    chyby.push({ radek: cislo, jmeno: osoba.jmeno, duvod: `Osoba s id ${id} v databázi není.` });
+                    continue;
+                }
+            } else if (osoba.login) {
+                stavajici = await env.DB.prepare('SELECT id FROM players WHERE lower(login) = ?')
+                    .bind(osoba.login).first<{ id: number }>();
+            } else {
+                stavajici = await env.DB.prepare(
+                    'SELECT id FROM players WHERE lower(jmeno) = lower(?) AND role = ?'
+                ).bind(osoba.jmeno, osoba.role).first<{ id: number }>();
+            }
+
+            if (nanecisto) { stavajici ? upraveno++ : pridano++; continue; }
+
+            if (stavajici) {
+                await env.DB.prepare(
+                    `UPDATE players SET jmeno = ?, prezdivka = ?, post = ?, pozice = ?, role = ?,
+                                        sablona = ?, aktivni = ?, email = ?, telegram_chat_id = ?,
+                                        telefon = ?, notif_email = ?, notif_telegram = ?, notif_sms = ?,
+                                        login = ?, hodnoceni_povinne = ?
+                      WHERE id = ?`
+                ).bind(
+                    osoba.jmeno, osoba.prezdivka, osoba.post, JSON.stringify(osoba.pozice),
+                    osoba.role, osoba.sablona, osoba.aktivni, osoba.email, osoba.telegram_chat_id,
+                    osoba.telefon, osoba.notif_email, osoba.notif_telegram, osoba.notif_sms,
+                    osoba.login, osoba.hodnoceni_povinne, stavajici.id
+                ).run();
+                upraveno++;
+            } else {
+                await env.DB.prepare(
+                    `INSERT INTO players (jmeno, prezdivka, post, pozice, role, sablona, aktivni,
+                                          email, telegram_chat_id, telefon,
+                                          notif_email, notif_telegram, notif_sms, login, hodnoceni_povinne)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                ).bind(
+                    osoba.jmeno, osoba.prezdivka, osoba.post, JSON.stringify(osoba.pozice),
+                    osoba.role, osoba.sablona, osoba.aktivni, osoba.email, osoba.telegram_chat_id,
+                    osoba.telefon, osoba.notif_email, osoba.notif_telegram, osoba.notif_sms,
+                    osoba.login, osoba.hodnoceni_povinne
+                ).run();
+                pridano++;
+            }
+        }
+
+        // Hesla ani hodnocení se importem nikdy nedotýkáme — jen kartotéky lidí.
+        return json({
+            nanecisto: !!nanecisto, pridano, upraveno, chyby,
+            radku: radky.length - 1
+        });
+    }
+
     if (cesta === '/api/players') {
         if (metoda === 'GET') {
             const { results } = await env.DB.prepare(
