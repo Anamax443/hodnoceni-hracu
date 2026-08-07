@@ -319,6 +319,18 @@ Definované v `web/src/sablony.js`, sdílené frontendem i Workerem.
 `chytani` Chytání a zákroky · `misto` Výběr místa a postavení · `nohama` Hra nohama (rozehrávka) ·
 `vykopy` Výkopy a dlouhá rozehrávka · `mimo` Hra mimo bránu a centry · `organizace` Organizace a komunikace
 
+**`leader`** — vůdcovství, 6 os (od 2026-08-07):
+`vedeni` Vedení na hřišti · `priklad` Příklad v tréninku · `tlak` Reakce na chybu a tlak ·
+`fairplay` Fair play a respekt · `podpora` Podpora spoluhráčů · `odpovednost` Spolehlivost a odpovědnost
+
+Je to **samostatná šablona, ne sedmá osa** u všech. Sedm vrcholů místo šesti změní tvar
+radaru a nová hodnocení by nešlo porovnat se staršími. Takhle dostane hráč druhý list vedle
+herního — stejný mechanismus, jakým má Ferda list brankářský i polní.
+
+Osy popisují **chování, které je vidět** (mluví na spoluhráče, chodí včas, po chybě se
+nesesype), ne povahu. Hodnotit čtrnáctiletému „osobnost" by byl přesah, který na papír
+pro rodiče nepatří.
+
 Ke každé ose je i **formulace v první osobě** (`JA`) pro formulář hráče — stejná osa, jiná
 věta: „Levou nohou přihraju na deset metrů tak, jak chci." Hráč odpovídá na „umím to",
 neznámkuje sám sebe.

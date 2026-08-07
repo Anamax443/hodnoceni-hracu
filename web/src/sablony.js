@@ -17,7 +17,13 @@ export const KRUHY = 5;  // počet soustředných úrovní mřížky (po 2 bodec
 
 export const SABLONY = {
     pole:    ['prava', 'leva', 'hlavicky', 'prihravka', 'braneni', 'skenovani'],
-    brankar: ['chytani', 'misto', 'nohama', 'vykopy', 'mimo', 'organizace']
+    brankar: ['chytani', 'misto', 'nohama', 'vykopy', 'mimo', 'organizace'],
+    /* Vůdcovství se známkuje zvlášť, ne jako sedmá osa u všech. Sedm vrcholů
+       místo šesti by změnilo tvar radaru a nová hodnocení by nešlo porovnat
+       se staršími. Takhle dostane hráč druhý list vedle svého herního —
+       stejně jako Ferda, který je hodnocený jako brankář i jako hráč v poli.
+       Není to hodnocení povahy: každá osa popisuje chování, které je vidět. */
+    leader:  ['vedeni', 'priklad', 'tlak', 'fairplay', 'podpora', 'odpovednost']
 };
 
 /* Kondice a rychlost mezi osami záměrně nejsou — u téhle věkové
@@ -50,7 +56,7 @@ export const POZICE = [
 export const POPISKY = {
     cs: {
         role: { hrac: 'hráč', trener: 'trenér' },
-        sablona: { pole: 'hráč v poli', brankar: 'brankář' },
+        sablona: { pole: 'hráč v poli', brankar: 'brankář', leader: 'leader' },
         pozice: {
             brankar: 'brankář', pravy_bek: 'pravý bek', stoper: 'stoper', levy_bek: 'levý bek',
             defenzivni_zaloznik: 'defenzivní záložník', stredni_zaloznik: 'střední záložník',
@@ -61,7 +67,7 @@ export const POPISKY = {
     },
     en: {
         role: { hrac: 'player', trener: 'coach' },
-        sablona: { pole: 'outfield', brankar: 'goalkeeper' },
+        sablona: { pole: 'outfield', brankar: 'goalkeeper', leader: 'leader' },
         pozice: {
             brankar: 'goalkeeper', pravy_bek: 'right back', stoper: 'centre back',
             levy_bek: 'left back', defenzivni_zaloznik: 'defensive midfielder',
