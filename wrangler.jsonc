@@ -30,6 +30,11 @@
     // příjemce, jinak E_RECIPIENT_NOT_ALLOWED.
     "send_email": [{ "name": "EMAIL" }],
 
+    // Workers AI — jazykový model přímo v účtu, bez klíče a ve free tieru zdarma
+    // (denní limit). Slouží příkazovému řádku aplikace. Samotné volání je
+    // podmíněné přepínačem v Nastavení, výchozí stav je vypnuto.
+    "ai": { "binding": "AI" },
+
     // Vlastní doména. Zóna maxferit.cz je na stejném účtu, takže si Cloudflare
     // DNS záznam založí sám. workers.dev adresa zůstává funkční jako záloha.
     "routes": [

@@ -37,6 +37,8 @@ export interface Env {
     GOSMS_CLIENT_ID?: string;
     GOSMS_CLIENT_SECRET?: string;
     GOSMS_KANAL?: string;      // ID kanálu z GoSMS (odesílatel je jejich, registrovaný)
+    AI?: { run(model: string, vstup: unknown): Promise<any> };  // Workers AI, binding "ai"
+    ANTHROPIC_API_KEY?: string;  // volitelný placený model; bez něj jede jen Workers AI
 }
 
 const MODUL = 'hodnoceni-hracu';
@@ -299,7 +301,11 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     // SMS je mimořádný nástroj: stojí peníze a lidi ruší. Výchozí stav je vypnuto
     // a zapíná se vědomě v Nastavení — přepínač u osoby sám o sobě nestačí.
     smsAktivni: '0',
-    smsDenniStrop: '50'        // pojistka proti smyčce, i když je kanál zapnutý
+    smsDenniStrop: '50',       // pojistka proti smyčce, i když je kanál zapnutý
+    // Jazykový model pro příkazový řádek. Výchozí 'vypnuto': v aplikaci jsou
+    // údaje nezletilých a odesílat je ven se musí zapnout vědomě.
+    aiPoskytovatel: 'vypnuto', // 'vypnuto' | 'workers' (zdarma) | 'claude' (placený)
+    aiModel: '@cf/meta/llama-3.1-8b-instruct'
 };
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
@@ -2258,6 +2264,42 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     }
 
     /* ---------- porovnání trenér vs. hráč (§7.3) ---------- */
+    /* ---------- ověření jazykového modelu (nic o hráčích neposílá) ----------
+       Jádro dřív, než se na něm cokoli postaví: odpoví model z Workeru vůbec?
+       Posílá se holá věta bez jediného údaje o komkoli z kádru.               */
+    if (cesta === '/api/ai/stav' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        const model = q.get('model') || nas.aiModel || '@cf/meta/llama-3.1-8b-instruct';
+
+        if (!env.AI) {
+            return json({ ok: false, poskytovatel: 'workers', model, popis: 'Chybí binding AI ve wrangler.jsonc.' });
+        }
+        try {
+            const zacatek = Date.now();
+            const r = await env.AI.run(model, {
+                messages: [
+                    { role: 'system', content: 'Odpovídej česky, jedním slovem.' },
+                    { role: 'user', content: 'Napiš slovo: funguje' }
+                ],
+                max_tokens: 20
+            });
+            const odpoved = String(r?.response ?? r?.result?.response ?? '').trim();
+            return json({
+                ok: !!odpoved, poskytovatel: nas.aiPoskytovatel, model,
+                odpoved: odpoved.slice(0, 120), trvaloMs: Date.now() - zacatek,
+                popis: odpoved
+                    ? 'Model odpověděl. Volání z Workeru funguje.'
+                    : 'Model odpověděl prázdnotou — zkus jiný model.'
+            });
+        } catch (e) {
+            // Nejčastěji: model neexistuje, nebo je vyčerpaný denní limit free tieru.
+            return json({
+                ok: false, poskytovatel: nas.aiPoskytovatel, model,
+                popis: e instanceof Error ? e.message : String(e)
+            });
+        }
+    }
+
     /* ---------- srovnání hráčů mezi sebou ----------
        Jiná otázka než /api/porovnani: tam jde o rozdíl trenér vs. hráč u jednoho
        člověka, tady o to, jak si stojí dva brankáři vedle sebe. Srovnávají se
