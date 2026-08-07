@@ -1329,6 +1329,21 @@ const CSV_SLOUPCE = [
     'notif_email', 'notif_telegram', 'notif_sms', 'hodnoceni_povinne'
 ] as const;
 
+/**
+ * Řazení lidí: trenéři nahoru, neaktivní dolů, jinak podle abecedy.
+ *
+ * Řadit se musí tady, ne v SQL — SQLite v D1 nemá českou collation a porovnává
+ * bajty, takže Říčka a Šplíchal spadnou až za Weisse. `Intl.Collator` ve Workeru
+ * je a česky řadí správně.
+ */
+const CESKA_ABECEDA = new Intl.Collator('cs', { sensitivity: 'base' });
+
+function porovnejLidi(a: any, b: any): number {
+    if (a.role !== b.role) return a.role === 'trener' ? -1 : 1;
+    if (!!a.aktivni !== !!b.aktivni) return a.aktivni ? -1 : 1;
+    return CESKA_ABECEDA.compare(String(a.jmeno ?? ''), String(b.jmeno ?? ''));
+}
+
 /* Sloupce, které Excel jinak spolkne jako číslo: z „+420604577765" udělá vzorec
    a zobrazí 4,20605E+11, z chat id vědecký zápis. Zabalují se do ="…", což je
    jediný zápis, který Excel po dvojkliku bere jako text. Import to zase svlékne. */
@@ -1676,14 +1691,14 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     /* ---------- export kádru do CSV ---------- */
     if (cesta === '/api/players/export.csv' && metoda === 'GET') {
         const { results } = await env.DB.prepare(
-            `SELECT ${CSV_SLOUPCE.join(', ')} FROM players
-              ORDER BY role DESC, aktivni DESC, jmeno`
+            `SELECT ${CSV_SLOUPCE.join(', ')} FROM players`
         ).all<Record<string, unknown>>();
+        const lide = (results ?? []).slice().sort(porovnejLidi);
 
         // Hlavička jde do souboru vždycky, i když kádr ještě nikdo nezaložil —
         // prázdný export je tím pádem rovnou šablona pro import.
         const radky: string[][] = [[...CSV_SLOUPCE]];
-        for (const o of results ?? []) {
+        for (const o of lide) {
             radky.push(CSV_SLOUPCE.map(s => {
                 if (s === 'pozice') {
                     try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
@@ -1818,10 +1833,11 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                         email, telegram_chat_id, telefon,
                         notif_email, notif_telegram, notif_sms, login,
                         hodnoceni_povinne, heslo_hash IS NOT NULL AS ma_heslo, heslo_zmeneno
-                   FROM players ORDER BY role DESC, aktivni DESC, jmeno`
+                   FROM players`
             ).all();
             // Hash ani sůl ven nikdy neposíláme, jen příznak „heslo nastavené".
-            return json((results ?? []).map(osobaVen));
+            // Řadí se česky v kódu, ne v SQL — viz porovnejLidi().
+            return json((results ?? []).slice().sort(porovnejLidi).map(osobaVen));
         }
         if (metoda === 'POST') {
             const p = await request.json<any>();
