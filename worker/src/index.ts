@@ -105,13 +105,19 @@ interface Ucet {
 }
 
 /** Najde trenéra podle přihlašovacího jména (velikost písmen nerozhoduje). */
-async function najdiUcet(env: Env, login: string): Promise<Ucet | null> {
+/**
+ * Účet podle přihlašovacího jména NEBO e-mailu. Lidé si pamatují svůj e-mail,
+ * ne vymyšlený login — dokud se braly jen loginy, e-mail tiše propadl do větve
+ * společného hesla a člověk si omylem přenastavil něco úplně jiného.
+ */
+async function najdiUcet(env: Env, kdo: string): Promise<Ucet | null> {
     return env.DB.prepare(
         `SELECT id, jmeno, login, heslo_hash, heslo_sul, heslo_iterace,
                 email, telegram_chat_id, telefon
            FROM players
-          WHERE role = 'trener' AND aktivni = 1 AND lower(login) = lower(?)`
-    ).bind(login.trim()).first<Ucet>();
+          WHERE role = 'trener' AND aktivni = 1
+            AND (lower(login) = lower(?) OR lower(email) = lower(?))`
+    ).bind(kdo.trim(), kdo.trim()).first<Ucet>();
 }
 
 /** Uloží heslo konkrétnímu člověku. */
@@ -896,31 +902,49 @@ async function posliObnovu(env: Env, u: Ucet, zaklad: string, lang: string): Pro
 async function zadostOObnovu(request: Request, env: Env, url: URL): Promise<Response> {
     const { login, email, lang } = await request.json<{ login?: string; email?: string; lang?: string }>();
     const neutralni = json({ odeslano: true });
+    const vstup = (login ?? email ?? '').trim();
 
-    // Brzda na spamování: pár žádostí za okno a dost.
+    // Tvar vstupu se říct smí — neprozrazuje, kdo účet má, a ušetří člověka
+    // hádání, proč nic nepřišlo. Mlčet se má jen o existenci účtu.
+    if (!vstup) return chyba('Vyplň přihlašovací jméno nebo e-mail.', 400);
+    const jeMail = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(vstup);
+    const jeLogin = /^[a-z0-9._-]{2,40}$/i.test(vstup);
+    if (!jeMail && !jeLogin) {
+        return chyba('Tohle nevypadá jako přihlašovací jméno ani e-mail.', 400);
+    }
+
+    // Brzda na spamování: pár žádostí za okno a dost. Že brzda sepnula, se řekne
+    // nahlas — dřív to vypadalo stejně jako úspěch a nikdo nevěděl, na čem je.
     const nedavno = await env.DB.prepare(
         `SELECT COUNT(*) AS pocet FROM obnova WHERE created_at > datetime('now', ?)`
     ).bind(`-${OBNOVA_MINUT} minutes`).first<{ pocet: number }>();
     if ((nedavno?.pocet ?? 0) >= OBNOVA_MAX_ZA_OKNO) {
-        console.warn('Obnova hesla: překročen limit žádostí, nic se neodeslalo.');
+        return chyba(`Za posledních ${OBNOVA_MINUT} minut už odešly ${OBNOVA_MAX_ZA_OKNO} žádosti o obnovu. `
+            + 'Počkej chvíli a zkus to znovu — a mrkni i do spamu, jestli odkaz nedorazil.', 429);
+    }
+
+    // 1) Účet po lidech — odkaz jde na kanály toho člověka. Hledá se podle
+    //    přihlašovacího jména i e-mailu, ať nezáleží, co si člověk pamatuje.
+    const u = await najdiUcet(env, vstup);
+    if (u) {
+        const zpravy = await posliObnovu(env, u, url.origin, lang ?? 'cs');
+        for (const z of zpravy) console.log('Obnova:', z);
         return neutralni;
     }
 
-    // 1) Účet po lidech — odkaz jde na kanály toho člověka.
-    if (login && login.trim()) {
-        const u = await najdiUcet(env, login);
-        if (u) {
-            const zpravy = await posliObnovu(env, u, url.origin, lang ?? 'cs');
-            for (const z of zpravy) console.log('Obnova:', z);
-            return neutralni;
-        }
-        // Nenašlo se přihlašovací jméno — zkusíme ještě, jestli to není adresa
-        // pro přechodné společné heslo (formulář má jen jedno políčko).
-    }
-
     // 2) Přechodné společné heslo — odkaz jde na adresy ze secretu.
-    const adresa = (email ?? login ?? '').trim().toLowerCase();
-    if (!adresa || !povoleneAdresy(env).includes(adresa)) return neutralni;
+    const adresa = vstup.toLowerCase();
+    if (!povoleneAdresy(env).includes(adresa)) {
+        // Nic se nenašlo. Že účet neexistuje, se neřekne (dalo by se tím zjišťovat,
+        // kdo účet má), ale v logu komunikace to vidět je — jinak by trenér neměl
+        // šanci poznat, jestli vůbec někdo o obnovu žádal.
+        await zalogujKomunikaci(env, {
+            kanal: 'obnova', platforma: 'zadost', adresa: vstup, typ: 'obnova',
+            vysledek: 'preskoceno', kod: 'NEZNAMY',
+            podrobnosti: 'Žádost o obnovu na jméno/adresu, která k žádnému účtu nepatří.'
+        });
+        return neutralni;
+    }
 
     const token = novyToken();
     const platnyDo = new Date(Date.now() + OBNOVA_MINUT * 60_000).toISOString();
@@ -949,7 +973,18 @@ async function obnovaHesla(request: Request, env: Env, token: string): Promise<R
 
     const platny = !!t && !t.pouzit && new Date(t.platny_do) > new Date();
 
-    if (request.method === 'GET') return json({ platny });
+    if (request.method === 'GET') {
+        // Komu odkaz patří, se říct musí: jinak si člověk myslí, že mění heslo
+        // svého účtu, a přitom přenastavuje staré společné. Držitel odkazu na to
+        // právo má, takže se tím nic neprozrazuje.
+        let komu: string | null = null;
+        if (platny && t!.player_id) {
+            const u = await env.DB.prepare('SELECT login FROM players WHERE id = ?')
+                .bind(t!.player_id).first<{ login: string }>();
+            komu = u?.login ?? null;
+        }
+        return json({ platny, komu, spolecne: platny && !t!.player_id });
+    }
     if (request.method !== 'POST') return chyba('Nepodporovaná metoda.', 405);
     if (!platny) return chyba('Odkaz už neplatí. Požádej o nový.', 410);
 

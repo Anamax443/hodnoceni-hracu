@@ -134,11 +134,15 @@ async function poslatObnovu() {
     const tlacitko = $('#obnova-poslat');
     tlacitko.disabled = true;
     try {
-        // Odpověď je vždycky stejná, ať se nedá zjišťovat, kdo má účet.
+        // O existenci účtu se mlčí (jinak by šlo zjišťovat, kdo účet má), ale
+        // špatný tvar vstupu a sepnutá brzda se říct musí — dřív obojí vypadalo
+        // jako úspěch a člověk marně čekal na odkaz, který nikam neodešel.
         const kdo = $('#obnova-email').value;
         await api('/api/obnova', { telo: { login: kdo, email: kdo, lang: jazyk() } });
-    } catch { /* i chybu bereme jako neutrální výsledek */ }
-    $('#obnova-hlaska').innerHTML = `<div class="hlaska ok">${t('login.obnova.odeslano')}</div>`;
+        $('#obnova-hlaska').innerHTML = `<div class="hlaska info">${t('login.obnova.odeslano')}</div>`;
+    } catch (e) {
+        $('#obnova-hlaska').innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+    }
     tlacitko.disabled = false;
 }
 

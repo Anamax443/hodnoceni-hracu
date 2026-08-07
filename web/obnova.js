@@ -13,6 +13,8 @@ const obsah = document.getElementById('obsah');
 const $ = s => document.querySelector(s);
 
 let platny = null;   // null = ještě nevíme
+let komu = null;     // přihlašovací jméno, jehož heslo se nastavuje
+let spolecne = false; // odkaz míří na staré společné heslo, ne na účet
 
 function vzhled() { return document.documentElement.getAttribute('data-theme') || 'light'; }
 
@@ -61,6 +63,8 @@ function vykresli() {
         <div class="karta login">
             <h2>${t('obnova.nadpis')}</h2>
             <p class="popis">${t('obnova.popis')}</p>
+            <div class="hlaska ${spolecne ? 'pozor' : 'info'}">${
+                spolecne ? t('obnova.komu.spolecne') : t('obnova.komu.ucet', esc(komu ?? '?'))}</div>
             <div class="pole">
                 <label for="nove">${t('heslo.nove')}</label>
                 <input type="password" id="nove" autocomplete="new-password">
@@ -115,7 +119,10 @@ verze();
 
 try {
     const r = await fetch(`/api/obnova/${encodeURIComponent(token)}`);
-    platny = (await r.json())?.platny === true;
+    const v = await r.json();
+    platny = v?.platny === true;
+    komu = v?.komu ?? null;
+    spolecne = v?.spolecne === true;
 } catch {
     platny = false;
 }
