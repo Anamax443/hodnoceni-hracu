@@ -94,6 +94,10 @@ const SLOVNIK = {
         'nav.odkazy.tip': 'Odkazy na sebehodnocení pro hráče',
         'nav.nastaveni': 'Nastavení',
         'nav.nastaveni.tip': 'Tolerance, období, hlavička listu',
+        'nav.dokumentace': '📖 Dokumentace',
+        'nav.dokumentace.tip': 'Jak aplikace funguje: hodnocení, tolerance, sebehodnocení, kanály, hesla, export a import',
+        'dokumentace.nadpis': 'Dokumentace',
+        'dokumentace.popis': 'Popisuje, jak se aplikace chová — ne jak je napsaná. Když něco nesedí s tím, co vidíš, platí aplikace a tenhle text patří opravit.',
 
         /* --- Lidé --- */
         'lide.nadpis': 'Lidé v týmu',
@@ -520,6 +524,10 @@ const SLOVNIK = {
         'nav.odkazy.tip': 'Self-evaluation links for players',
         'nav.nastaveni': 'Settings',
         'nav.nastaveni.tip': 'Tolerance, period, sheet header',
+        'nav.dokumentace': '📖 Documentation',
+        'nav.dokumentace.tip': 'How the app works: evaluation, tolerance, self-evaluation, channels, passwords, export and import',
+        'dokumentace.nadpis': 'Documentation',
+        'dokumentace.popis': 'It describes how the app behaves, not how it is written. If something here disagrees with what you see, the app is right and this text needs fixing.',
 
         'lide.nadpis': 'People in the team',
         'lide.popis': 'Players get evaluated and printed sheets. Coaches are not evaluated — they are listed so it is recorded who made the evaluation.',

@@ -11,6 +11,7 @@
 import { SABLONY, MAX, POZICE } from './src/sablony.js';
 import { esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
+import { dokumentaceHtml } from './src/dokumentace.js';
 
 const $ = s => document.querySelector(s);
 const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null };
@@ -183,7 +184,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { lide, hodnotit, shoda, listy, porovnani, odkazy, nastaveni }[stav.zalozka];
+        const kresli = { lide, hodnotit, shoda, listy, porovnani, odkazy, nastaveni, dokumentace }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -589,6 +590,19 @@ async function lide(kam) {
             hlaska($('#formular-osoby'), 'chyba', e.message);
         }
     };
+}
+
+/* ===================== záložka: Dokumentace ===================== */
+
+/* Text žije v src/dokumentace.js. Tahle záložka nechodí na server —
+   po přepnutí jazyka se jen překreslí. */
+function dokumentace(kam) {
+    kam.innerHTML = `
+        <div class="karta dokumentace">
+            <h2>${t('dokumentace.nadpis')}</h2>
+            <p class="popis">${t('dokumentace.popis')}</p>
+            ${dokumentaceHtml(jazyk())}
+        </div>`;
 }
 
 /* ===================== záložka: Hodnotit ===================== */

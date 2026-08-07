@@ -179,3 +179,13 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 .odkaz-pole { font-family: Consolas, monospace; font-size: 12px; }
 
 .login { max-width: 340px; margin: 80px auto; }
+
+/* Dokumentace: souvislý text, ne formulář — potřebuje vzduch a užší
+   sloupec, po celé šířce karty by se špatně četl. */
+.dokumentace h2 { margin: 22px 0 6px; font-size: 16px; }
+.dokumentace h2:first-of-type { margin-top: 8px; }
+.dokumentace h3 { margin: 16px 0 4px; font-size: 14px; color: var(--seda); }
+.dokumentace p, .dokumentace li { max-width: 68ch; line-height: 1.55; }
+.dokumentace ul { margin: 6px 0 10px; padding-left: 20px; }
+.dokumentace li { margin: 3px 0; }
+.dokumentace code { background: var(--pozadi); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
