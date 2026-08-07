@@ -188,6 +188,13 @@ Aplikace je na veřejné adrese a chrání data nezletilých, proto navíc:
 nastavuje malým skriptem v `<head>` ještě před vykreslením — jinak by při tmavém vzhledu
 problikla bílá. Barvy jsou CSS proměnné v `app.css`, tmavá varianta je jen jejich přepis.
 
+**Mobil.** Pod 720 px se záložky schovají pod hamburger (osm položek se vedle sebe
+nevejde) a tlačítko nese jméno otevřené záložky, ať je i zavřené menu orientační. Dál:
+ovládací prvky povyrostou na palec (známky 42 px), formulářové řádky se skládají pod sebe,
+vstupy mají 16 px (pod tím iOS zvětší celou stránku a už ji nevrátí) a **široké tabulky
+se posouvají uvnitř karty**, aby stránka nerolovala do stran. Čas a název aplikace
+z lišty mizí — telefon má hodiny vlastní a místo je drahé.
+
 **Tištěný list zůstává vždy světlý.** `listy.html` načítá pouze `src/styl.css` a o tmavém
 vzhledu nic neví. Je to papír, ne obrazovka.
 
@@ -222,7 +229,16 @@ Sloupce `telefon` a `telegram_chat_id` mají styl s `numFmtId="49"` (formát Tex
 2026-08-07 přímo Excelem přes COM: `NumberFormat` je `@` a hodnota `+420604577765` zůstala
 doslova, bez vzorce; diakritika v pořádku.
 
-CSV export zůstává pro programy mimo Excel (středníky, CRLF, BOM) a tam se `="…"` používá.
+CSV export zůstává pro programy mimo Excel (středníky, CRLF, BOM). Berlička `="…"` se v něm
+**už nepoužívá** — v Power Query se ukazovala doslova a od zavedení sešitu není k čemu.
+Import ji pořád umí svléknout, aby prošly starší soubory.
+
+**V souboru jsou popisky, ne klíče.** `trener`, `pole` a `stredni_zaloznik` jsou klíče do
+databáze; v tabulce pro trenéra nemají co dělat. Export je překládá (`POPISKY` v
+`web/src/sablony.js`, sdílený modul) podle `?lang=cs|en`, přepínače píše jako `ano`/`ne`.
+Je to vědomá výjimka z pravidla „server texty nevrací": soubor nečte aplikace, ale člověk.
+Import bere zpátky **popisek i klíč**, v obou jazycích, bez ohledu na velikost písmen
+a diakritiku (`klicZPopisu()`), takže starší soubory dál projdou.
 
 **Import** (`POST /api/players/import`) čte jediný formát — CSV. Sešit `.xlsx` se proto
 rozbaluje **v prohlížeči** (`DecompressionStream('deflate-raw')` + `DOMParser`) a posílá se

@@ -37,6 +37,67 @@ export const POZICE = [
     'hrotovy_utocnik'
 ];
 
+/* =====================================================================
+   POPISKY PRO EXPORT
+
+   Výjimka z pravidla „server texty nevrací": soubor pro Excel nečte
+   aplikace, ale člověk. `trener`, `pole` a `stredni_zaloznik` jsou klíče
+   do databáze a v tabulce pro trenéra nemají co dělat.
+
+   Import bere obojí — popisek i klíč — takže starší soubory dál fungují.
+   ===================================================================== */
+
+export const POPISKY = {
+    cs: {
+        role: { hrac: 'hráč', trener: 'trenér' },
+        sablona: { pole: 'hráč v poli', brankar: 'brankář' },
+        pozice: {
+            brankar: 'brankář', pravy_bek: 'pravý bek', stoper: 'stoper', levy_bek: 'levý bek',
+            defenzivni_zaloznik: 'defenzivní záložník', stredni_zaloznik: 'střední záložník',
+            ofenzivni_zaloznik: 'ofenzivní záložník', prave_kridlo: 'pravé křídlo',
+            leve_kridlo: 'levé křídlo', hrotovy_utocnik: 'hrotový útočník'
+        },
+        ano: 'ano', ne: 'ne'
+    },
+    en: {
+        role: { hrac: 'player', trener: 'coach' },
+        sablona: { pole: 'outfield', brankar: 'goalkeeper' },
+        pozice: {
+            brankar: 'goalkeeper', pravy_bek: 'right back', stoper: 'centre back',
+            levy_bek: 'left back', defenzivni_zaloznik: 'defensive midfielder',
+            stredni_zaloznik: 'centre midfielder', ofenzivni_zaloznik: 'attacking midfielder',
+            prave_kridlo: 'right winger', leve_kridlo: 'left winger', hrotovy_utocnik: 'striker'
+        },
+        ano: 'yes', ne: 'no'
+    }
+};
+
+/** Popisek klíče pro export. Neznámý klíč se vrátí, jak přišel. */
+export function popis(skupina, klic, jazyk = 'cs') {
+    const slovnik = POPISKY[jazyk] ?? POPISKY.cs;
+    return slovnik[skupina]?.[klic] ?? klic ?? '';
+}
+
+/** Porovnání bez ohledu na velikost písmen a diakritiku — lidi píšou různě. */
+function holy(text) {
+    return String(text ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/**
+ * Zpátky z popisku na klíč. Bere popisek v obou jazycích i samotný klíč,
+ * aby prošly i soubory vyexportované dřív.
+ */
+export function klicZPopisu(skupina, text) {
+    const hledane = holy(text);
+    if (!hledane) return '';
+    for (const jazyk of Object.keys(POPISKY)) {
+        for (const [klic, popisek] of Object.entries(POPISKY[jazyk][skupina] ?? {})) {
+            if (holy(popisek) === hledane || holy(klic) === hledane) return klic;
+        }
+    }
+    return text.trim();
+}
+
 /** Ověří pole pozic. Prázdné je v pořádku — pozice nejsou povinné. */
 export function zkontrolujPozice(pozice) {
     if (!Array.isArray(pozice)) return 'Pozice musí být seznam.';

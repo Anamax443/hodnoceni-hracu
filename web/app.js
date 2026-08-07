@@ -102,6 +102,13 @@ function prekresliShell() {
         b.title = t('nav.' + b.dataset.z + '.tip');
     });
 
+    // Hamburger nese jméno otevřené záložky, ať je i po zavření menu vidět, kde jsi.
+    const menuBtn = $('#menuBtn');
+    if (menuBtn) {
+        menuBtn.textContent = t('nav.' + stav.zalozka);
+        menuBtn.title = t($('#zalozky')?.classList.contains('otevreno') ? 'nav.menu.zavrit' : 'nav.menu.tip');
+    }
+
     nastavVzhled(vzhled());
     hodiny();
     verze();
@@ -180,6 +187,8 @@ async function spust() {
 async function prekresli() {
     document.querySelectorAll('#zalozky button')
         .forEach(b => b.classList.toggle('aktivni', b.dataset.z === stav.zalozka));
+    const menuBtn = $('#menuBtn');
+    if (menuBtn) menuBtn.textContent = t('nav.' + stav.zalozka);
 
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
@@ -409,8 +418,9 @@ async function lide(kam) {
 
     // Stažení přes odkaz, ne fetch — session cookie se pošle sama a soubor
     // skončí rovnou ve Staženém, bez blobů v paměti.
-    $('#export-lide').onclick = () => { location.href = '/api/players/export.xlsx'; };
-    $('#export-lide-csv').onclick = () => { location.href = '/api/players/export.csv'; };
+    // Jazyk se posílá s sebou: v souboru jsou popisky pro člověka, ne klíče.
+    $('#export-lide').onclick = () => { location.href = `/api/players/export.xlsx?lang=${jazyk()}`; };
+    $('#export-lide-csv').onclick = () => { location.href = `/api/players/export.csv?lang=${jazyk()}`; };
 
     $('#import-lide').onclick = () => $('#import-soubor').click();
 
@@ -1368,8 +1378,20 @@ $('#jazykBtn').onclick = async () => {
     if (stav.prihlasen) await prekresli();
 };
 
+/* Na telefonu se záložky schovávají pod hamburger. Po volbě se menu zavře —
+   jinak by zabralo půl obrazovky nad obsahem, kvůli kterému se klikalo. */
+function menu(otevrit) {
+    const tlacitko = $('#menuBtn');
+    $('#zalozky').classList.toggle('otevreno', otevrit);
+    tlacitko.setAttribute('aria-expanded', otevrit ? 'true' : 'false');
+    tlacitko.title = t(otevrit ? 'nav.menu.zavrit' : 'nav.menu.tip');
+}
+
+$('#menuBtn').onclick = () => menu(!$('#zalozky').classList.contains('otevreno'));
+
 document.querySelectorAll('#zalozky button').forEach(b => b.onclick = () => {
     stav.zalozka = b.dataset.z;
+    menu(false);
     prekresli();
 });
 

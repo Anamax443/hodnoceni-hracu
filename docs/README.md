@@ -122,6 +122,16 @@ vybíráš až u konkrétního hodnocení.
 Import mění jen kartotéku lidí. **Hesla ani hodnocení nikdy nepřepisuje.** Když někoho
 opravuješ, nech v souboru sloupec `id` — podle něj se řádek spáruje se správným člověkem.
 
+V souboru jsou **normální slova**, ne vnitřní zkratky: `trenér`, `hráč v poli`,
+`střední záložník`, `ano` / `ne`. Píšou se v jazyce, který máš zrovna zapnutý, a při
+importu se berou zpátky i s velkými písmeny nebo bez háčků.
+
+### Na telefonu
+
+Aplikace se přizpůsobí úzké obrazovce: záložky se schovají pod tlačítko **☰**, které
+zároveň ukazuje, kde zrovna jsi. Známky mají větší tlačítka na palec a široké tabulky
+se posouvají do stran uvnitř karty, takže stránka nikam neuteče.
+
 ### Hodnotit
 
 Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tři slovní bloky a cíle.

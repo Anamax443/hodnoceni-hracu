@@ -11,7 +11,7 @@
 
 /* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
-import { SABLONY, klice, zkontrolujHodnoty, zkontrolujPozice } from '../../web/src/sablony.js';
+import { SABLONY, POZICE, klice, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
 import { xlsxSoubor, type Sloupec } from './xlsx';
@@ -1345,10 +1345,32 @@ function porovnejLidi(a: any, b: any): number {
     return CESKA_ABECEDA.compare(String(a.jmeno ?? ''), String(b.jmeno ?? ''));
 }
 
-/* Sloupce, které Excel jinak spolkne jako číslo: z „+420604577765" udělá vzorec
-   a zobrazí 4,20605E+11, z chat id vědecký zápis. Zabalují se do ="…", což je
-   jediný zápis, který Excel po dvojkliku bere jako text. Import to zase svlékne. */
+/* Sloupce, které by Excel spolkl jako číslo: z „+420604577765" udělá vzorec
+   a zobrazí 4,20605E+11. V sešitu .xlsx se řeší formátem Text; v CSV se nedá
+   řešit vůbec, protože CSV žádné formáty nenese. */
 const CSV_JAKO_TEXT = ['telefon', 'telegram_chat_id'];
+
+/* Sloupce s ano/ne. V souboru pro člověka nemá co dělat 0 a 1. */
+const CSV_ANO_NE = ['aktivni', 'notif_email', 'notif_telegram', 'notif_sms', 'hodnoceni_povinne'];
+
+/**
+ * Hodnota do souboru pro člověka: klíče se překládají na popisky, přepínače
+ * na ano/ne. Import bere zpátky obojí, takže starší soubory dál projdou.
+ */
+function hodnotaVen(sloupec: string, o: Record<string, unknown>, jazyk: string): string {
+    const h = o[sloupec] === null || o[sloupec] === undefined ? '' : String(o[sloupec]);
+    if (sloupec === 'pozice') {
+        try {
+            return (JSON.parse(String(o.pozice ?? '[]')) as string[])
+                .map(p => popis('pozice', p, jazyk)).join(', ');
+        } catch { return ''; }
+    }
+    if (sloupec === 'role' || sloupec === 'sablona') return popis(sloupec, h, jazyk);
+    if (CSV_ANO_NE.includes(sloupec)) {
+        return h === '1' ? (jazyk === 'en' ? 'yes' : 'ano') : (jazyk === 'en' ? 'no' : 'ne');
+    }
+    return h;
+}
 
 /** Jedno pole do CSV. Uvozovky se zdvojují, jinak by rozsekaly řádek. */
 function csvPole(h: unknown): string {
@@ -1356,12 +1378,7 @@ function csvPole(h: unknown): string {
     return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Hodnota, kterou má Excel zobrazit doslova, ne si ji přebrat po svém. */
-function csvText(h: string): string {
-    return h ? `="${h.replace(/"/g, '""')}"` : '';
-}
-
-/** Zpátky z ="…" na holou hodnotu — ať se dá vyexportovaný soubor rovnou nahrát. */
+/** Zpátky z ="…" na holou hodnotu — starší exporty ten obal ještě mají. */
 function csvZText(h: string): string {
     const m = h.trim().match(/^="(.*)"$/s);
     return (m ? m[1].replace(/""/g, '"') : h).trim();
@@ -1698,19 +1715,14 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         ).all<Record<string, unknown>>();
         const lide = (results ?? []).slice().sort(porovnejLidi);
 
+        const jazyk = q.get('lang') === 'en' ? 'en' : 'cs';
         const sloupce: Sloupec[] = CSV_SLOUPCE.map(s => ({
             nazev: s,
             text: CSV_JAKO_TEXT.includes(s),
-            sirka: s === 'jmeno' ? 26 : (s.startsWith('notif') || s === 'hodnoceni_povinne' ? 18 : 14)
+            sirka: s === 'jmeno' ? 26 : (s === 'pozice' ? 30 : 14)
         }));
 
-        const radky = lide.map(o => CSV_SLOUPCE.map(s => {
-            if (s === 'pozice') {
-                try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
-                catch { return ''; }
-            }
-            return o[s] === null || o[s] === undefined ? '' : String(o[s]);
-        }));
+        const radky = lide.map(o => CSV_SLOUPCE.map(s => hodnotaVen(s, o, jazyk)));
 
         const datum = new Date().toISOString().slice(0, 10);
         return new Response(xlsxSoubor('lide', sloupce, radky), {
@@ -1731,16 +1743,10 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
 
         // Hlavička jde do souboru vždycky, i když kádr ještě nikdo nezaložil —
         // prázdný export je tím pádem rovnou šablona pro import.
+        const jazyk = q.get('lang') === 'en' ? 'en' : 'cs';
         const radky: string[][] = [[...CSV_SLOUPCE]];
         for (const o of lide) {
-            radky.push(CSV_SLOUPCE.map(s => {
-                if (s === 'pozice') {
-                    try { return (JSON.parse(String(o.pozice ?? '[]')) as string[]).join(' '); }
-                    catch { return ''; }
-                }
-                const h = o[s] === null || o[s] === undefined ? '' : String(o[s]);
-                return CSV_JAKO_TEXT.includes(s) ? csvText(h) : h;
-            }));
+            radky.push(CSV_SLOUPCE.map(s => hodnotaVen(s, o, jazyk)));
         }
 
         const datum = new Date().toISOString().slice(0, 10);
@@ -1778,15 +1784,26 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         for (let i = 1; i < radky.length; i++) {
             const r = radky[i];
             const cislo = i + 1;   // číslo řádku tak, jak ho vidí Excel
+            // Pozice se píšou oddělené čárkou („střední záložník, stoper“); starší
+            // soubory je mají jako klíče oddělené mezerou. Bereme obojí: nejdřív
+            // podle čárek, a co se nepodaří přeložit, zkusíme rozpadnout na slova.
+            const poziceText = sloupec(r, 'pozice');
+            const pozice = poziceText
+                .split(',')
+                .map(c => c.trim())
+                .filter(Boolean)
+                .flatMap(cast => {
+                    const klic = klicZPopisu('pozice', cast);
+                    return POZICE.includes(klic) ? [klic] : cast.split(/\s+/).filter(Boolean);
+                });
+
             const osoba = {
                 jmeno: sloupec(r, 'jmeno'),
                 prezdivka: sloupec(r, 'prezdivka') || null,
                 post: sloupec(r, 'post') || null,
-                // Pozice se v tabulce píšou oddělené mezerou nebo čárkou — středník
-                // by se pral s oddělovačem sloupců.
-                pozice: sloupec(r, 'pozice').split(/[\s,]+/).filter(Boolean),
-                role: sloupec(r, 'role') || 'hrac',
-                sablona: sloupec(r, 'sablona') || 'polni',
+                pozice,
+                role: klicZPopisu('role', sloupec(r, 'role')) || 'hrac',
+                sablona: klicZPopisu('sablona', sloupec(r, 'sablona')) || 'pole',
                 aktivni: hlavicka.includes('aktivni') ? csvAno(sloupec(r, 'aktivni')) : 1,
                 email: sloupec(r, 'email') || null,
                 telegram_chat_id: sloupec(r, 'telegram_chat_id') || null,

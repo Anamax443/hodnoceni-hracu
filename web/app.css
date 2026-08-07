@@ -189,3 +189,54 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 .dokumentace ul { margin: 6px 0 10px; padding-left: 20px; }
 .dokumentace li { margin: 3px 0; }
 .dokumentace code { background: var(--pozadi); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* ===== mobil =====
+   Trenér to má v ruce na hřišti, ne u stolu. Na úzké obrazovce se záložky
+   schovají pod hamburger (osm položek vedle sebe se stejně nevejde),
+   ovládací prvky povyrostou na palec a široké tabulky se posouvají uvnitř
+   karty — jinak by roztáhly celou stránku a nešlo by nic přečíst. */
+
+.menu-btn { display: none; }
+
+@media (max-width: 720px) {
+    .menu-btn {
+        display: block; width: 100%; text-align: left;
+        background: var(--karta); color: var(--text);
+        border: 0; border-bottom: 1px solid var(--linka);
+        padding: 12px 14px; font-size: 15px; cursor: pointer;
+    }
+    .menu-btn::before { content: '☰'; margin-right: 10px; }
+    .menu-btn[aria-expanded="true"]::before { content: '✕'; }
+
+    nav#zalozky { display: none; flex-direction: column; padding: 0; }
+    nav#zalozky.otevreno { display: flex; }
+    nav#zalozky button {
+        width: 100%; text-align: left; padding: 12px 16px;
+        border-bottom: 1px solid var(--linka); border-left: 3px solid transparent;
+    }
+    nav#zalozky button.aktivni { border-bottom-color: var(--linka); border-left-color: var(--modra); }
+
+    .topbar { padding: 8px 12px; gap: 8px; }
+    .topbar .app, .topbar .hodiny { display: none; }   /* čas i název má telefon vlastní */
+    .topbar .tools { gap: 6px; }
+
+    main { margin: 12px auto; padding: 0 10px 48px; }
+    .karta { padding: 14px 12px; }
+
+    /* Široká tabulka se posouvá sama v sobě, stránka zůstane bez vodorovného rolování. */
+    .karta table { display: block; overflow-x: auto; white-space: nowrap; }
+
+    /* Pod 16px iOS při psaní zvětší celou stránku a už ji nevrátí zpátky. */
+    input[type=text], input[type=password], input[type=number], select, textarea { font-size: 16px; }
+
+    /* Známky se ťukají prstem, ne myší. */
+    .stupnice { gap: 6px; }
+    .stupnice label { width: 42px; height: 42px; line-height: 40px; font-size: 15px; }
+
+    .radek { gap: 8px; }
+    .radek > * { min-width: 100%; }     /* dvě pole vedle sebe se na telefon nevejdou */
+
+    button.hl, button.vedlejsi { padding: 10px 14px; font-size: 14px; }
+    .login { margin: 24px auto; max-width: none; }
+    .dokumentace p, .dokumentace li { max-width: none; }
+}
