@@ -5,6 +5,32 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-08 (15) — Analýzy (souhrny v kódu + otázka modelu)
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+Nastražená data: hráč se slepým místem (trenér bránění 3, hráč si dal 8), druhý hráč zcela
+bez hodnocení, třetí řada `leader` bez sebehodnocení. Ostrá databáze nedotčena.
+
+| Kontrola | Očekáváno | Naměřeno |
+|---|---|---|
+| `/api/analyzy` počty | 2 hráči, 3 listy, 2 s hodnocením, 1 se sebehodnocením, 1 s obojím | přesně tak |
+| kdo chybí | rozdělit „bez hodnocení" a „má hodnocení, nemá sebehodnocení" | `bezHodnoceni: [Dva]`, `bezSebehodnoceni: [Jedna]` |
+| nejslabší osy `pole` | `leva` a `braneni` po 3 | `leva 3 · braneni 3 · skenovani 5` |
+| nejslabší osy `leader` | `tlak` 4 nejníž | `tlak 4 · podpora 6 · vedeni 7` |
+| osy nad tolerancí | jen bránění, rozdíl +5 | přesně jedna, `trenér 3, hráč 8, +5` |
+| brána bez modelu | odmítnout | `ok:false, duvod:'vypnuto'` |
+| brána s modelem, ale `aiAnalyzy=ne` | odmítnout zvlášť | `duvod:'analyzyVypnuty'` |
+| **odpověď modelu** | trefit čísla, nic nedopočítat | za **3285 ms** citoval `3` a `8` a rozdíl `+5`; použil skutečný popisek osy „Bránění 1v1" z i18n |
+| podklady v odpovědi API | vrátit k ověření | `podklady.zaznamy` = 3 |
+| záložka v prohlížeči (CDP) | vykreslit obojí | 4 karty, 4 tabulky, 3 příklady, 3 štítky šablon, 5 zvýrazněných řádků |
+| konzole prohlížeče | čistá | **žádná výjimka** |
+| i18n | CS = EN | 522 klíčů na obou stranách, nechybí ani jeden |
+
+**Co ověřeno NEBYLO:** analýza nad ostrými daty (v produkci je `aiAnalyzy=ne`) a Claude
+větev (`ANTHROPIC_API_KEY` není nastavený).
+
+---
+
 ## 2026-08-08 (14) — tisk po listech, ne po hráčích
 
 **Commit:** `56a0db8` · **NASAZENO** 2026-08-08, Version ID `778a4728-ac67-4aac-973f-caf7b3ca8ab1`. **Ověřeno** proti `wrangler dev` nad lokální D1

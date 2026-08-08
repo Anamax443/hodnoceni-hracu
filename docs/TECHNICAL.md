@@ -292,6 +292,65 @@ je s ním 513 kB / 108 kB gzip.
 
 ---
 
+## 3e. Analýzy
+
+Záložka **Analýzy** má dvě vrstvy a v tomhle pořadí:
+
+**1. Spočítané podklady** (`GET /api/analyzy`, funkce `podkladyProAnalyzu`). Průměry os za
+kádr, osy nad tolerancí, kdo nemá hodnocení a kdo sebehodnocení. Počítá se ve Workeru,
+je to přesné, zadarmo, okamžité a **nic neopustí aplikaci**. Dostupné vždycky, i když je
+model vypnutý.
+
+**2. Otázka jazykovému modelu** (`POST /api/ai/analyza`). Model dostane **tatáž hotová
+čísla** a otázku; jeho prací je formulace, ne výpočet. V pokynu má výslovný zákaz cokoli
+dopočítávat. Kdyby počítal sám, spletl by se a věta by zněla stejně sebejistě jako
+správná — proto je aritmetika v kódu.
+
+Odpověď se v UI zobrazuje **nad** tabulkami s podklady a nese větu „ověř si čísla níž".
+Odpověď bez čísel pod sebou je dojem, ne analýza. `podklady` se proto vrací i v odpovědi API.
+
+### Popisky os posílá prohlížeč
+
+Worker texty nedrží — vrací klíče a překládá se až v UI (§3b). Model by ale z klíče
+`braneni` slušnou větu nenapsal, takže mu prohlížeč pošle `popisky: {osy, sablony}`
+z i18n. Neznámý klíč se použije, jak přišel.
+
+### Vlastní vypínač, protože jde o jiná data
+
+| | příkazový řádek | analýzy |
+|---|---|---|
+| co odchází modelu | jedna věta + **jména kádru** | jména, **známky, slovní posudky, cíle, poznámka hráče** |
+| přepínač | `settings.aiPoskytovatel` | **navíc** `settings.aiAnalyzy` (výchozí `ne`) |
+| bez modelu | povel se rozřadí v prohlížeči | podklady se dál počítají, jen se nedá ptát větou |
+
+**Rozhodnutí (8. 8. 2026, vědomé):** analýza nad samotnými čísly by přišla o polovinu toho,
+co trenér napsal, takže modelu jdou i slovní bloky a cíle. Je to jediné místo v aplikaci,
+odkud odcházejí ven údaje o konkrétním nezletilém hráči — proto samostatný vypínač, který
+je ve výchozím stavu vypnutý a v Nastavení má u sebe varování. Zapnout se to musí vědomě,
+ne omylem při přepnutí modelu.
+
+**Co z toho plyne a co je otevřené:**
+- Do **logu komunikace** jde jen rozsah podkladů (kolik listů, kolik os nad tolerancí),
+  nikdy jejich obsah — log čte i ten, kdo na hodnocení nemá dosah.
+- **Poskytovatel má význam.** Workers AI běží na Cloudflare, tedy na témže účtu jako
+  aplikace; Claude je americká třetí strana. Pro data nezletilých je Workers AI méně
+  problematická cesta a je to i výchozí volba.
+- **GDPR zatím nedořešeno:** zpracování údajů dětí jazykovým modelem si zaslouží záznam
+  o činnosti zpracování a informaci pro rodiče. Otevřené, viz STATUS.
+
+### Pravidla, která tady platí dál
+
+- **§7.4 se neporušuje:** trend zůstává šipkový (↑ ↓ →, pásmo šumu 2 body), souhrnné číslo
+  ani průměr os se u něj nepočítá. Průměr je jen tam, kde už zavedený byl (srovnání hráčů),
+  a vždy jako orientační souhrn.
+- **Na tištěný list nejde z analýz nic** (§7.5). Je to interní pohled trenéra.
+- Průměr osy za kádr se počítá **v rámci jedné šablony** — brankářské a polní osy se
+  míchat nedají.
+- Na list i do analýzy jde **uzavřená shoda trenérů**, když existuje, jinak poslední
+  hodnocení trenéra. Stejné pravidlo na obou místech, ať papír a analýza neříkají jiné číslo.
+
+---
+
 ## 4. Radar graf
 
 Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.html`.
@@ -663,6 +722,9 @@ GET    /api/srovnani?sablona=&obdobi=&ids=        admin — tabulka osa × hrá�
 POST   /api/ai/prikaz     {text}                  admin — rozřazení povelu modelem
 GET    /api/ai/stav?model=                        admin — odpoví model? nic o hráčích
 GET    /api/ai/modely                             admin — nabídka pro Nastavení
+
+GET    /api/analyzy?obdobi=                       admin — spočítané podklady, BEZ modelu
+POST   /api/ai/analyza    {otazka,obdobi,popisky} admin — otázka nad plnými daty (viz 3e)
 
 GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč

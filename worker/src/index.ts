@@ -311,7 +311,13 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     // Jazykový model pro příkazový řádek. Výchozí 'vypnuto': v aplikaci jsou
     // údaje nezletilých a odesílat je ven se musí zapnout vědomě.
     aiPoskytovatel: 'vypnuto', // 'vypnuto' | 'workers' (zdarma) | 'claude' (placený)
-    aiModel: '@cf/meta/llama-3.1-8b-instruct-fp8'   // stejná výchozí volba jako faxx-hr
+    aiModel: '@cf/meta/llama-3.1-8b-instruct-fp8',  // stejná výchozí volba jako faxx-hr
+    /* Analýzy nad plnými daty. Příkazovému řádku stačí jména kádru, ale
+       analýza bez známek a posudků není analýza — musí je dostat celé.
+       Je to jediné místo, kde z aplikace odcházejí ven údaje o konkrétním
+       nezletilém hráči, proto vlastní vypínač a výchozí 'ne': zapnout se to
+       musí vědomě, ne omylem přes nastavení modelu. Viz TECHNICAL §3d. */
+    aiAnalyzy: 'ne'            // 'ne' | 'ano'
 };
 
 /**
@@ -354,6 +360,211 @@ function claudeNaZalohu(e: unknown): string | null {
         if (/credit balance|insufficient|quota/i.test(e.message)) return 'Na účtu Anthropic došel kredit.';
     }
     return null;
+}
+
+/* =====================================================================
+   PODKLADY PRO ANALÝZY
+
+   Čísla počítá kód, ne jazykový model. Průměr, rozdíl a pořadí jsou
+   aritmetika — kdyby je skládal model, občas by se spletl a nikdo by si
+   toho nevšiml, protože věta zní stejně sebejistě správně i špatně.
+   Model dostane hotová čísla a jeho prací je formulace, ne výpočet.
+   (Totéž rozdělení jako u faxx-hr: co jde spočítat, se počítá.)
+
+   Pravidla ze zadání, která tady platí dál:
+   - §7.4: u TRENDU se nepočítá souhrnné číslo ani průměr os — jen šipky
+     a kolik os kam. Pásmo šumu 2 body.
+   - Průměr se počítá jen tam, kde už je zavedený (srovnání hráčů) a vždy
+     jako orientační souhrn, ne známka na vysvědčení.
+   - Nic z toho nejde na tištěný list. Je to interní pohled trenéra (§7.5).
+   ===================================================================== */
+
+/** Orientační průměr ze šestice os. `null`, když nejsou čísla. */
+function prumerOs(hodnoty: Record<string, number> | null, osy: string[]): number | null {
+    if (!hodnoty) return null;
+    const cisla = osy.map(k => hodnoty[k]).filter(x => typeof x === 'number');
+    if (!cisla.length) return null;
+    return Math.round((cisla.reduce((a, b) => a + b, 0) / cisla.length) * 10) / 10;
+}
+
+async function podkladyProAnalyzu(env: Env, obdobi: string, nas: Record<string, string>) {
+    const tolerance = Number(nas.tolerance ?? 2);
+
+    const { results: hraci } = await env.DB.prepare(
+        `SELECT id, jmeno, prezdivka, post, pozice, sablona, sablony FROM players
+          WHERE role = 'hrac' AND aktivni = 1 ORDER BY jmeno`
+    ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null;
+            pozice: string; sablona: string; sablony: string }>();
+
+    const zaznamy = [];
+    for (const h of (hraci ?? [])) {
+        // Které šablony vzít: co má hráč přiřazené plus co v období opravdu
+        // vzniklo. Přiřazená bez hodnocení musí být vidět taky — je to díra,
+        // ne prázdné místo.
+        const { results: pouzite } = await env.DB.prepare(
+            `SELECT DISTINCT sablona FROM evaluations WHERE player_id = ? AND obdobi = ?`
+        ).bind(h.id, obdobi).all<{ sablona: string }>();
+        const sablony = [...new Set([...(pouzite ?? []).map(s => s.sablona), ...sablonyOsoby(h)])];
+
+        for (const sablona of sablony) {
+            const osyKlice = klice(sablona);
+            if (!osyKlice.length) continue;
+
+            // Uzavřená shoda trenérů vyhrává nad posledním hodnocením — stejné
+            // pravidlo jako na tiskovém listu, ať analýza a papír neříkají jiné číslo.
+            const trener = await posledni(env, h.id, obdobi, 'shoda', sablona)
+                ?? await posledni(env, h.id, obdobi, 'trener', sablona);
+            const hrac = await posledni(env, h.id, obdobi, 'hrac', sablona);
+            const driv = await predchoziObdobi(env, h.id, obdobi, sablona);
+
+            const osy = osyKlice.map(klic => {
+                const t = trener?.hodnoty[klic] ?? null;
+                const s = hrac?.hodnoty[klic] ?? null;
+                // Znaménko, ne absolutní hodnota: + = hráč si dal víc než trenér.
+                const rozdil = t !== null && s !== null ? s - t : null;
+                const zmena = t !== null && driv?.hodnoty[klic] !== undefined
+                    ? t - driv.hodnoty[klic] : null;
+                return {
+                    klic, trener: t, hrac: s, rozdil,
+                    resit: rozdil !== null && Math.abs(rozdil) > tolerance,
+                    driv: driv?.hodnoty[klic] ?? null,
+                    // §7.4: pásmo šumu, posun o 1 bod není signál
+                    smer: zmena === null ? null : (Math.abs(zmena) >= PASMO_SUMU ? (zmena > 0 ? '↑' : '↓') : '→')
+                };
+            });
+
+            zaznamy.push({
+                player_id: h.id, jmeno: h.jmeno, prezdivka: h.prezdivka, post: h.post,
+                pozice: JSON.parse(h.pozice ?? '[]') as string[],
+                sablona,
+                maTrener: !!trener, maHrac: !!hrac,
+                prumerTrener: prumerOs(trener?.hodnoty ?? null, osyKlice),
+                prumerHrac: prumerOs(hrac?.hodnoty ?? null, osyKlice),
+                osy,
+                // Slovní bloky jsou součást podkladu — analýza nad samotnými
+                // čísly by přišla o polovinu toho, co trenér napsal.
+                fyzicky: trener?.fyzicky ?? '', hlavou: trener?.hlavou ?? '',
+                parta: trener?.parta ?? '', cile: trener?.cile ?? [],
+                poznamkaHrace: hrac?.poznamka ?? '',
+                predchoziObdobi: driv?.obdobi ?? null
+            });
+        }
+    }
+
+    /* --- souhrny za kádr --- */
+
+    // Průměr osy napříč kádrem v rámci JEDNÉ šablony. Míchat brankářské
+    // a polní osy dohromady nedává smysl — jiná šestice, jiná řada.
+    const podleSablon: Record<string, { klic: string; soucet: number; pocet: number }[]> = {};
+    for (const z of zaznamy) {
+        if (!z.maTrener) continue;
+        podleSablon[z.sablona] ??= klice(z.sablona).map(klic => ({ klic, soucet: 0, pocet: 0 }));
+        for (const o of z.osy) {
+            if (o.trener === null) continue;
+            const cil = podleSablon[z.sablona].find(x => x.klic === o.klic)!;
+            cil.soucet += o.trener; cil.pocet++;
+        }
+    }
+    const osyKadru = Object.entries(podleSablon).map(([sablona, osy]) => ({
+        sablona,
+        osy: osy.filter(o => o.pocet)
+            .map(o => ({ klic: o.klic, prumer: Math.round((o.soucet / o.pocet) * 10) / 10, hracu: o.pocet }))
+            .sort((a, b) => a.prumer - b.prumer)      // nejslabší nahoře, tam se trénuje
+    }));
+
+    // Kde se pohledy nejvíc rozcházejí. Řadí se podle velikosti rozdílu bez
+    // ohledu na znaménko — slepé místo i podceňování jsou obojí téma.
+    const rozdily = zaznamy.flatMap(z => z.osy
+        .filter(o => o.resit)
+        .map(o => ({ player_id: z.player_id, jmeno: z.jmeno, sablona: z.sablona, klic: o.klic,
+                     trener: o.trener, hrac: o.hrac, rozdil: o.rozdil! })))
+        .sort((a, b) => Math.abs(b.rozdil) - Math.abs(a.rozdil));
+
+    const jmenoListu = (f: (z: typeof zaznamy[number]) => boolean) =>
+        [...new Set(zaznamy.filter(f).map(z => z.jmeno))];
+
+    return {
+        obdobi, tolerance,
+        pocty: {
+            hracu: (hraci ?? []).length,
+            listu: zaznamy.length,
+            sHodnocenim: zaznamy.filter(z => z.maTrener).length,
+            seSebehodnocenim: zaznamy.filter(z => z.maHrac).length,
+            sObojim: zaznamy.filter(z => z.maTrener && z.maHrac).length
+        },
+        chybi: {
+            bezHodnoceni: jmenoListu(z => !z.maTrener),
+            bezSebehodnoceni: jmenoListu(z => z.maTrener && !z.maHrac)
+        },
+        osyKadru,
+        rozdily,
+        zaznamy
+    };
+}
+
+/**
+ * Podklady zhuštěné do textu pro jazykový model.
+ *
+ * Proč ne JSON: model dostane stejná čísla v polovině tokenů a čte to líp.
+ * Popisky os a šablon posílá PROHLÍŽEČ (`popisky`) — Worker texty nedrží,
+ * vrací klíče a překládá se až v UI. Neznámý klíč se použije, jak přišel.
+ */
+function podkladyDoTextu(p: any, popisky?: { osy?: Record<string, string>; sablony?: Record<string, string> }): string {
+    const osa = (k: string) => popisky?.osy?.[k] ?? k;
+    const sab = (k: string) => popisky?.sablony?.[k] ?? k;
+    const r: string[] = [];
+
+    r.push(`OBDOBÍ: ${p.obdobi} · tolerance ${p.tolerance} body`);
+    r.push(`POČTY: ${p.pocty.hracu} aktivních hráčů, ${p.pocty.listu} kombinací hráč+šablona, `
+        + `${p.pocty.sHodnocenim} s hodnocením trenéra, ${p.pocty.seSebehodnocenim} se sebehodnocením hráče, `
+        + `${p.pocty.sObojim} s obojím (jen u nich jde porovnávat pohledy).`);
+
+    if (p.osyKadru.length) {
+        r.push('', 'PRŮMĚRY OS ZA CELÝ KÁDR (od nejslabší, jen hodnocení trenéra, v rámci jedné šablony):');
+        for (const s of p.osyKadru) {
+            r.push(`  ${sab(s.sablona)}: ` + s.osy.map((o: any) => `${osa(o.klic)} ${o.prumer} (${o.hracu} hr.)`).join(' · '));
+        }
+    }
+
+    r.push('', `OSY NAD TOLERANCÍ (rozdíl hráč − trenér, + = hráč si dal víc):`);
+    if (!p.rozdily.length) r.push('  žádné — chybí sebehodnocení, není co porovnávat');
+    for (const d of p.rozdily.slice(0, 40)) {
+        r.push(`  ${d.jmeno} (${sab(d.sablona)}) ${osa(d.klic)}: trenér ${d.trener}, hráč ${d.hrac}, rozdíl ${d.rozdil > 0 ? '+' : ''}${d.rozdil}`);
+    }
+
+    if (p.chybi.bezHodnoceni.length) {
+        r.push('', `BEZ HODNOCENÍ TRENÉRA: ${p.chybi.bezHodnoceni.join(', ')}`);
+    }
+    if (p.chybi.bezSebehodnoceni.length) {
+        r.push(`BEZ SEBEHODNOCENÍ: ${p.chybi.bezSebehodnoceni.join(', ')}`);
+    }
+
+    r.push('', 'JEDNOTLIVÍ HRÁČI:');
+    for (const z of p.zaznamy) {
+        const kdo = `${z.jmeno}${z.prezdivka ? ` „${z.prezdivka}"` : ''} (${sab(z.sablona)})`;
+        if (!z.maTrener) { r.push(`  ${kdo}: bez hodnocení trenéra`); continue; }
+
+        const cisla = z.osy.filter((o: any) => o.trener !== null)
+            .map((o: any) => `${osa(o.klic)} ${o.trener}${o.hrac !== null ? `/${o.hrac}` : ''}${o.smer ? ` ${o.smer}` : ''}`)
+            .join(', ');
+        r.push(`  ${kdo}: ${cisla}`);
+        r.push(`    orientační průměr trenér ${z.prumerTrener ?? '—'}`
+            + (z.prumerHrac !== null ? `, hráč ${z.prumerHrac}` : ', hráč nevyplnil')
+            + (z.predchoziObdobi ? ` · šipky proti období ${z.predchoziObdobi}` : ''));
+        if (z.pozice?.length) r.push(`    pozice: ${z.pozice.join(', ')}${z.post ? ` · ${z.post}` : ''}`);
+        const slovne = [
+            z.fyzicky && `Fyzicky: ${z.fyzicky}`,
+            z.hlavou && `Hlavou: ${z.hlavou}`,
+            z.parta && `V partě: ${z.parta}`
+        ].filter(Boolean).join(' | ');
+        if (slovne) r.push(`    ${slovne}`);
+        if (z.cile?.length) r.push(`    cíle: ${z.cile.join(' / ')}`);
+        if (z.poznamkaHrace) r.push(`    hráč o sobě napsal: ${z.poznamkaHrace}`);
+    }
+
+    r.push('', 'POZNÁMKA: hodnoty jsou 1–10. Dvojice „8/6" znamená trenér 8, hráč 6.',
+        'Šipka ↑ ↓ → je posun proti minulému období, za změnu se počítá až rozdíl 2 bodů.');
+    return r.join('\n');
 }
 
 async function nastaveni(env: Env): Promise<Record<string, string>> {
@@ -2563,6 +2774,114 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
     }
 
+    /* ---------- analýza kádru jazykovým modelem ----------
+       Model tu NEPOČÍTÁ. Průměry, rozdíly a pořadí spočítal Worker
+       (`podkladyProAnalyzu`) a model dostane hotová čísla — jeho prací je
+       formulace. Kdyby počítal sám, spletl by se a věta by zněla stejně
+       sebejistě. Proto je v pokynu zákaz cokoli dopočítávat.               */
+    if (cesta === '/api/ai/analyza' && metoda === 'POST') {
+        const { otazka, obdobi: kdy, popisky } = await request.json<{
+            otazka?: string; obdobi?: string;
+            popisky?: { osy?: Record<string, string>; sablony?: Record<string, string> };
+        }>();
+        const dotazTrenera = (otazka ?? '').trim().slice(0, 500);
+        if (!dotazTrenera) return chyba('Prázdná otázka.', 400);
+
+        const nas = await nastaveni(env);
+        if (nas.aiPoskytovatel === 'vypnuto') {
+            return json({ ok: false, duvod: 'vypnuto', popis: 'Jazykový model je v Nastavení vypnutý.' });
+        }
+        if (nas.aiAnalyzy !== 'ano') {
+            return json({
+                ok: false, duvod: 'analyzyVypnuty',
+                popis: 'Analýzy modelem jsou vypnuté. Zapínají se zvlášť v Nastavení — '
+                     + 'posílají ven známky a slovní posudky konkrétních hráčů.'
+            });
+        }
+        if (!env.AI) return json({ ok: false, duvod: 'binding', popis: 'Chybí binding AI.' });
+
+        const obdobi = (kdy || nas.obdobi).trim();
+        const podklady = await podkladyProAnalyzu(env, obdobi, nas);
+        if (!podklady.pocty.sHodnocenim) {
+            return json({ ok: false, duvod: 'prazdno', popis: `Za období „${obdobi}" není žádné hodnocení.` });
+        }
+
+        const pokyn = [
+            'Jsi pomocník trenéra mládežnického fotbalu. Dostaneš SPOČÍTANÁ data o hráčích a otázku.',
+            'Odpovídej česky, stručně a konkrétně, ke každému tvrzení uveď jméno a číslo z podkladů.',
+            'NIC NEDOPOČÍTÁVEJ a nevymýšlej: používej jen čísla, která jsou v podkladech.',
+            'Když na otázku podklady nestačí, řekni to rovnou a napiš, co by bylo potřeba doplnit.',
+            'Nehodnoť povahu hráče. Osy popisují chování, které je vidět, ne charakter.',
+            'Rozdíl se znaménkem: + znamená, že si hráč dal víc než trenér (slepé místo),',
+            '− že si dal míň (může jít o sebedůvěru nebo o něco mimo fotbal).',
+            'Neuváděj souhrnnou známku hráče. Průměr je orientační, ne vysvědčení.'
+        ].join(' ');
+
+        const dotaz = `${podkladyDoTextu(podklady, popisky)}\n\nOTÁZKA TRENÉRA: ${dotazTrenera}`;
+
+        const pres_workers = async (m: string) => {
+            const r = await env.AI!.run(m, {
+                messages: [{ role: 'system', content: pokyn }, { role: 'user', content: dotaz }],
+                max_tokens: 900, temperature: 0.2
+            });
+            return String(r?.response ?? r?.result?.response ?? '').trim();
+        };
+        const pres_claude = async (m: string) => {
+            if (!env.ANTHROPIC_API_KEY) throw new Error('Chybí secret ANTHROPIC_API_KEY.');
+            const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+            const odpoved = await anthropic.messages.create({
+                model: m, max_tokens: 1200, system: pokyn,
+                messages: [{ role: 'user', content: dotaz }]
+            });
+            return odpoved.content.filter(b => b.type === 'text').map(b => (b as any).text).join('').trim();
+        };
+
+        let model = nas.aiModel || vychoziModel(nas.aiPoskytovatel);
+        let poskytovatel = nas.aiPoskytovatel;
+        let zaloha: string | null = null;
+        const zacatek = Date.now();
+
+        try {
+            let text: string;
+            if (poskytovatel === 'claude') {
+                try {
+                    text = await pres_claude(model);
+                } catch (e) {
+                    const duvod = claudeNaZalohu(e);
+                    if (!duvod) throw e;              // chyba zadání se zálohou nezakrývá
+                    zaloha = duvod;
+                    poskytovatel = 'workers';
+                    model = vychoziModel('workers');
+                    text = await pres_workers(model);
+                }
+            } else {
+                text = await pres_workers(model);
+            }
+
+            const trvaloMs = Date.now() - zacatek;
+            await zalogujKomunikaci(env, {
+                kanal: 'ai', platforma: model, typ: 'analyza', vysledek: text ? 'ok' : 'preskoceno',
+                poznamka: dotazTrenera.slice(0, 120),
+                // Do logu jde jen rozsah podkladů, ne jejich obsah — log čte i ten,
+                // kdo na hodnocení nemá dosah.
+                podrobnosti: `Za ${trvaloMs} ms; podklady: ${podklady.pocty.sHodnocenim} listů`
+                    + `, ${podklady.rozdily.length} os nad tolerancí.`
+                    + (zaloha ? ` Záloha zdarma: ${zaloha}` : '')
+            });
+
+            // Podklady se vrací s odpovědí, aby si trenér mohl každé tvrzení ověřit
+            // proti číslům. Věta od modelu bez čísel pod ní je jen dojem.
+            return json({ ok: !!text, odpoved: text, model, poskytovatel, zaloha, trvaloMs, podklady });
+        } catch (e) {
+            const popis = e instanceof Error ? e.message : String(e);
+            await zalogujKomunikaci(env, {
+                kanal: 'ai', platforma: model, typ: 'analyza', vysledek: 'chyba',
+                poznamka: dotazTrenera.slice(0, 120), podrobnosti: popis
+            });
+            return json({ ok: false, model, popis });
+        }
+    }
+
     /* ---------- nabídka modelů pro Nastavení ---------- */
     if (cesta === '/api/ai/modely' && metoda === 'GET') {
         const nas = await nastaveni(env);
@@ -2775,6 +3094,13 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             dolu: osy.filter(o => o.smer === '↓').length,
             stejne: osy.filter(o => o.smer === '→').length
         });
+    }
+
+    /* ---------- podklady pro analýzy (bez modelu) ---------- */
+    if (cesta === '/api/analyzy' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        const obdobi = q.get('obdobi') || nas.obdobi;
+        return json(await podkladyProAnalyzu(env, obdobi, nas));
     }
 
     /* ---------- odkazy na sebehodnocení ---------- */

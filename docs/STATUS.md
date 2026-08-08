@@ -32,6 +32,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Notifikace — e-mail | ✅ | Cloudflare Email Sending |
 | Notifikace — SMS | ⚠️ | postaveno a zapojeno, ale **účet GoSMS neověřený a bez kreditu** |
 | Příkazový řádek | ✅ | rozřazení lokálně, bez tokenů |
+| Analýzy — souhrny | ✅ | nejslabší osy kádru, největší rozpory, kdo chybí; počítá aplikace, nic neodchází |
+| Analýzy — otázka modelu | ⚠️ | postaveno a ověřeno, ale **vypnuté** — posílá ven plná data, zapíná se vědomě v Nastavení |
 | Jazykový model | ⚠️ | Workers AI ověřené; Claude čeká na `ANTHROPIC_API_KEY` |
 | Mobil | ✅ | hamburger, ovládání na palec, tabulky se posouvají v kartě |
 | Dokumentace v aplikaci | ✅ | záložka 📖, česky i anglicky |
@@ -94,6 +96,10 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 
 ## Otevřené otázky
 
+- **GDPR u analýz jazykovým modelem.** Zapnuté analýzy posílají ven známky, slovní posudky
+  a cíle nezletilých. Rozhodnuto vědomě (8. 8. 2026), vypínač je ve výchozím stavu vypnutý,
+  ale zbývá záznam o činnosti zpracování a informace pro rodiče. Workers AI (Cloudflare,
+  týž účet) je pro tohle méně problematická cesta než Claude (americká třetí strana).
 - Mají mít k tištěnému listu přístup rodiče, nebo jen hráči?
 - WhatsApp jako další kanál: provozně bez paušálu, ale chce číslo mimo běžný WhatsApp,
   Meta Business Portfolio a schválenou šablonu. Nepostaveno.

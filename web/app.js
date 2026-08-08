@@ -202,7 +202,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { lide, hodnotit, shoda, listy, porovnani, odkazy, nastaveni, dokumentace }[stav.zalozka];
+        const kresli = { lide, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -1654,6 +1654,164 @@ function tabulkaTrendu(tr) {
         </div>`;
 }
 
+/* ===================== záložka: Analýzy =====================
+
+   Dvě vrstvy nad sebou a v tomhle pořadí:
+
+   1. Spočítané podklady — průměry os za kádr, osy nad tolerancí, kdo chybí.
+      Jsou přesné, zadarmo, okamžité a nic neopustí Worker. Ukazují se vždycky.
+   2. Otázka jazykovému modelu. Model dostane TATÁŽ spočítaná čísla a jeho
+      prací je formulace, ne výpočet. Vypnuto, dokud se to v Nastavení vědomě
+      nezapne — posílá ven známky a posudky konkrétních nezletilých.
+
+   Odpověď modelu se proto zobrazuje NAD podklady, ne místo nich: trenér si má
+   každé tvrzení ověřit proti číslům. Věta bez čísel pod sebou je jen dojem.   */
+
+/* Popisky os a šablon do dotazu pro model. Worker texty nedrží — vrací klíče
+   a překládá se až tady, takže mu je musí poslat prohlížeč. */
+function popiskyProModel() {
+    const osy = {};
+    for (const s of Object.keys(SABLONY)) for (const k of SABLONY[s]) osy[k] = t('osa.' + k);
+    const sablony = Object.fromEntries(Object.keys(SABLONY).map(s => [s, t('sablona.' + s)]));
+    return { osy, sablony };
+}
+
+function tabulkaPodkladu(p) {
+    const osaText = k => t('osa.' + k);
+
+    const slabiny = p.osyKadru.map(s => `
+        <h3 style="margin:14px 0 4px;font-size:14px">${stitekSablony(s.sablona)}</h3>
+        <table>
+            <thead><tr><th>${t('analyzy.osa')}</th><th class="cisla">${t('analyzy.prumer')}</th>
+                <th class="cisla">${t('analyzy.zPoctu')}</th></tr></thead>
+            <tbody>${s.osy.map((o, i) => `
+                <tr${i < 2 ? ' class="resit"' : ''}>
+                    <td>${esc(osaText(o.klic))}</td>
+                    <td class="cisla">${o.prumer}</td>
+                    <td class="cisla">${o.hracu}</td>
+                </tr>`).join('')}</tbody>
+        </table>`).join('');
+
+    const rozdily = p.rozdily.length ? `
+        <table>
+            <thead><tr><th>${t('hodnotit.hrac')}</th><th>${t('lide.sablona')}</th><th>${t('analyzy.osa')}</th>
+                <th class="cisla">${t('lide.trener')}</th><th class="cisla">${t('lide.hrac')}</th>
+                <th class="cisla">${t('porovnani.rozdil')}</th></tr></thead>
+            <tbody>${p.rozdily.slice(0, 20).map(d => `
+                <tr class="resit">
+                    <td>${esc(d.jmeno)}</td>
+                    <td>${stitekSablony(d.sablona)}</td>
+                    <td>${esc(osaText(d.klic))}</td>
+                    <td class="cisla">${d.trener}</td>
+                    <td class="cisla">${d.hrac}</td>
+                    <td class="cisla ${d.rozdil > 0 ? 'rozdil-plus' : 'rozdil-minus'}">${d.rozdil > 0 ? '+' : ''}${d.rozdil}</td>
+                </tr>`).join('')}</tbody>
+        </table>`
+        : `<div class="hlaska pozor">${t('analyzy.bezRozdilu')}</div>`;
+
+    const chybi = [
+        p.chybi.bezHodnoceni.length ? `<li>${t('analyzy.bezHodnoceni', esc(p.chybi.bezHodnoceni.join(', ')))}</li>` : '',
+        p.chybi.bezSebehodnoceni.length ? `<li>${t('analyzy.bezSebehodnoceni', esc(p.chybi.bezSebehodnoceni.join(', ')))}</li>` : ''
+    ].filter(Boolean).join('');
+
+    return `
+        <div class="karta">
+            <h2>${t('analyzy.pocty')}</h2>
+            <p class="popis">${t('analyzy.pocty.popis', esc(p.obdobi), p.tolerance)}</p>
+            <table>
+                <tbody>
+                    <tr><td>${t('analyzy.hracu')}</td><td class="cisla">${p.pocty.hracu}</td></tr>
+                    <tr><td>${t('analyzy.listu')}</td><td class="cisla">${p.pocty.listu}</td></tr>
+                    <tr><td>${t('analyzy.sHodnocenim')}</td><td class="cisla">${p.pocty.sHodnocenim}</td></tr>
+                    <tr><td>${t('analyzy.seSebehodnocenim')}</td><td class="cisla">${p.pocty.seSebehodnocenim}</td></tr>
+                    <tr><td><b>${t('analyzy.sObojim')}</b></td><td class="cisla"><b>${p.pocty.sObojim}</b></td></tr>
+                </tbody>
+            </table>
+            ${chybi ? `<ul style="margin-top:10px">${chybi}</ul>` : ''}
+        </div>
+
+        <div class="karta">
+            <h2>${t('analyzy.slabiny')}</h2>
+            <p class="popis">${t('analyzy.slabiny.popis')}</p>
+            ${slabiny || `<div class="hlaska pozor">${t('analyzy.bezHodnoceniVubec')}</div>`}
+        </div>
+
+        <div class="karta">
+            <h2>${t('analyzy.rozdily')}</h2>
+            <p class="popis">${t('analyzy.rozdily.popis', p.tolerance)}</p>
+            ${rozdily}
+        </div>`;
+}
+
+async function analyzy(kam) {
+    const p = await api(`/api/analyzy?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
+    const zapnuty = stav.nastaveni.aiAnalyzy === 'ano' && stav.nastaveni.aiPoskytovatel !== 'vypnuto';
+
+    kam.innerHTML = `
+        <div class="karta">
+            <h2>${t('analyzy.nadpis')}</h2>
+            <p class="popis">${t('analyzy.popis')}</p>
+            ${zapnuty ? `
+                <div class="pole">
+                    <label for="an-otazka">${t('analyzy.otazka')}</label>
+                    <textarea id="an-otazka" maxlength="500" placeholder="${t('analyzy.otazka.placeholder')}"></textarea>
+                    <div class="popis">${t('analyzy.otazka.napoveda')}</div>
+                </div>
+                <p>
+                    <button class="hl" id="an-zeptat" title="${t('analyzy.zeptat.tip')}">${t('analyzy.zeptat')}</button>
+                </p>
+                <div class="popis">${t('analyzy.priklady')}</div>
+                <p id="an-priklady">${[
+                    'analyzy.priklad1', 'analyzy.priklad2', 'analyzy.priklad3'
+                ].map(k => `<button class="vedlejsi" data-priklad="${esc(t(k))}">${t(k)}</button>`).join(' ')}</p>
+            ` : `<div class="hlaska pozor">${t('analyzy.vypnuto')}</div>`}
+            <div id="an-odpoved"></div>
+        </div>
+
+        ${tabulkaPodkladu(p)}`;
+
+    if (!zapnuty) return;
+
+    kam.querySelectorAll('[data-priklad]').forEach(b => b.onclick = () => {
+        $('#an-otazka').value = b.dataset.priklad;
+        $('#an-otazka').focus();
+    });
+
+    $('#an-zeptat').onclick = async () => {
+        const otazka = $('#an-otazka').value.trim();
+        const cil = $('#an-odpoved');
+        if (!otazka) { cil.innerHTML = `<div class="hlaska chyba">${t('analyzy.prazdna')}</div>`; return; }
+
+        const tlacitko = $('#an-zeptat');
+        tlacitko.disabled = true;
+        cil.innerHTML = `<p class="popis">${t('analyzy.pocitam')}</p>`;
+        try {
+            const r = await api('/api/ai/analyza', {
+                telo: { otazka, obdobi: stav.nastaveni.obdobi, popisky: popiskyProModel() }
+            });
+            if (!r.ok) {
+                cil.innerHTML = `<div class="hlaska chyba">${esc(r.popis || t('analyzy.nepovedlo'))}</div>`;
+                return;
+            }
+            // Odstavce zachovat, ale nic z modelu nevykreslovat jako HTML.
+            const text = esc(r.odpoved).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
+            cil.innerHTML = `
+                <div class="hlaska info" style="margin-top:12px">
+                    <p>${text}</p>
+                    <p class="popis" style="margin-bottom:0">
+                        ${t('analyzy.zdroj', esc(r.model), Math.round(r.trvaloMs / 100) / 10)}
+                        ${r.zaloha ? `<br>⚠️ ${esc(r.zaloha)} ${t('analyzy.zaloha')}` : ''}
+                        <br>${t('analyzy.overSi')}
+                    </p>
+                </div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        } finally {
+            tlacitko.disabled = false;
+        }
+    };
+}
+
 /* ===================== záložka: Odkazy ===================== */
 
 async function odkazy(kam) {
@@ -1788,6 +1946,9 @@ async function nastaveni(kam) {
                     <select id="n-aiModel"></select>
                     <div class="popis">${t('ai.model.napoveda')}</div></div>
             </div>
+            <div class="pole"><label><input type="checkbox" id="n-aiAnalyzy" style="width:auto"
+                ${stav.nastaveni.aiAnalyzy === 'ano' ? 'checked' : ''}> ${t('ai.analyzy')}</label>
+                <div class="popis">${t('ai.analyzy.napoveda')}</div></div>
             <p>
                 <button class="vedlejsi" id="ai-zkouska" title="${t('ai.zkouska.tip')}">${t('ai.zkouska')}</button>
             </p>
@@ -1882,7 +2043,8 @@ async function nastaveni(kam) {
             notifDnyTicho: $('#n-dnyTicho').value,
             smsAktivni: $('#n-sms').checked ? '1' : '0',
             aiPoskytovatel: $('#n-ai').value,
-            aiModel: $('#n-aiModel').value
+            aiModel: $('#n-aiModel').value,
+            aiAnalyzy: $('#n-aiAnalyzy').checked ? 'ano' : 'ne'
         };
         try {
             stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });

@@ -34,6 +34,7 @@ se nikdy neznámkují.
 | **Shoda** | matice osa × trenér, uzavření finálního znění pro list; povinný trenér nevidí cizí čísla, dokud neodevzdá |
 | **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně; **každá šablona má svou barvu a název v hlavičce** |
 | **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, srovnání hráčů mezi sebou, vývoj v čase, historie verzí |
+| **Analýzy** | souhrny za celý kádr (nejslabší osy, největší rozpory) počítané v aplikaci; volitelně otázka jazykovému modelu nad plnými daty — **vypnuto, dokud se vědomě nezapne** |
 | **Odkazy** | jednorázové odkazy na sebehodnocení; odkaz nese jednu šestici os, takže hráč s víc šablonami dostane odkaz na každou |
 | **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace, jazykový model |
 | **Notifikace** | souhrn na Telegram, e-mail a SMS; zvlášť interval „když se něco děje" a „když se nic neděje" |
@@ -127,3 +128,9 @@ zadává až v běžící aplikaci.
 
 Notifikace nesou jen „kdo a co", nikdy obsah hodnocení. Vytištěné listy patří hráči.
 Do rukou jiných hráčů nebo na nástěnku ne.
+
+**Jediné místo, odkud odcházejí data ven, jsou Analýzy** — a jen když se to vědomě zapne.
+Souhrny za kádr se počítají v aplikaci a nic neposílají; teprve otázka jazykovému modelu
+mu předá známky, slovní posudky a cíle konkrétních hráčů. Vypínač je v Nastavení zvlášť od
+příkazového řádku (ten dostane jen jména) a ve výchozím stavu je vypnutý. Podrobnosti
+a otevřená GDPR otázka jsou v [docs/TECHNICAL.md](docs/TECHNICAL.md) §3e.

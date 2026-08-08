@@ -175,6 +175,19 @@ vyplňuje hráč. Na barvu samotnou se nespoléhej — název je vedle ní vždy
 takže list dává smysl i vytištěný černobíle. Kumulovaný list patří všem třem
 šablonám najednou, proto má hlavičku šedou a barvy nesou jednotlivé radary.</p>
 
+<h2>Analýzy</h2>
+<p>Souhrny za celý kádr: <b>kde je mužstvo nejslabší</b> (průměr osy přes všechny hodnocené,
+od nejnižší) a <b>kde se nejvíc rozchází pohled trenéra a hráče</b>. Počítá to aplikace,
+takže je to přesné, okamžité a nic to nikam neposílá. Průměr osy se počítá vždy v rámci
+jedné šablony — brankářské a polní osy se míchat nedají.</p>
+<p>Nad tabulkami je <b>otázka jazykovému modelu</b>. Model dostane tatáž spočítaná čísla
+a jeho prací je formulace, ne výpočet — v pokynu má zákaz cokoli dopočítávat. Přesto platí:
+<b>ověř si čísla v tabulkách pod odpovědí</b>. Model umí být sebejistý i když se mýlí.</p>
+<p><b>Otázky modelu jsou ve výchozím stavu vypnuté</b> a zapínají se v Nastavení zvlášť od
+příkazového řádku. Důvod: příkazovému řádku stačí jména kádru, ale analýze ne — modelu
+odejdou známky, slovní posudky i cíle konkrétních hráčů. Je to jediné místo v aplikaci,
+odkud údaje o hráčích odcházejí ven. Souhrny se počítají dál i s vypnutým modelem.</p>
+
 <h2>Notifikace</h2>
 <p>Aplikace posílá <b>souhrn</b>, ne zprávu za každou událost. Zpráva nese jen
 „kdo a co udělal“ — <b>nikdy známky ani slovní posudky</b>. Kanály se zapínají
@@ -436,6 +449,21 @@ self-evaluation page the player fills in. Do not rely on colour alone — the na
 is always next to it, so the sheet still works printed in black and white. The
 combined sheet belongs to all templates at once, so its header stays grey and
 the colours are carried by the individual radars.</p>
+
+<h2>Analyses</h2>
+<p>Squad-wide summaries: <b>where the team is weakest</b> (average of an axis across all
+evaluated players, lowest first) and <b>where the coach's and the player's views differ
+most</b>. The app computes this, so it is exact, instant and sends nothing anywhere. Axis
+averages are always computed within one template — goalkeeper and outfield axes cannot be mixed.</p>
+<p>Above the tables sits a <b>question to the language model</b>. The model gets the same
+computed numbers and its job is the wording, not the arithmetic — its instructions forbid
+computing anything. Even so: <b>check the numbers in the tables below the answer</b>.
+A model can be confident and wrong at the same time.</p>
+<p><b>Questions to the model are off by default</b> and are enabled in Settings separately
+from the command bar. The reason: the command bar only needs the squad names, an analysis
+does not — scores, written assessments and goals of individual players are sent to the
+model. It is the only place in the app where player data leaves. The summaries keep working
+with the model switched off.</p>
 
 <h2>Notifications</h2>
 <p>The app sends a <b>digest</b>, not one message per event, and the message

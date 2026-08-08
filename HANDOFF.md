@@ -2,6 +2,58 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-08 (19) — Analýzy: souhrny v kódu, formulace modelem
+
+**Zadání:** „chtěl bych, abych mohl žádat třeba o analýzy". Postaveno jako **dvě vrstvy nad
+sebou**, ne jako jeden chat nad databází.
+
+**1. Spočítané podklady** (`GET /api/analyzy`, `podkladyProAnalyzu`). Průměry os za kádr od
+nejnižší, osy nad tolerancí seřazené podle velikosti rozdílu, kdo nemá hodnocení a kdo
+sebehodnocení. Počítá to Worker: přesné, zadarmo, okamžité a **nic neopustí aplikaci**.
+Ukazuje se vždycky, i s vypnutým modelem.
+
+**2. Otázka modelu** (`POST /api/ai/analyza`). Model dostane **tatáž hotová čísla** a jeho
+prací je formulace, ne výpočet — v pokynu má výslovný zákaz cokoli dopočítávat. Kdyby
+počítal sám, spletl by se a věta by zněla stejně sebejistě jako správná. Odpověď se
+zobrazuje **nad** tabulkami a nese větu „ověř si čísla níž"; `podklady` se vrací i v API.
+
+**Rozhodnutí o datech (vědomé, po dotazu):** modelu jdou **plná data** — jména, známky,
+slovní bloky, cíle i poznámka hráče. Analýza nad samotnými čísly by přišla o polovinu toho,
+co trenér napsal. Je to jediné místo, odkud z aplikace odcházejí ven údaje o konkrétním
+nezletilém, proto:
+- **vlastní vypínač** `settings.aiAnalyzy`, výchozí `ne` — odděleně od `aiPoskytovatel`,
+  aby se to nezaplo omylem při přepnutí modelu; v Nastavení má u sebe varování,
+- do **logu komunikace** jde jen rozsah podkladů (kolik listů, kolik os nad tolerancí),
+  nikdy obsah,
+- **Workers AI zůstává výchozí** — běží na Cloudflare, tedy na témže účtu; Claude je
+  americká třetí strana.
+- **GDPR zbývá:** záznam o činnosti zpracování a informace pro rodiče. Zapsáno do STATUS
+  jako otevřená otázka.
+
+**Popisky os posílá prohlížeč.** Worker texty nedrží (§3b) a z klíče `braneni` by model
+slušnou větu nenapsal, takže mu jdou `popisky: {osy, sablony}` z i18n.
+
+**Pravidla, která zůstala:** §7.4 se neporušuje — trend je dál šipkový a bez souhrnného
+čísla; průměr je jen tam, kde už byl zavedený (srovnání hráčů), a jako orientační souhrn.
+Na tištěný list z analýz nejde nic. Do analýzy se bere uzavřená shoda trenérů, když
+existuje — stejné pravidlo jako na listu, ať papír a analýza neříkají jiné číslo.
+
+**Ověřeno lokálně** (`wrangler dev` + lokální D1, nastražený hráč se slepým místem:
+trenér bránění 3, hráč 8):
+- `/api/analyzy` vrátil přesně to — počty 2/3/2/1/1, nejslabší osy `leva 3` a `braneni 3`,
+  jediný rozdíl nad tolerancí `+5`, chybějící hráči správně rozdělení.
+- Brána: s vypnutým modelem `ok:false, duvod:'vypnuto'`; po zapnutí `aiAnalyzy` model
+  odpověděl za **3,3 s** a **trefil se do čísel** („trenér dal 3 a hráč 8, rozdíl +5"),
+  nic si nevymyslel a použil skutečný popisek osy „Bránění 1v1" z i18n.
+- Záložka proklikaná v headless Edge přes CDP: 4 karty, 4 tabulky, 3 příklady otázek,
+  štítky šablon, 5 zvýrazněných řádků, odpověď se vykreslila, **žádná výjimka v konzoli**.
+- i18n kompletní: 522 klíčů česky i anglicky, nechybí ani jeden na obou stranách.
+
+**Pozor po nasazení:** `aiAnalyzy` je v ostré databázi `ne` (výchozí), takže záložka ukáže
+souhrny, ale ptát se nepůjde, dokud se to nezapne v Nastavení.
+
+---
+
 ## 2026-08-08 (18) — dokumentace srovnaná se skutečností + STATUS.html
 
 **STATUS tvrdil „hodnocení zatím žádné", a to už neplatí.** Ověřeno souhrnným dotazem do

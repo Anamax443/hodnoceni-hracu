@@ -33,6 +33,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
 | Notifications — SMS | ⚠️ | built and wired, but the **GoSMS account is unverified and has no credit** |
 | Command bar | ✅ | resolved locally, no tokens spent |
+| Analyses — summaries | ✅ | weakest squad axes, biggest gaps, who is missing; computed in the app, nothing leaves |
+| Analyses — asking the model | ⚠️ | built and verified, but **switched off** — it sends full data out, enabled deliberately in Settings |
 | Language model | ⚠️ | Workers AI verified; Claude waiting for `ANTHROPIC_API_KEY` |
 | Mobile | ✅ | hamburger menu, thumb-sized controls, tables scroll inside their card |
 | In-app documentation | ✅ | 📖 tab, Czech and English |
@@ -93,6 +95,11 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 
 ## Open questions
 
+- **GDPR around model-driven analyses.** Once enabled, analyses send out scores, written
+  assessments and goals of minors. Decided deliberately (8 Aug 2026) and the switch is off by
+  default, but a record of processing activities and information for parents are still owed.
+  Workers AI (Cloudflare, same account) is the less problematic route here than Claude
+  (a US third party).
 - Should parents have access to the printed sheet, or only players?
 - WhatsApp as another channel: no monthly fee to run, but it needs a number that is not on
   regular WhatsApp, a Meta Business Portfolio and an approved template. Not built.
