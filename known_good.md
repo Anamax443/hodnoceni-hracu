@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (18) — odkazy vybraným hráčům a šablonám
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+**Commit:** `04ebd28` · **NASAZENO** 2026-08-09, Version ID `07a33467-63a3-4afb-b3ec-8fd9f8005680`; živě ověřeno na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.
 Hráč 9 má šablony `pole` + `leader`, hráč 10 `brankar`. Ostrá data nedotčena.
 
 | `ids` | Očekáváno | Naměřeno |

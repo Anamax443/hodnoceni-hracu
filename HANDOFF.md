@@ -45,6 +45,12 @@ se a rozesílá ručně, protože notifikační kanály má aplikace jen na tren
 z 18 aktivních hráčů nemá **nikdo** vyplněný telefon ani e-mail, takže automatické rozesílání
 by dnes stejně nemělo kam.
 
+**NASAZENO** 2026-08-09 v commitu `04ebd28` (Version ID `07a33467-63a3-4afb-b3ec-8fd9f8005680`).
+Ověřeno živě: `/api/version` = `04ebd28` na obou adresách, servírovaný `app.js` nese tabulku
+výběru i odesílání `ids`, `POST /api/tokens` bez přihlášení dál `401`. (Pozor při ověřování:
+první dotaz na `i18n.js` vrátil ještě cachovanou starou verzi a vypadalo to, že klíče chybí —
+nechybí, jen se to musí načíst znovu.)
+
 ---
 
 ## 2026-08-09 (22) — gpt-oss neodpovídal: uvažující model vyčerpal limit tokenů
