@@ -28,7 +28,12 @@ s výchozí hodnotou v kódu.
 **STATUS.html:** nová sekce **„Kde odcházejí data ven"** s tabulkou tří vypínačů a jejich
 výchozích stavů, plus bod do „co dál" o rozhodnutí ohledně zapnutí analýz a GDPR.
 
-Nic z toho nemění kód, takže se nenasazuje — až s příští změnou aplikace.
+**NASAZENO** 2026-08-08 v commitu `c89b499` (Version ID `5c14f450-f3a3-448a-9eb5-9b3676f3fc6d`)
+— na přání, i když změna byla čistě dokumentační. Jediné, co se tím v běžící aplikaci
+změnilo, je **otisk verze v horní liště a v `/api/version`**; teď sedí s HEAD repozitáře,
+což usnadňuje dohledávání („co přesně běží" = jeden commit, ne „ten předchozí plus docs").
+Ověřeno živě: `c89b499`, `cisto: true` na vlastní doméně i na `workers.dev`, `/health` OK,
+`/api/analyzy`, `/api/listy` i `/api/settings` dál bez přihlášení `401`.
 
 ---
 
