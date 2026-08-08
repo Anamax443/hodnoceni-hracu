@@ -2,6 +2,37 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-08 (18) — dokumentace srovnaná se skutečností + STATUS.html
+
+**STATUS tvrdil „hodnocení zatím žádné", a to už neplatí.** Ověřeno souhrnným dotazem do
+ostré D1 (jen počty, žádná jména ani známky — na to se zvenčí nekoukám):
+
+| | |
+|---|---|
+| osob v kartotéce | 22 (18 aktivních hráčů, 3 trenéři, 1 neaktivní) |
+| hodnocení od trenéra | **16** u 11 hráčů, jedno období |
+| podle šablon | pole 11 (10 hráčů) · brankář 3 (2) · leader 2 (2) |
+| sebehodnocení od hráčů | **0** |
+| vygenerovaných odkazů | **0** |
+| shod mezi trenéry | 0 |
+| hráčů s pozicemi | 4 z 18 |
+| účtů v `auth` | 1 (pořád společné heslo) |
+
+**Z toho plyne nové pořadí priorit.** Trenérská strana běží, hráčská ne. Dokud se nerozešlou
+odkazy na sebehodnocení, nemá list druhý polygon a rozhovor nad rozdílem pohledů — kvůli
+kterému nástroj vznikl — se nemá o co opřít. V STATUS.md i .en je to teď bod č. 1.
+Bod „přiřadit šablony" se z větší části vyřídil sám: brankářská i leader hodnocení už
+v databázi jsou. Zbývají pozice (4 z 18), ty se tisknou na list.
+
+**Přidán `STATUS.html`** — stav na jedné stránce v domácím stylu ostatních projektů
+(tmavá, samostatná, bez závislostí). Nese čísla z databáze, tři šablony ve svých barvách,
+schéma toku dat s vyznačeným místem, kde to stojí, a pořadí dalších kroků. Odkaz z README.
+
+**Srovnáno taky:** README (kádr a stav), `docs/STATUS.md` + `.en`, obojí nově se sekcí
+„kolik je v aplikaci dat".
+
+---
+
 ## 2026-08-08 (17) — tiskne se po listech, ne po hráčích
 
 **Ferda má tři šablony a tiskly se vždycky všechny tři.** V tabulce *Kdo se vytiskne* byl

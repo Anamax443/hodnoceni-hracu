@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hodnoceni-hracu — stav projektu</title>
+<style>
+  :root{
+    --bg:#0e1220; --panel:#161d30; --panel2:#1e2740; --line:#28324e;
+    --txt:#e7edf7; --muted:#8ea1c2; --accent:#5ad1b0; --accent-dim:#1f6f5a;
+    --amber:#f0b429; --red:#f0556b; --blue:#5aa9f0;
+    /* Barvy šablon — tytéž jako na tiskovém listu (web/src/styl.css) */
+    --sab-pole:#2196F3; --sab-brankar:#00bcd4; --sab-leader:#ec407a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+  header{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  .icon{width:56px;height:56px;border-radius:14px;background:var(--panel2);
+    border:1px solid var(--line);display:grid;place-items:center;font-size:26px;flex:0 0 auto}
+  h1{margin:0;font-size:26px;letter-spacing:.2px}
+  .sub{color:var(--muted);margin:4px 0 0}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .badge{font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .badge.live{color:var(--accent);border-color:var(--accent-dim);background:rgba(90,209,176,.08)}
+  .badge.priv{color:var(--red);border-color:#5a2430;background:rgba(240,85,107,.08)}
+
+  .gate{margin:28px 0;padding:20px 22px;border-radius:14px;
+    background:linear-gradient(180deg,rgba(240,180,41,.10),rgba(240,180,41,.03));
+    border:1px solid #5a4a18;border-left:4px solid var(--amber)}
+  .gate h2{margin:0 0 6px;font-size:16px;color:var(--amber)}
+  .gate p{margin:0}
+  .gate .crit{margin:12px 0 0;color:var(--muted);font-size:14px}
+  .gate.red{background:linear-gradient(180deg,rgba(240,85,107,.10),rgba(240,85,107,.03));
+    border-color:#5a2430;border-left-color:var(--red)}
+  .gate.red h2{color:var(--red)}
+
+  h2.section{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:40px 0 14px;font-weight:700}
+
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;
+    font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--txt);white-space:pre-wrap;overflow-x:auto}
+  .flow .c{color:var(--accent)} .flow .m{color:var(--muted)} .flow .a{color:var(--amber)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:680px){.grid,.grid3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h3{margin:0 0 10px;font-size:15px}
+  ul{margin:0;padding-left:18px} li{margin:5px 0}
+  li.yes::marker{content:"✅ "} li.no::marker{content:"❌ "} li.wait::marker{content:"⚠️ "}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  tbody tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .big{font-size:19px;font-weight:700}
+  .zero{color:var(--red)}
+
+  .sab{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;
+    border:1px solid currentColor;white-space:nowrap}
+  .sab.pole{color:var(--sab-pole)} .sab.brankar{color:var(--sab-brankar)} .sab.leader{color:var(--sab-leader)}
+
+  .scroll{overflow-x:auto}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:13px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="icon">⚽</div>
+    <div>
+      <h1>hodnoceni-hracu</h1>
+      <p class="sub">Hodnotící listy mládežnických fotbalistů SK Říčmanice — radar graf, sebehodnocení hráče a překryv obou pohledů pro rozhovor</p>
+    </div>
+    <div class="badges">
+      <span class="badge live">Nasazeno · běží</span>
+      <span class="badge priv">Private repo</span>
+    </div>
+  </header>
+
+  <div class="gate red">
+    <h2>⚠ Osobní údaje nezletilých</h2>
+    <p>Repozitář je <strong>private a musí takový zůstat</strong>. Databáze a zálohy obsahují jména
+       nezletilých hráčů, známky a slovní posudky.</p>
+    <p class="crit">V repozitáři samotném žádná osobní data nejsou — kádr se zadává až v běžící aplikaci.
+       Notifikace nesou jen „kdo a co", nikdy obsah hodnocení. Vytištěný list patří hráči, ne nástěnce.</p>
+  </div>
+
+  <h2 class="section">Co to dělá</h2>
+  <div class="card">
+    <p style="margin:0 0 10px">Trenér hodnotí hráče <strong>2× za sezónu</strong> na pevné škále 1–10.
+       Hráč vyplní <strong>sebehodnocení</strong> týchž os přes jednorázový odkaz. Výstupem je tištěný
+       list A4 s radar grafem a slovním komentářem.</p>
+    <p style="margin:0">Hlavní hodnota je <strong>rozdíl mezi oběma pohledy</strong> — ukazuje, kde o sobě
+       hráč neví. Řeší se jen osy, kde je rozdíl větší než nastavená <strong>tolerance</strong>.
+       Metodicky vychází z <strong>FA Four Corner Model</strong>: technicko-taktický roh se známkuje čísly,
+       zbylé tři rohy jsou slovní bloky <strong>bez čísel</strong>. Povahové vlastnosti se nikdy neznámkují.</p>
+  </div>
+
+  <h2 class="section">Tři šablony, tři barvy</h2>
+  <div class="grid3">
+    <div class="card">
+      <h3><span class="sab pole">hráč v poli</span></h3>
+      <p style="margin:0;color:var(--muted);font-size:14px">Pravá · levá · hlavičky · přihrávka · bránění · skenování</p>
+    </div>
+    <div class="card">
+      <h3><span class="sab brankar">brankář</span></h3>
+      <p style="margin:0;color:var(--muted);font-size:14px">Chytání · postavení · hra nohama · výkopy · hra mimo · organizace</p>
+    </div>
+    <div class="card">
+      <h3><span class="sab leader">leader</span></h3>
+      <p style="margin:0;color:var(--muted);font-size:14px">Vedení · příklad · tlak · fair play · podpora · odpovědnost</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <p style="margin:0">Hráč má šablon kolik potřebuje — kdo chytá, hraje v poli i vede mužstvo, má všechny tři.
+       Každá je <strong>vlastní řada, vlastní odkaz a vlastní list</strong>. Sloučit je do jednoho grafu nejde
+       (jiných šest os má jiný tvar), vytisknout vedle sebe na jednu stránku ano.
+       <strong>Barva je jen druhý signál</strong> — název šablony stojí vždycky vedle ní, aby list dával smysl
+       i černobíle a barvoslepému čtenáři.</p>
+  </div>
+
+  <h2 class="section">Kolik je v aplikaci dat — 8. 8. 2026</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Ukazatel</th><th>Počet</th><th>Poznámka</th></tr></thead>
+    <tbody>
+      <tr><td>Osob v kartotéce</td><td class="num big">22</td><td>18 aktivních hráčů, 3 trenéři, 1 neaktivní</td></tr>
+      <tr><td>Hodnocení od trenéra</td><td class="num big">16</td><td>u 11 hráčů, jedno období</td></tr>
+      <tr><td>… podle šablon</td><td class="num">11 / 3 / 2</td>
+          <td><span class="sab pole">pole</span> 10 hráčů ·
+              <span class="sab brankar">brankář</span> 2 ·
+              <span class="sab leader">leader</span> 2</td></tr>
+      <tr><td>Sebehodnocení od hráčů</td><td class="num big zero">0</td><td>hráčská strana zatím neběží</td></tr>
+      <tr><td>Vygenerovaných odkazů</td><td class="num big zero">0</td><td>bez nich nemá hráč jak vyplnit</td></tr>
+      <tr><td>Uzavřených shod mezi trenéry</td><td class="num">0</td><td>zatím hodnotí jeden</td></tr>
+      <tr><td>Hráčů s vyplněnými pozicemi</td><td class="num">4 / 18</td><td>pozice se tisknou na list</td></tr>
+      <tr><td>Účtů v <code>auth</code></td><td class="num">1</td><td>pořád společné heslo</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="gate" style="margin-top:16px">
+    <h2>📉 Rozhovor nad rozdílem dvou pohledů se zatím nekonal</h2>
+    <p>Trenérská strana běží, <strong>hráčská ne</strong>. Dokud se hráčům nerozešlou odkazy, není co
+       porovnávat a druhý polygon na listu zůstává prázdný.</p>
+    <p class="crit">Je to jediná věc, která dnes brání tomu, aby nástroj dělal to, kvůli čemu vznikl.
+       Všechno ostatní je postavené a ověřené.</p>
+  </div>
+
+  <h2 class="section">Jak to teče</h2>
+  <div class="flow">prohlížeč  <span class="m">-&gt;</span>  <span class="c">Cloudflare Worker</span> (API + statické soubory)  <span class="m">-&gt;</span>  <span class="c">Cloudflare D1</span> (SQLite)
+
+<span class="m">Frontend nikdy nesahá do D1 přímo. Veškerá autorizace je ve Workeru.</span>
+<span class="m">Žádný framework, žádný bundler, žádný build krok — čisté ES moduly, radar je inline SVG.</span>
+
+trenér    <span class="m">-&gt;</span> Hodnotit  <span class="m">-&gt;</span> 6 os 1–10 + slovní bloky + cíle   <span class="m">(append-only, nic se nepřepisuje)</span>
+hráč      <span class="m">-&gt;</span> /h/&lt;token&gt; <span class="m">-&gt;</span> tytéž osy, jednorázově          <span class="a">&lt;- tady to teď stojí</span>
+oba       <span class="m">-&gt;</span> Porovnání <span class="m">-&gt;</span> rozdíl se znaménkem a tolerancí
+výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A4 s radarem, barva podle šablony</div>
+
+  <h2 class="section">Co běží</h2>
+  <div class="grid">
+    <div class="card"><h3>✅ Hotovo a ověřené</h3>
+      <ul>
+        <li class="yes">Kádr, pozice, <strong>N šablon</strong> u hráče, export/import <code>.xlsx</code> i CSV</li>
+        <li class="yes">Hodnocení trenérem, hromadné hodnocení, <strong>úprava jako nová verze</strong></li>
+        <li class="yes">Sebehodnocení za jednorázovým odkazem, <strong>blind guard ověřený naostro</strong></li>
+        <li class="yes">Porovnání trenér × hráč, srovnání hráčů, shoda mezi trenéry</li>
+        <li class="yes">Tiskové listy A4 — <strong>1 list = 1 stránka</strong>, kumulovaný list, výběr po listech</li>
+        <li class="yes">Barva podle šablony + název šablony v hlavičce</li>
+        <li class="yes">Účty po lidech, obnova hesla, zámek po 5 pokusech</li>
+        <li class="yes">Notifikace na Telegram a e-mail, CS/EN, tmavý vzhled, mobil, dokumentace v aplikaci</li>
+      </ul></div>
+    <div class="card"><h3>⚠️ Postavené, ale nedotažené</h3>
+      <ul>
+        <li class="wait"><strong>SMS</strong> — zapojené, ale účet GoSMS je neověřený a bez kreditu; ostrá zpráva končí na <code>400</code></li>
+        <li class="wait"><strong>Jazykový model</strong> — Workers AI ověřený a zdarma; Claude čeká na <code>ANTHROPIC_API_KEY</code></li>
+        <li class="wait"><strong>Julek a Maso</strong> nemají vlastní heslo ani kanál — jede společné heslo</li>
+        <li class="wait"><strong>Trendy v čase</strong> — šipky u os hotové, plný pohled až s druhým obdobím</li>
+      </ul></div>
+  </div>
+
+  <h2 class="section">Co dál — v tomhle pořadí</h2>
+  <div class="card">
+    <ol style="margin:0;padding-left:20px">
+      <li><strong>Rozeslat hráčům odkazy na sebehodnocení.</strong> Bez toho nemá list druhý polygon.</li>
+      <li>Dohodnotit zbylých 7 hráčů z 18.</li>
+      <li>Doplnit pozice — vyplněné mají 4 z 18, tisknou se na list.</li>
+      <li>Ověřit účet GoSMS a dobít kredit, pokud se má posílat SMS.</li>
+      <li>Pozvat Julka a Masa na vlastní účet, pak zrušit společné heslo.</li>
+    </ol>
+  </div>
+
+  <h2 class="section">Otevřené otázky</h2>
+  <div class="card">
+    <ul>
+      <li>Mají mít k tištěnému listu přístup rodiče, nebo jen hráči?</li>
+      <li>WhatsApp jako další kanál: provozně bez paušálu, ale chce číslo mimo běžný WhatsApp,
+          Meta Business Portfolio a schválenou šablonu. Nepostaveno.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <span>Podrobnosti: <code>docs/STATUS.md</code> · deník <code>HANDOFF.md</code> · doklady <code>known_good.md</code></span>
+    <span>Snímek k 8. 8. 2026 · živě na hodnoceni.maxferit.cz</span>
+  </footer>
+
+</div>
+</body>
+</html>

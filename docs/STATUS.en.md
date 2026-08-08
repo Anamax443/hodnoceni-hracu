@@ -1,6 +1,6 @@
 # STATUS — where the project stands
 
-Snapshot as of **7 Aug 2026**. It answers three questions: what runs, what has been
+Snapshot as of **8 Aug 2026**. It answers three questions: what runs, what has been
 verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HANDOFF.md)
 (a diary, newest entry first — Czech only).
 
@@ -13,7 +13,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 
 | Area | State | Note |
 |---|---|---|
-| Squad register (People) | ✅ | 22 people loaded; positions, nicknames, roles; click a name to edit |
+| Squad register (People) | ✅ | 22 people (18 active players + 3 coaches); positions, nicknames, roles; click a name to edit |
 | Several templates per player | ✅ | goalkeeper + outfield + leader; each its own series, link and sheet |
 | Squad export / import | ✅ | `.xlsx` with Text formatting, CSV, dry-run import |
 | Coach evaluation | ✅ | 6 axes 1–10, append-only, templates `pole` / `brankar` / `leader` |
@@ -25,6 +25,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Agreement between coaches | ✅ | axis × coach matrix, final wording for the sheet |
 | Printable A4 sheets | ✅ | 1 sheet = 1 page, verified by headless print to PDF |
 | Combined sheet | ✅ | optionally all of a player’s templates on one A4, verified by print to PDF |
+| Colour by template | ✅ | outfield blue, goalkeeper teal, leader crimson; template name in the sheet header, matching labels in the app |
+| Printing selected per sheet | ✅ | a tick box on every player × template row, `ids=id:sablona` |
 | Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts |
 | Password recovery | ✅ | single-use link, 15 minutes, Telegram or e-mail |
 | Notifications — Telegram | ✅ | delivery confirmed |
@@ -34,6 +36,25 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Language model | ⚠️ | Workers AI verified; Claude waiting for `ANTHROPIC_API_KEY` |
 | Mobile | ✅ | hamburger menu, thumb-sized controls, tables scroll inside their card |
 | In-app documentation | ✅ | 📖 tab, Czech and English |
+
+## How much data is in the app
+
+Aggregate numbers from the production database as of 8 Aug 2026 (counts only — no names, no scores):
+
+| | |
+|---|---|
+| people in the register | 22 (18 active players, 3 coaches, 1 inactive) |
+| players with positions filled in | 4 of 18 |
+| coach evaluations | **16** across 11 players, one period |
+| by template | outfield 11 (10 players) · goalkeeper 3 (2 players) · leader 2 (2 players) |
+| player self-evaluations | **0** |
+| self-evaluation links generated | **0** |
+| closed agreements between coaches | 0 |
+| rows in `auth` | 1 (still the shared password) |
+
+**The conversation over the gap between the two views — the whole point of the tool — has not
+happened yet.** The coach side runs, the player side does not: until the links go out there is
+nothing to compare and the second polygon on the sheet stays empty.
 
 ## What has been verified live
 
@@ -54,16 +75,20 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 
 ## What is missing
 
-1. **Verify the GoSMS account and top up credit.** Until then the sender is `GoSMS-test`
+1. **Send the players their self-evaluation links.** Not one has been generated yet, so the
+   players have filled in nothing. Without it the sheet has no second polygon and the
+   conversation over the gap — the reason the tool exists — has nothing to stand on.
+   **This is the main thing right now.**
+2. **Verify the GoSMS account and top up credit.** Until then the sender is `GoSMS-test`
    and a real SMS will not go out (the last attempt ended in `400`). The dry run works.
-2. **Enter the first real evaluations.** App and squad are ready; there are no evaluations yet.
 3. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
    or a verified e-mail, send them an invitation from People, then drop the shared password
    (`DELETE FROM auth`).
-4. **Add positions for the remaining players** (only Ferda has them so far) **and assign
-   templates** — after the migration every player has just `outfield`. Anyone who should get
-   a goalkeeper or leader sheet needs that template ticked in People.
-5. **An `ANTHROPIC_API_KEY`**, if the paid model is to be used. Without it — and with an
+4. **Add positions for the remaining players** — 4 of 18 have them. Templates are already
+   assigned (goalkeeper and leader evaluations exist in the database), so most of this point
+   is done; what remains are the positions, which get printed on the sheet.
+5. **Evaluate the remaining 7 players** — 11 of 18 active players have an evaluation.
+6. **An `ANTHROPIC_API_KEY`**, if the paid model is to be used. Without it — and with an
    exhausted credit — the command bar keeps working on the free model.
 
 ## Open questions

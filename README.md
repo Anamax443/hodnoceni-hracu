@@ -58,11 +58,14 @@ Tištěný list je vždy světlý, i když má aplikace tmavý vzhled — je to 
 
 Nad rámec zadání: účty po lidech, obnova hesla, souhrnné notifikace i SMS, vlastní doména,
 CS/EN, tmavý vzhled, shoda mezi trenéry, hromadné hodnocení, úprava hodnocení jako nová
-verze, víc šablon u hráče s kumulovaným listem, příkazový řádek s přepínatelným jazykovým
-modelem.
+verze, víc šablon u hráče s kumulovaným listem, barva a název šablony na listu, výběr tisku
+po jednotlivých listech, příkazový řádek s přepínatelným jazykovým modelem.
 
-**Kádr je nahraný** (19 hráčů + 3 trenéři), hodnocení zatím žádné. Co přesně běží,
-co je ověřené a co chybí, je v [docs/STATUS.md](docs/STATUS.md).
+**Kádr je nahraný** (18 aktivních hráčů + 3 trenéři) a **hodnocení od trenéra běží** —
+16 záznamů u 11 hráčů. **Sebehodnocení zatím nevyplnil nikdo**, protože se nerozeslaly
+odkazy; do té doby nemá list druhý polygon a rozhovor nad rozdílem pohledů se nemá o co
+opřít. Co přesně běží, co je ověřené a co chybí, je v [docs/STATUS.md](docs/STATUS.md),
+přehledně na jedné stránce v [STATUS.html](STATUS.html).
 
 ## Stack
 
@@ -100,6 +103,7 @@ Lokální běh (`npm run dev`) je jen pro vývoj; ostrý provoz je v cloudu.
 
 ## Dokumentace
 
+- [STATUS.html](STATUS.html) — **stav na jedné stránce**: čísla z ostré databáze, co běží, co dál
 - [docs/STATUS.md](docs/STATUS.md) — **kde to stojí**: co běží, co je ověřené, co chybí
 - [docs/README.md](docs/README.md) — **uživatelská**: jak hodnotit, tisknout a vést rozhovor
 - [docs/TECHNICAL.md](docs/TECHNICAL.md) — architektura, datový model, API, funkční pravidla, backlog
