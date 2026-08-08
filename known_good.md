@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (17) — gpt-oss odpovídá (uvažující model)
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+**Commit:** `fd9b459` · **NASAZENO** 2026-08-09, Version ID `6bcd49ff-0742-418e-898e-70db78e8944c`; živě ověřeno 8× po sobě na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.
 
 | Kontrola | gpt-oss-120b | llama-3.3-70b-fp8-fast |
 |---|---|---|

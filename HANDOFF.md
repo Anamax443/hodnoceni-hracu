@@ -48,6 +48,11 @@ v textu nezůstaly holé hvězdičky.
 **Latence je daň za uvažování** — gpt-oss je na povely v liště citelně pomalejší.
 Popis modelu v Nastavení to nově říká.
 
+**NASAZENO** 2026-08-09 v commitu `fd9b459` (Version ID `6bcd49ff-0742-418e-898e-70db78e8944c`).
+Ověřeno živě: `/api/version` = `fd9b459` 8× po sobě na obou adresách. Roznášení po edge bylo
+tentokrát nejdelší z dosavadních (~10 min) a **nerovnoměrné v obou směrech** — chvíli měla novou
+verzi jen custom doména, chvíli jen workers.dev. Ověřovat opakovaně, nepřenasazovat.
+
 ---
 
 ## 2026-08-09 (21) — jedno pole na dotazy: ptá se z příkazového řádku
