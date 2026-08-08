@@ -27,6 +27,13 @@ mají pozice, 1 účet v `auth`. Proti včerejšku beze změny — hráčská st
 přepsaná tabulka vypínačů, datum). STATUS.html ověřen headless renderem: 10 sekcí, 2 tabulky,
 žádná chyba parsování. Změna je čistě dokumentační, kód se nedotkl.
 
+**NASAZENO** 2026-08-09 v commitu `40faeb6` (Version ID `f3104aa3-c27a-4c2b-ba32-1903ab5824d6`)
+— na přání, aby otisk verze v liště seděl s HEAD repozitáře. V běžící aplikaci se tím nic
+funkčního nezměnilo; jde jen o to, že „co přesně běží" je teď jeden commit, ne „ten předchozí
+plus dokumentace navrch". Ověřeno živě: `/api/version` = `40faeb6` 10× po sobě na obou
+adresách, `/health` OK, `/api/analyzy`, `/api/zaznamy`, `/api/tokens` i `/api/listy` bez
+přihlášení dál `401`.
+
 ---
 
 ## 2026-08-09 (24) — porovnat cokoliv s čímkoliv
