@@ -78,7 +78,7 @@ Dva, oba povinné a oba už nastavené:
 | `TELEGRAM_BOT_TOKEN` | bot pro notifikace a odkazy na obnovu hesla | jen pro Telegram |
 | `OBNOVA_EMAILY` | adresy oddělené čárkou pro obnovu **společného** hesla | ne |
 | `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET` | klíče k SMS bráně GoSMS (app.gosms.eu → API) | jen pro SMS |
-| `ANTHROPIC_API_KEY` | placený model pro příkazový řádek | ne — bez něj jede Workers AI |
+| `ANTHROPIC_API_KEY` | placený model pro příkazový řádek a analýzy | ne — bez něj jede Workers AI |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio; do Česka se nepoužívá (viz TECHNICAL) | ne |
 
 Hesla jednotlivých trenérů secrety nejsou — jsou to PBKDF2 hashe u jejich řádku v `players`.
@@ -107,6 +107,20 @@ npx wrangler secret put ANTHROPIC_API_KEY
 Bez klíče (nebo při vyčerpaném kreditu) povel dokončí model zdarma. `@anthropic-ai/sdk` je
 jediná runtime závislost a vyžaduje `"compatibility_flags": ["nodejs_compat"]` ve
 `wrangler.jsonc` — bez něj Worker spadne za běhu na chybějících modulech Node.
+
+**Analýzy mají vypínač navíc: `settings.aiAnalyzy`, výchozí `ne`.** Po nasazení tedy záložka
+Analýzy ukáže spočítané souhrny, ale ptát se modelu nepůjde, dokud to někdo v Nastavení
+vědomě nepovolí. Je to schválně oddělené od `aiPoskytovatel`: příkazovému řádku stačí jména
+kádru, kdežto analýze odejdou známky, slovní posudky i cíle konkrétních nezletilých hráčů.
+Podrobnosti a otevřená GDPR otázka jsou v [TECHNICAL.md](TECHNICAL.md) §3e.
+
+Shrnutí vypínačů, které jsou po čerstvém nasazení **vypnuté** a musí se zapnout ručně:
+
+| Nastavení | Výchozí | Co odemyká |
+|---|---|---|
+| `smsAktivni` | `0` | odesílání SMS (mimořádný, placený kanál) |
+| `aiPoskytovatel` | `vypnuto` | jazykový model vůbec (příkazový řádek) |
+| `aiAnalyzy` | `ne` | otázky na kádr v Analýzách — **posílá ven data hráčů** |
 
 Telegram bota založí `@BotFather` (`/newbot`); token je ten dlouhý řetězec, co vrátí.
 Bota **nelze** oslovit první — každý trenér mu musí jednou napsat, teprve pak vznikne chat id.

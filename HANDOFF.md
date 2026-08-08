@@ -2,6 +2,36 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-08 (20) — provozní dokumentace dohnala poslední tři změny
+
+Zápisy 16–19 srovnaly README, STATUS, TECHNICAL i dokumentaci v aplikaci, ale **BUILD
+a RUNBOOK zůstaly pozadu** — o barvách šablon, tisku po listech ani o Analýzách nevěděly nic.
+Provozní dokumenty čte člověk ve chvíli, kdy něco nefunguje, takže zaostávat nemají.
+
+**RUNBOOK:**
+- do tabulky častých situací přibylo šest řádků: analýzy nejdou zapnout, model je vypnutý,
+  prázdné „kde se pohledy rozchází", model tvrdí něco mimo tabulku, a jak se poznají listy
+  od sebe,
+- **tisk**: čím se liší šablony na papíře a že značka v hlavičce je čitelná i bez grafiky
+  na pozadí (barevný text a rámeček, ne bílý text na barvě); plus řádek „vytisklo se víc
+  listů, než jsem chtěl" → každý řádek má vlastní zaškrtávátko,
+- **nová §4c Analýzy** — co od modelu čekat (formulace) a co ne (výpočet, znalost zápasů
+  a docházky), a že při rozporu platí tabulka, ne věta,
+- **bezpečnostní minimum**: analýzy jsou jediné místo, odkud data odcházejí ven; log nese
+  jen rozsah podkladů; GDPR záznam zatím není.
+
+**BUILD:** `ANTHROPIC_API_KEY` platí i pro analýzy, popis vypínače `aiAnalyzy` a nová
+tabulka „co je po čerstvém nasazení vypnuté a musí se zapnout ručně" (`smsAktivni`,
+`aiPoskytovatel`, `aiAnalyzy`). Migrace nepřibyla — `aiAnalyzy` je řádek v `settings`
+s výchozí hodnotou v kódu.
+
+**STATUS.html:** nová sekce **„Kde odcházejí data ven"** s tabulkou tří vypínačů a jejich
+výchozích stavů, plus bod do „co dál" o rozhodnutí ohledně zapnutí analýz a GDPR.
+
+Nic z toho nemění kód, takže se nenasazuje — až s příští změnou aplikace.
+
+---
+
 ## 2026-08-08 (19) — Analýzy: souhrny v kódu, formulace modelem
 
 **Zadání:** „chtěl bych, abych mohl žádat třeba o analýzy". Postaveno jako **dvě vrstvy nad

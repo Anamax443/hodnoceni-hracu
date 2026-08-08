@@ -92,6 +92,11 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | tiskne se druhá prázdná stránka | slovní blok se přelil, nebo vlastní CSS přebilo tiskovou sekci | zkrátit text; tisková pravidla musí zůstat na **konci** `web/src/styl.css` |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
+| v Analýzách nejde napsat otázku | `aiAnalyzy` je vypnuté (výchozí stav) | Nastavení → *Povolit otázky na kádr*; souhrny v tabulkách jedou i bez toho |
+| Analýzy hlásí „Jazykový model je vypnutý" | `aiPoskytovatel = vypnuto` | Nastavení → Jazykový model → Cloudflare Workers AI |
+| „Kde se pohledy nejvíc rozchází" je prázdné | hráči nevyplnili sebehodnocení | Odkazy → vygenerovat a rozeslat; bez druhé strany není co porovnávat |
+| model v analýze tvrdí něco, co v tabulce není | model formuluje, nepočítá — a mýlí se sebejistě | čísla pod odpovědí platí, věta ne; případně zkusit silnější model |
+| vytištěné listy se pletou dohromady | víc šablon vypadá na první pohled stejně | každá šablona má barvu a název v hlavičce — modrá hráč v poli, petrolejová brankář, vínová leader |
 
 ---
 
@@ -99,7 +104,9 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 
 | Problém | Příčina | Oprava |
 |---|---|---|
-| bílý list bez modrého pruhu a barevných bloků | vypnutá grafika na pozadí | v dialogu tisku zapnout **Grafika na pozadí / Background graphics** |
+| bílý list bez barevného pruhu se jménem a bez barevných bloků | vypnutá grafika na pozadí | v dialogu tisku zapnout **Grafika na pozadí / Background graphics**. Značka šablony v hlavičce je čitelná i bez toho (barevný text a rámeček), takže i takhle vytištěný list poznáš |
+| nepoznám, jestli je to brankářský nebo polní list | — | v hlavičce je **název šablony** a barva celého listu: modrá hráč v poli, petrolejová brankář, vínová leader. Kumulovaný list je šedý, protože patří všem šablonám najednou |
+| vytisklo se víc listů, než jsem chtěl | zaškrtnuté byly i ostatní šablony toho hráče | v tabulce *Kdo se vytiskne* má **každý řádek vlastní zaškrtávátko** — odškrtni, co nechceš |
 | hráč se přelil na dvě stránky | dlouhý slovní blok | zkrátit text, nebo ubrat cíl |
 | useknuté okraje | vlastní okraje v dialogu | nastavit okraje na **Výchozí** — stránka si je řídí sama (A4, 12 mm) |
 | „Nejsi přihlášený" místo listů | vypršela session | přihlásit se v aplikaci a otevřít listy znovu |
@@ -118,6 +125,35 @@ stránce, slovní bloky a cíle složené ze všech šablon. Ověřeno tiskem do
 Odkazy na sebehodnocení se generují na každou šablonu zvlášť (odkaz nese jednu šestici
 os), takže takový hráč dostane víc odkazů. Nevyplněný odkaz na tutéž šablonu se
 podruhé nezakládá — kolik se jich přeskočilo, hlásí zpráva po generování.
+
+**Tisknout jde i jeden jeho list.** V tabulce *Kdo se vytiskne* má každý řádek (hráč ×
+šablona) vlastní zaškrtávátko — když chceš od Ferdy jen brankářský, zbylé dva odškrtni.
+Zaškrtávátko v záhlaví označí a odznačí všechno.
+
+---
+
+## 4c. Analýzy — co od nich čekat
+
+**Tabulky se počítají v aplikaci a jsou tam vždycky.** Nejslabší osy kádru, největší
+rozpory mezi pohledem trenéra a hráče, kdo ještě nemá hodnocení nebo sebehodnocení.
+Nic z toho nikam neodchází a nestojí to nic.
+
+**Otázka jazykovému modelu je vypnutá, dokud se nezapne.** Nastavení → *Povolit otázky
+na kádr v záložce Analýzy*. Je to zvlášť od volby modelu schválně: příkazovému řádku stačí
+jména kádru, ale analýze odejdou **známky, slovní posudky i cíle konkrétních hráčů**.
+
+Co od modelu čekat a co ne:
+
+| | |
+|---|---|
+| co umí | shrnout, na co se zaměřit, u koho je největší rozpor, jak formulovat téma k rozhovoru |
+| co neumí | počítat — čísla dostává hotová a má zakázáno cokoli dopočítávat |
+| co neví | nic o zápasech, docházce ani o tom, co se stalo na tréninku |
+| jak si ho ověřit | čísla jsou v tabulkách pod odpovědí; když věta neodpovídá tabulce, platí tabulka |
+
+Na souhrny stačí model zdarma (Workers AI). Na formulace k rozhovoru je znát rozdíl —
+tam se hodí silnější model, případně Claude (`ANTHROPIC_API_KEY`, kaskáda je postavená
+a při vyčerpaném kreditu spadne zpátky na model zdarma).
 
 ---
 
@@ -165,5 +201,12 @@ odmítne) a uzavřená shoda trenérů se řeší v záložce Shoda.
 - Každý trenér má vlastní heslo. Když někdo z týmu odejde, stačí ho v Lidech
   deaktivovat — tím se přestane moct přihlásit.
 - Notifikace nesou jen „kdo a co". Známky ani slovní bloky do Telegramu a e-mailu nepatří.
+- **Analýzy jsou jediné místo, odkud data odcházejí ven** — a jen se zapnutým přepínačem
+  `aiAnalyzy`. Modelu pak jdou jména, známky, slovní posudky i cíle. Souhrnné tabulky se
+  počítají v aplikaci a neposílají nic. Než to zapneš, věz, co posíláš a komu: Workers AI
+  běží na Cloudflare (týž účet jako aplikace), Claude je americká třetí strana.
+  GDPR záznam o činnosti zpracování a informace pro rodiče zatím **nejsou** — viz STATUS.
+- Log komunikace nese u analýzy jen rozsah podkladů (kolik listů, kolik os nad tolerancí),
+  nikdy jejich obsah.
 - Aplikace je na veřejné adrese. Špatné heslo má 700ms prodlevu, aby hádání ve smyčce
   nebylo praktické; náhledová URL jednotlivých verzí jsou vypnutá.

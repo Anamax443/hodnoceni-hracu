@@ -198,7 +198,32 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
       <li>Doplnit pozice — vyplněné mají 4 z 18, tisknou se na list.</li>
       <li>Ověřit účet GoSMS a dobít kredit, pokud se má posílat SMS.</li>
       <li>Pozvat Julka a Masa na vlastní účet, pak zrušit společné heslo.</li>
+      <li>Rozhodnout o <strong>zapnutí otázek modelu v Analýzách</strong> — a než se zapnou,
+          dopsat GDPR záznam o činnosti zpracování a informaci pro rodiče.</li>
     </ol>
+  </div>
+
+  <h2 class="section">Kde odcházejí data ven</h2>
+  <div class="card">
+    <p style="margin:0 0 10px">Aplikace je jinak uzavřená: frontend nesahá do D1, notifikace nesou
+       jen „kdo a co", repozitář neobsahuje žádná osobní data. <strong>Jediná cesta ven vede přes
+       Analýzy</strong> — a jen se zapnutým vypínačem.</p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Vypínač</th><th>Výchozí</th><th>Co odemyká</th></tr></thead>
+      <tbody>
+        <tr><td><code>aiPoskytovatel</code></td><td class="num">vypnuto</td>
+            <td>jazykový model vůbec; příkazovému řádku pak jde <strong>jen jedna věta a jména kádru</strong></td></tr>
+        <tr><td><code>aiAnalyzy</code></td><td class="num zero">ne</td>
+            <td><strong>otázky na kádr</strong> — modelu jdou jména, známky, slovní posudky i cíle</td></tr>
+        <tr><td><code>smsAktivni</code></td><td class="num">0</td>
+            <td>odesílání SMS (mimořádný placený kanál)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:14px">Souhrnné tabulky v Analýzách se
+       počítají ve Workeru a neposílají nikam nic — jsou dostupné i s vypnutým modelem. Do logu
+       komunikace jde u analýzy jen rozsah podkladů, nikdy jejich obsah.</p>
   </div>
 
   <h2 class="section">Otevřené otázky</h2>
