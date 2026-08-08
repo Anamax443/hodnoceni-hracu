@@ -218,6 +218,27 @@ vytiskne jako podklad, ať nezmizí z dohledu.
 šablony vedle sebe, každý podepsaný, slovní bloky a cíle poskládané ze všech (u každého
 kusu je napsáno, ze které šablony je). Bez zaškrtnutí má každá šablona vlastní stránku.
 
+#### Barva podle šablony
+
+Každá šablona má svou barvu, aby se v hromádce vytištěných listů poznalo na první pohled,
+co je co:
+
+| Šablona | Barva | |
+|---|---|---|
+| hráč v poli | modrá | `#2196F3` |
+| brankář | petrolejová | `#00838F` |
+| leader | vínová | `#AD1457` |
+
+Barvu nese hlavička, pruh se jménem hráče, radar i vzorek v legendě. **V hlavičce navíc
+stojí název šablony** — barva je jen druhý signál. Na černobílé tiskárně, při tisku bez
+grafiky na pozadí i barvoslepému čtenáři musí list dál dávat smysl, proto je název vždycky
+vidět. Kumulovaný list patří všem šablonám najednou, takže má hlavičku šedou a barvy nesou
+jednotlivé radary; v hlavičce jsou značky všech šablon, které jsou na stránce.
+
+Stejné barvy jsou i v aplikaci (štítky v Lidech, Hodnotit, Odkazech a Porovnání) a na
+stránce sebehodnocení, kterou vyplňuje hráč. Tmavý vzhled aplikace má vlastní, světlejší
+odstíny — na tmavém pozadí by papírové nebyly čitelné. Papír zůstává papírem.
+
 Listy se otevřou v nové záložce, odtud jdou na tiskárnu. **V dialogu tisku zapni „Grafika na
 pozadí" / „Background graphics"** — jinak se vytiskne bílý list bez modrého pruhu se jménem
 a bez barevných bloků. Okraje nech na „Výchozí", stránka si je řídí sama (A4, 12 mm).

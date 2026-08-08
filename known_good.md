@@ -5,6 +5,39 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-08 (13) — barva podle šablony a název šablony v hlavičce
+
+**Commit:** rozpracováno, nenasazeno. **Ověřeno** headless Edgem nad listy vyrenderovanými
+mimo prohlížeč (import `web/src/list.js` v Node, vzorová data — žádná ostrá, žádná D1).
+Změna je jen ve `web/`: bez migrace a bez zásahu do Workeru.
+
+Měřily se **spočtené** barvy (`getComputedStyle`), ne to, co je napsané v CSS.
+
+| Kontrola | Výsledek |
+|---|---|
+| list `pole` | hlavička, jméno i výplň polygonu `rgb(33,150,243)` = `#2196F3`, obrys `#1565C0` |
+| list `brankar` | vše `rgb(0,131,143)` = `#00838F`, obrys `#006064` |
+| list `leader` | vše `rgb(173,20,87)` = `#AD1457`, obrys `#880E4F` |
+| značka v hlavičce | 1 na list, texty `hráč v poli` / `brankář` / `leader (vůdcovství)` |
+| porovnávací polygon | zůstal šedý `rgb(158,158,158)` i na barevném listu |
+| kumulovaný list | hlavička neutrální `rgb(55,71,79)`, **3 značky** v hlavičce |
+| kumulovaný list — radary | tři polygony ve třech barvách; linka a titulek nad každým sedí s jeho šablonou |
+| kumulovaný list — legenda | vzorek za každou šablonu, každý svou barvou |
+| **tisk do PDF** | **5 listů = 5 stránek**, MediaBox `595 × 842 pt` (A4 na výšku); kumulovaný se 3 radary drží 1 stránku |
+| štítky v aplikaci — světlý vzhled | kontrast text/pozadí 5,03 / 6,60 / 7,85 |
+| štítky v aplikaci — tmavý vzhled | kontrast 8,87 / 9,66 / 10,64 |
+| syntaxe (`node --check`) | `list.js`, `radar.js`, `sablony.js`, `app.js`, `h.js`, `listy.js` — bez chyby |
+
+**Chyba, kterou test odhalil (opraveno):** záložní pravidlo `.page` stálo v `styl.css` **za**
+třídami `.sab-*`. Při stejné specificitě rozhoduje pořadí, takže je přebilo a brankářský
+i leader list se dál vykreslovaly modré, přestože třída na stránce byla správná. Na pohled
+do kódu to vidět nebylo — chytlo to až měření spočtených barev.
+
+**Poznámka:** štítek role „hráč" a štítek šablony „hráč v poli" mají v Lidech tutéž modrou;
+odlišuje je jen text. Nevyřešeno, jen zaznamenáno.
+
+---
+
 ## 2026-08-07 (12) — víc šablon u hráče a kumulovaný list
 
 **Commit:** `6dd0701` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–013).

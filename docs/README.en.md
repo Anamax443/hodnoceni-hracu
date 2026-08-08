@@ -152,6 +152,27 @@ The **Combined sheet** tick box puts them on **one page**: the radars side by si
 captioned, with the written notes and goals merged from all templates (each part says which
 template it came from). Unticked, every template gets its own page.
 
+#### Colour by template
+
+Every template has its own colour, so a stack of printed sheets can be told apart at a glance:
+
+| Template | Colour | |
+|---|---|---|
+| outfield | blue | `#2196F3` |
+| goalkeeper | teal | `#00838F` |
+| leader | crimson | `#AD1457` |
+
+The colour is carried by the header, the player's name bar, the radar and the legend swatch.
+**The header also spells out the template name** — colour is only the second signal. On a
+black-and-white printer, when printing without background graphics, and to a colour-blind
+reader the sheet still has to make sense, which is why the name is always visible. The
+combined sheet belongs to all templates at once, so its header stays grey, the colours are
+carried by the individual radars, and the header shows a badge per template on the page.
+
+The same colours appear in the app (labels under People, Evaluate, Links and Comparison) and
+on the self-evaluation page the player fills in. The app's dark theme uses its own, lighter
+shades — the paper ones are unreadable on a dark background. Paper stays paper.
+
 Sheets open in a new tab. **In the print dialogue enable “Background graphics”** — without
 it you get a white page with no blue name bar and no coloured blocks. Leave margins on
 “Default”; the page sets its own (A4, 12 mm). Check before printing: the number of pages in

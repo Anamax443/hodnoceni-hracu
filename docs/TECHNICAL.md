@@ -301,14 +301,52 @@ Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.htm
 - osa 0 je nahoře, pokračuje po směru hodinových ručiček: `úhel = 2π·i/n − π/2`
 - 5 soustředných úrovní mřížky (`KRUHY`), střídavě bílá a `#fafafa`
 - popisky os vně grafu (poloměr + 22), zalomené na dva řádky nad 17 znaků, s hodnotou `x/10`
-- aktuální hodnocení: modrý výplňový polygon `#2196F3` @ 40 % + body
-- porovnávací hodnocení: šedý čárkovaný obrys pod ním
+- aktuální hodnocení: výplňový polygon @ 40 % + body, **barva podle šablony** (viz 4c)
+- porovnávací hodnocení: šedý čárkovaný obrys pod ním — zůstává šedý vždy, aby se nepletl
+  s barvou šablony
 
 **Na jednom listu jsou maximálně dva polygony.** Buď trenér + hráč (rozhovor), nebo trenér
 nyní + trenér minule (vývoj). Vybírá se v záložce Listy. Tři polygony jsou nečitelné.
 
 Když se geometrie změní tady, musí se změnit i v `docs/vzor-list.html` — jinak přestane být
-referenční.
+referenční. Barvy se změnit smějí: vzor je list hráče v poli, tedy modrý.
+
+---
+
+## 4c. Barva podle šablony
+
+Aby se v hromádce vytištěných listů poznalo na první pohled, co je co:
+
+| Šablona | Barva | základ | tmavá | světlá |
+|---|---|---|---|---|
+| `pole` | modrá | `#2196F3` | `#1565C0` | `#E3F2FD` |
+| `brankar` | petrolejová | `#00838F` | `#006064` | `#E0F7FA` |
+| `leader` | vínová | `#AD1457` | `#880E4F` | `#FCE4EC` |
+
+Odstíny jsou schválně daleko od sebe a žádný se netluče se slovními bloky (zelená, oranžová,
+fialová) ani s rámečkem cílů (žlutá).
+
+**Barva je vždy jen druhý signál.** Vedle ní stojí název šablony — v hlavičce listu jako
+značka (`.sab-znacka`), v aplikaci jako štítek (`.znacka.sab-*`). Bez toho by list nedával
+smysl na černobílé tiskárně, při tisku bez grafiky na pozadí ani barvoslepému čtenáři.
+Značka má proto barevný **text a rámeček**, ne bílý text na barevném podkladu.
+
+Technicky jsou to tři CSS proměnné (`--sab-zaklad`, `--sab-tmava`, `--sab-svetla`) a tři
+třídy `.sab-pole` / `.sab-brankar` / `.sab-leader` v `src/styl.css`. Proměnné se dědí, takže
+třída se nasadí buď na `.page` (jeden list = jedna šablona), nebo na `.chart-one` (kumulovaný
+list = víc šablon na stránce, každý radar má svou). Kumulovaná `.page.kumul` je neutrálně
+šedá — stránka nepatří žádné jedné šabloně.
+
+**Pozor na pořadí pravidel.** Záložní `.page` má stejnou specificitu jako `.sab-*`, takže
+musí stát **před** nimi; když stálo za nimi, přebilo je a brankářský i leader list se
+tiskly modré. Je to tentýž případ jako pravidla `@media print` na konci souboru.
+
+Radar bere barvu z týchž proměnných, ale zapisuje ji přes atribut `style`, ne přes
+`fill="…"` — prezentační atributy `var()` spolehlivě neumí. Záložní hodnota je modrá, aby
+SVG vytažené ze stránky vypadalo pořád stejně.
+
+V aplikaci má tmavý vzhled vlastní, světlejší odstíny (`:root[data-theme="dark"] .znacka.sab-*`
+v `app.css`) — papírové jsou na tmavém pozadí nečitelné. Tištěný list zůstává světlý vždy.
 
 ---
 

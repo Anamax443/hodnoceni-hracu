@@ -163,6 +163,14 @@ vytiskne jako podklad, aby nezmizela z dohledu.</p>
 vedle sebe, každý podepsaný svou šablonou, slovní bloky a cíle poskládané ze
 všech šablon (a je u nich napsáno, ze které jsou). Radary zůstávají oddělené
 i tady — sloučit dvanáct os do jednoho obrazce by nedávalo smysl.</p>
+<p><b>Každá šablona má svou barvu</b>, ať se na hromádce vytištěných listů
+pozná na první pohled, co je co: <b>hráč v poli modrá</b>, <b>brankář
+petrolejová</b>, <b>leader vínová</b>. Barvu nese hlavička, jméno hráče, radar
+i vzorek v legendě; v hlavičce navíc stojí <b>název šablony</b>. Stejné barvy
+jsou i v aplikaci u štítků v tabulkách a na stránce sebehodnocení, kterou
+vyplňuje hráč. Na barvu samotnou se nespoléhej — název je vedle ní vždycky,
+takže list dává smysl i vytištěný černobíle. Kumulovaný list patří všem třem
+šablonám najednou, proto má hlavičku šedou a barvy nesou jednotlivé radary.</p>
 
 <h2>Notifikace</h2>
 <p>Aplikace posílá <b>souhrn</b>, ne zprávu za každou událost. Zpráva nese jen
@@ -413,6 +421,15 @@ an empty one is printed as a blank form so it does not drop out of sight.</p>
 by side, each captioned with its template, and the written notes and goals merged
 from all templates (saying which one each part came from). The radars stay
 separate here too — merging twelve axes into one shape would mean nothing.</p>
+<p><b>Every template has its own colour</b>, so that a stack of printed sheets
+can be told apart at a glance: <b>outfield blue</b>, <b>goalkeeper teal</b>,
+<b>leader crimson</b>. The colour is carried by the header, the player's name,
+the radar and the legend swatch; the header also spells out the <b>template
+name</b>. The same colours appear in the app on the labels in tables and on the
+self-evaluation page the player fills in. Do not rely on colour alone — the name
+is always next to it, so the sheet still works printed in black and white. The
+combined sheet belongs to all templates at once, so its header stays grey and
+the colours are carried by the individual radars.</p>
 
 <h2>Notifications</h2>
 <p>The app sends a <b>digest</b>, not one message per event, and the message

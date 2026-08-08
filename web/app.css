@@ -175,6 +175,17 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 .znacka.trener { color: var(--oranzova); border-color: var(--oranzova); background: var(--pozor-poz); }
 .znacka.neaktivni { color: var(--seda); border-color: var(--linka); background: var(--pozadi); }
 
+/* Šablony mají svou barvu na tiskovém listu (src/styl.css) — na obrazovce musí
+   sedět ta samá, jinak by jeden odstín znamenal na papíře a v aplikaci něco
+   jiného. Název šablony stojí vedle barvy, na barvu samotnou se nespoléhá.
+   Tmavý vzhled má vlastní odstíny: papírové jsou na tmavém pozadí nečitelné. */
+.znacka.sab-pole    { color: #1565C0; border-color: #2196F3; background: #E3F2FD; }
+.znacka.sab-brankar { color: #006064; border-color: #00838F; background: #E0F7FA; }
+.znacka.sab-leader  { color: #880E4F; border-color: #AD1457; background: #FCE4EC; }
+:root[data-theme="dark"] .znacka.sab-pole    { color: #90CAF9; border-color: #42A5F5; background: #102636; }
+:root[data-theme="dark"] .znacka.sab-brankar { color: #80DEEA; border-color: #26C6DA; background: #0b2b30; }
+:root[data-theme="dark"] .znacka.sab-leader  { color: #F8BBD0; border-color: #EC407A; background: #301022; }
+
 .ano { color: var(--zelena); font-weight: bold; }
 .ne { color: var(--seda); opacity: .6; }
 .resit td { background: var(--pozor-poz); }

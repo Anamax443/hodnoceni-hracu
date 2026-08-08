@@ -2,6 +2,56 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-08 (16) — barva podle šablony a název šablony v hlavičce
+
+**Na listu nebylo poznat, kterou šesticí os je hodnocený.** Šablonu prozradily až popisky
+os, tedy po přečtení; v hromádce vytištěných listů se brankářský od polního nedal odlišit
+pohledem. Kumulovaný list měl titulky u radarů (zápis 15), jednotlivý neměl nic.
+
+**Každá šablona má vlastní barvu** — hráč v poli **modrá** `#2196F3` (beze změny, tak se
+tisklo dosud), brankář **petrolejová** `#00838F`, leader **vínová** `#AD1457`. Odstíny jsou
+schválně daleko od sebe a žádný se netluče se slovními bloky (zelená, oranžová, fialová)
+ani s rámečkem cílů (žlutá). Barvu nese hlavička, pruh se jménem, radar i vzorek v legendě.
+
+**V hlavičce navíc stojí název šablony** jako značka. Barva je jen druhý signál — na
+černobílé tiskárně, při tisku bez grafiky na pozadí i barvoslepému čtenáři musí list dál
+dávat smysl. Značka má proto barevný text a rámeček, ne bílý text na barevném podkladu.
+
+**Kde všude:**
+- **Tiskový list** — jednotlivý má barvu své šablony; **kumulovaný zůstává neutrálně šedý**,
+  protože stránka nepatří žádné jedné šabloně, a barvy nesou jednotlivé radary (nově i linka
+  nad každým). V hlavičce jsou značky všech šablon na stránce, v legendě vzorek za každou.
+- **Aplikace** — popisky šablon v Lidech, Hodnotit, Odkazech a Porovnání se z prostého textu
+  změnily na barevné štítky. Tmavý vzhled má vlastní, světlejší odstíny; papírové jsou na
+  tmavém pozadí nečitelné.
+- **Sebehodnocení `/h/<token>`** — v horní liště je značka šablony. Odkaz nese jednu šestici
+  os, takže kdo chytá i hraje v poli, dostane odkazy dva a musí poznat, který má otevřený.
+  Server šablonu v `GET /api/self/:token` vracel už dřív, Worker se měnit nemusel.
+
+**Porovnávací polygon zůstal šedý** ve všech případech. Kdyby se barvil taky, splynul by
+význam „tohle je druhý pohled" s významem „tohle je jiná šablona".
+
+**Past, na kterou jsem šlápl:** záložní pravidlo `.page` má stejnou specificitu jako
+`.sab-*` a bylo v souboru **za** nimi → přebilo je a brankářský i leader list se dál
+vykreslovaly modré. Odchytil to až test spočtených barev, na pohled do kódu to nebylo vidět.
+Je to tentýž případ jako pravidla `@media print` na konci `styl.css` — poznámka o pořadí je
+teď u obojího.
+
+**Ověřeno lokálně** (headless Edge, vyrenderované listy bez běžící aplikace a bez ostrých dat):
+spočtené barvy sedí u všech tří šablon zvlášť i na kumulovaném listu (hlavička, jméno,
+polygon, obrys, linka nad radarem, titulek, vzorky v legendě), porovnávací polygon je šedý,
+značky nesou správné názvy. **Tisk do PDF: 5 listů = 5 stránek, MediaBox 595 × 842 pt**
+(A4 na výšku) — kumulovaný se třemi radary se pořád vejde na jednu. Štítky v aplikaci mají
+ve světlém i tmavém vzhledu kontrast 5,0–10,6, tedy nad hranicí čitelnosti.
+
+**Nenasazeno.** Změna je jen ve `web/` (žádná migrace, žádný zásah do Workeru), takže stačí
+`npm run deploy`.
+
+**Pozn. k dořešení:** štítek role „hráč" a štítek šablony „hráč v poli" jsou v Lidech vedle
+sebe a mají tutéž modrou. Text je odlišuje, barva ne.
+
+---
+
 ## 2026-08-07 (15) — víc šablon u jednoho hráče a kumulovaný list
 
 **Hráč má šablon kolik potřebuje** (migrace `013`, `players.sablony` jako JSON pole).

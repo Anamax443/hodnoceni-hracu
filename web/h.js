@@ -81,6 +81,10 @@ function vykresli() {
 
     if (!data) return;
     $('#hl-jmeno').textContent = data.jmeno;
+    // Barva i název šablony sedí s tiskovým listem, který hráč dostane potom.
+    $('#hl-sablona').innerHTML = data.sablona
+        ? `<span class="znacka sab-${esc(data.sablona)}">${t('sablona.' + data.sablona)}</span>`
+        : '';
 
     if (data.pouzit) {
         obsah.innerHTML = `<div class="karta"><div class="hlaska ok">${t('self.jizOdeslano')}</div></div>`;

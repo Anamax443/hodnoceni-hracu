@@ -32,7 +32,7 @@ se nikdy neznámkují.
 | **Hodnotit** | 6 os po 1–10, tři slovní bloky, 2–3 cíle; **šestice os se vybírá u hodnocení**, hromadné hodnocení víc hráčů naráz |
 | **Úprava hodnocení** | starší hodnocení se načte, opraví a uloží jako **nová verze** — nic se nepřepisuje |
 | **Shoda** | matice osa × trenér, uzavření finálního znění pro list; povinný trenér nevidí cizí čísla, dokud neodevzdá |
-| **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně |
+| **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně; **každá šablona má svou barvu a název v hlavičce** |
 | **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, srovnání hráčů mezi sebou, vývoj v čase, historie verzí |
 | **Odkazy** | jednorázové odkazy na sebehodnocení; odkaz nese jednu šestici os, takže hráč s víc šablonami dostane odkaz na každou |
 | **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace, jazykový model |

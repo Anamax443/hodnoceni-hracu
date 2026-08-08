@@ -29,6 +29,16 @@ function popisPostu(h) {
     return [pozice, h.post].filter(Boolean).join(' — ');
 }
 
+/**
+ * Značka šablony do hlavičky. Na listu musí být na první pohled vidět, jestli
+ * je to brankářská, polní nebo leader šestice — samotné popisky os to říkají
+ * až po přečtení. Barvu drží třída `sab-*` (styl.css), název stojí vedle ní:
+ * na černobílém tisku a barvoslepému čtenáři musí list dál dávat smysl.
+ */
+function znacka(sablona) {
+    return `<span class="sab-znacka sab-${esc(sablona)}">${t('sablona.' + sablona)}</span>`;
+}
+
 /** Popisek druhého polygonu podle režimu, který vrátil server. */
 function popisekPorovnani(h) {
     if (h.porovnaniRezim === 'hrac') return t('list.hracSeVidi');
@@ -49,11 +59,12 @@ export function list(h, nas) {
     const datum = new Date().toLocaleDateString(locale());
 
     return `
-    <div class="page">
+    <div class="page sab-${esc(h.sablona)}">
         <div class="header">
             <div>
                 <div class="club">${esc(nas.klub)}</div>
                 <h1>${t('list.nadpis')}</h1>
+                ${znacka(h.sablona)}
             </div>
             <div class="meta">
                 ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
@@ -71,8 +82,8 @@ export function list(h, nas) {
 
         <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
         <div class="legend">
-            <span><i class="swatch" style="background:#2196F3;opacity:.6"></i> ${t('list.trener')}</span>
-            ${h.porovnani ? `<span><i class="swatch" style="background:#9e9e9e;opacity:.5"></i> ${esc(popisekPorovnani(h))}</span>` : ''}
+            <span><i class="swatch trener"></i> ${t('list.trener')}</span>
+            ${h.porovnani ? `<span><i class="swatch porovnani"></i> ${esc(popisekPorovnani(h))}</span>` : ''}
         </div>
 
         <div class="blocks">
@@ -145,6 +156,7 @@ export function listKumulovany(hraci, nas) {
             <div>
                 <div class="club">${esc(nas.klub)}</div>
                 <h1>${t('list.nadpis')}</h1>
+                <div class="sab-znacky">${hraci.map(h => znacka(h.sablona)).join('')}</div>
             </div>
             <div class="meta">
                 ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
@@ -163,7 +175,7 @@ export function listKumulovany(hraci, nas) {
                 const seznamOs = osy(h.sablona);
                 if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
                 return `
-                <div class="chart-one">
+                <div class="chart-one sab-${esc(h.sablona)}">
                     <div class="chart-title">${t('sablona.' + h.sablona)}</div>
                     <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
                     ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
@@ -171,9 +183,9 @@ export function listKumulovany(hraci, nas) {
             }).join('')}
         </div>
         <div class="legend">
-            <span><i class="swatch" style="background:#2196F3;opacity:.6"></i> ${t('list.trener')}</span>
+            <span>${hraci.map(h => `<i class="swatch trener sab-${esc(h.sablona)}"></i>`).join('')} ${t('list.trener')}</span>
             ${hraci.some(h => h.porovnani)
-                ? `<span><i class="swatch" style="background:#9e9e9e;opacity:.5"></i> ${
+                ? `<span><i class="swatch porovnani"></i> ${
                     esc(popisekPorovnani(hraci.find(h => h.porovnani)))}</span>`
                 : ''}
         </div>

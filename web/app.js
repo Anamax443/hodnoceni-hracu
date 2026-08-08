@@ -225,6 +225,13 @@ const jmenoText = o => o.prezdivka ? `${o.jmeno} „${o.prezdivka}"` : o.jmeno;
 const sablonyOsoby = o => (o?.sablony?.length ? o.sablony : [o?.sablona ?? 'pole']);
 const nazvySablon = o => sablonyOsoby(o).map(s => t('sablona.' + s)).join(' · ');
 
+/* Barevný štítek šablony. Stejné odstíny jako na tiskovém listu (src/styl.css),
+   ať trenér nemusí u každé tabulky luštit, jestli kouká na brankářskou nebo
+   polní řadu. Barva je druhý signál — název šablony je v štítku pořád.
+   `nazvySablon` zůstává čistý text, používá se tam, kde se výstup escapuje. */
+const stitekSablony = s => `<span class="znacka sab-${esc(s)}">${t('sablona.' + s)}</span>`;
+const stitkySablon = o => sablonyOsoby(o).map(stitekSablony).join(' ');
+
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
@@ -235,7 +242,7 @@ async function lide(kam) {
             <td class="klik-jmeno" data-upravit="${o.id}" title="${t('lide.upravit.tip')}">${jmenoHtml(o)}</td>
             <td>${esc(nazvyPozic(o) || t('lide.bezPozic'))}${o.post ? ` <span class="popis">${esc(o.post)}</span>` : ''}</td>
             <td><span class="znacka ${o.role}">${o.role === 'trener' ? t('lide.trener') : t('lide.hrac')}</span></td>
-            <td>${o.role === 'hrac' ? esc(nazvySablon(o)) : '—'}</td>
+            <td>${o.role === 'hrac' ? stitkySablon(o) : '—'}</td>
             <td>${o.aktivni ? '' : `<span class="znacka neaktivni">${t('lide.neaktivni')}</span>`}</td>
             <td><button class="vedlejsi" data-upravit="${o.id}" title="${t('lide.upravit.tip')}">${t('lide.upravit')}</button></td>
         </tr>`;
@@ -290,7 +297,7 @@ async function lide(kam) {
             <div class="pole">
                 <label>${t('lide.sablona.label')}</label>
                 <div class="pozice-vyber">${Object.keys(SABLONY).map(s => `
-                    <label class="volba"><input type="checkbox" class="o-sablona" value="${s}"> ${t('sablona.' + s)}</label>
+                    <label class="volba"><input type="checkbox" class="o-sablona" value="${s}"> ${stitekSablony(s)}</label>
                 `).join('')}</div>
                 <div class="popis">${t('lide.sablona.napoveda')}</div>
             </div>
@@ -1349,7 +1356,7 @@ async function listy(kam) {
                         <td class="cisla" rowspan="${stavy.length}">
                             <input type="checkbox" class="vyber" value="${h.id}" checked></td>
                         <td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
-                        <td>${t('sablona.' + s.sablona)}</td>
+                        <td>${stitekSablony(s.sablona)}</td>
                         <td class="cisla">${znacka(s.maTrener)}</td>
                         <td class="cisla">${znacka(s.maHrac)}</td>
                     </tr>`).join('');
@@ -1516,7 +1523,7 @@ async function pripojHistorii(kam, hracId) {
                         <td>${esc(cas(v.datum))}${znackaUpravy(v)}</td>
                         <td>${esc(v.obdobi)}</td>
                         <td>${esc(jmenoAutora(v))}</td>
-                        <td>${t('sablona.' + v.sablona)}</td>
+                        <td>${stitekSablony(v.sablona)}</td>
                         <td>${v.autor === 'trener'
                                 ? `<button class="vedlejsi" data-upravit="${v.id}" title="${t('historie.upravit.tip')}">${t('historie.upravit')}</button> `
                                 : ''}<button class="vedlejsi" data-tisk="${v.id}" title="${t('historie.tisk.tip')}">${t('historie.tisk')}</button></td>
@@ -1605,7 +1612,7 @@ function tabulkaPorovnani(p) {
     return `
         <div class="karta">
             <h2>${t('porovnani.rozdily', esc(p.obdobi))}
-                ${p.sablona ? `<span class="popis">— ${t('porovnani.sablona', t('sablona.' + p.sablona))}</span>` : ''}</h2>
+                ${p.sablona ? `<span class="popis">— ${t('porovnani.sablona', stitekSablony(p.sablona))}</span>` : ''}</h2>
             ${p.pocetResit > 3 ? `<div class="hlaska pozor">${t('porovnani.upozorneni', p.pocetResit)}</div>` : ''}
             <table>
                 <thead><tr><th>${t('porovnani.osa')}</th><th class="cisla">${t('lide.trener')}</th>
@@ -1670,7 +1677,7 @@ async function odkazy(kam) {
                 <tbody>${seznam.length ? seznam.map(x => `
                     <tr>
                         <td>${jmenoHtml(x)}</td>
-                        <td>${t('sablona.' + (x.sablona || 'pole'))}</td>
+                        <td>${stitekSablony(x.sablona || 'pole')}</td>
                         <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
                         <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
                         <td class="odkaz-pole">${esc(zaklad)}/h/${esc(x.token.slice(0, 8))}…</td>

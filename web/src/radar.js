@@ -4,9 +4,18 @@
 
    Geometrie převzata beze změny z docs/vzor-list.html — referenční
    tiskový výstup. Když se tady něco změní, musí se změnit i tam.
+   (Barvu si graf bere z šablony, viz níž; vzor je list hráče v poli,
+   takže zůstává modrý a jako reference platí dál.)
 
    Na jednom listu jsou maximálně DVA polygony. Tři jsou nečitelné.
    ===================================================================== */
+
+/* Barva polygonu jde ze šablony (proměnné `--sab-*` v styl.css), aby graf
+   držel stejný odstín jako hlavička listu. Zapisuje se přes `style`, ne přes
+   `fill="..."`: prezentační atributy `var()` spolehlivě neumí. Záložní hodnota
+   je modrá hráče v poli, takže SVG vytažené ze stránky vypadá pořád stejně. */
+const VYPLN = 'var(--sab-zaklad, #2196F3)';
+const OBRYS = 'var(--sab-tmava, #1565C0)';
 
 import { MAX, KRUHY } from './sablony.js';
 
@@ -77,7 +86,7 @@ export function radar(osy, hodnoceni, porovnani) {
             svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + ri * 10).toFixed(1)}" text-anchor="${anchor}" font-size="9.5" font-family="Arial" fill="#444444">${r}</text>`;
         });
         if (hodnota !== null && hodnota !== undefined) {
-            svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + radky.length * 10 + 1).toFixed(1)}" text-anchor="${anchor}" font-size="11.5" font-weight="bold" font-family="Arial" fill="#1565C0">${hodnota}/10</text>`;
+            svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + radky.length * 10 + 1).toFixed(1)}" text-anchor="${anchor}" font-size="11.5" font-weight="bold" font-family="Arial" style="fill:${OBRYS}">${hodnota}/10</text>`;
         }
     }
 
@@ -90,10 +99,10 @@ export function radar(osy, hodnoceni, porovnani) {
     // --- aktuální hodnocení ---
     if (hodnoceni) {
         const h = osy.map(o => hodnoceni[o.klic] ?? 0);
-        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" fill="#2196F3" fill-opacity="0.40" stroke="#1565C0" stroke-width="2.5"/>`;
+        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" fill-opacity="0.40" stroke-width="2.5" style="fill:${VYPLN};stroke:${OBRYS}"/>`;
         h.forEach((v, i) => {
             const p = bod(cx, cy, R * v / MAX, i, n);
-            svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#1565C0"/>`;
+            svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" style="fill:${OBRYS}"/>`;
         });
     }
 
