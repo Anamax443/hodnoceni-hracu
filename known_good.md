@@ -5,6 +5,33 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-08 (14) — tisk po listech, ne po hráčích
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1
+(zkušební hráč se třemi šablonami a hodnocením ke každé; ostrá data nedotčena).
+
+| `ids` | Očekáváno | Naměřeno |
+|---|---|---|
+| `vse` | všechny listy | `brankar, pole, leader` |
+| `2` | všechny listy hráče (starý tvar) | `brankar, pole, leader` |
+| `2:brankar` | jeden list | `brankar` |
+| `2:brankar,2:leader` | dva listy | `brankar, leader` |
+| `2:nesmysl` | nic | 0 listů |
+| `2:brankar,2` | míchané zadání = všechno | `brankar, pole, leader` |
+
+**Tabulka proklikaná v headless Edge přes CDP** (přihlášení cookie, záložka Listy):
+
+| Kontrola | Výsledek |
+|---|---|
+| řádků / zaškrtávátek | 3 / 3 |
+| řádek bez zaškrtávátka | 0 |
+| buněk v řádcích | `5 / 4 / 4` — jméno drží `rowspan`, sloupce sedí |
+| hodnoty zaškrtávátek | `2:brankar`, `2:pole`, `2:leader` |
+| štítků šablon v tabulce | 3 |
+| výběr jednoho listu → adresa | `listy.html?…&ids=2%3Abrankar` |
+
+---
+
 ## 2026-08-08 (13) — barva podle šablony a název šablony v hlavičce
 
 **Commit:** `3378321` · **NASAZENO** 2026-08-08, Version ID `d672d044-3954-4c68-9beb-67dcffda81a7`.

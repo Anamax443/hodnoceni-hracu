@@ -1350,12 +1350,15 @@ async function listy(kam) {
                     // takže musí být vidět, která z nich ještě chybí.
                     const stavy = h.stavSablon ?? [{ sablona: h.sablona, maTrener: h.ma_trener, maHrac: h.ma_hrac }];
                     const znacka = ano => ano ? '<span class="ano">✓</span>' : '<span class="ne">—</span>';
+                    // Zaškrtávátko je na KAŽDÉM řádku, ne na hráči: co list, to
+                    // vlastní volba. Ferda má tři šablony a nemá smysl, aby se
+                    // pokaždé tisklo všechno, když chce trenér jen brankářský list.
                     return stavy.map((s, i) => `
                     <tr>
-                        ${i === 0 ? `
-                        <td class="cisla" rowspan="${stavy.length}">
-                            <input type="checkbox" class="vyber" value="${h.id}" checked></td>
-                        <td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
+                        <td class="cisla">
+                            <input type="checkbox" class="vyber" value="${h.id}:${s.sablona}"
+                                   title="${t('listy.vyber.tip')}" checked></td>
+                        ${i === 0 ? `<td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
                         <td>${stitekSablony(s.sablona)}</td>
                         <td class="cisla">${znacka(s.maTrener)}</td>
                         <td class="cisla">${znacka(s.maHrac)}</td>

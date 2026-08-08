@@ -148,6 +148,10 @@ A player with several templates gets **a sheet for each of them**. The *Who gets
 table therefore has a row per template and shows which one still has no evaluation; an empty
 one is printed as a blank form so it does not drop out of sight.
 
+**Tick boxes work per sheet, not per player.** Ferda has three templates and therefore three
+rows, each with its own tick box: to print only his goalkeeper sheet, untick the other two.
+The tick box in the header selects and deselects everything.
+
 The **Combined sheet** tick box puts them on **one page**: the radars side by side, each
 captioned, with the written notes and goals merged from all templates (each part says which
 template it came from). Unticked, every template gets its own page.

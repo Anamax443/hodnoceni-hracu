@@ -214,6 +214,10 @@ Hráč, který má víc šablon, dostane **list na každou z nich**. V tabulce *
 je proto řádek na každou šablonu a je vidět, která ještě hodnocení nemá — prázdná se
 vytiskne jako podklad, ať nezmizí z dohledu.
 
+**Zaškrtává se po listech, ne po hráčích.** Ferda má tři šablony a má tedy tři řádky, každý
+s vlastním zaškrtávátkem: když chceš jen jeho brankářský list, zbylé dva odškrtneš. Zaškrtávátko
+v záhlaví označí a odznačí všechno.
+
 **Kumulovaný list** (zaškrtávátko nahoře) to složí na **jednu stránku**: radary za všechny
 šablony vedle sebe, každý podepsaný, slovní bloky a cíle poskládané ze všech (u každého
 kusu je napsáno, ze které šablony je). Bez zaškrtnutí má každá šablona vlastní stránku.

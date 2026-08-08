@@ -159,6 +159,9 @@ dvěma vybranými posouvat šipkami.</p>
 polní i leader zvlášť. V tabulce <i>Kdo se vytiskne</i> je proto řádek na
 každou šablonu a je v něm vidět, která ještě hodnocení nemá; prázdná se
 vytiskne jako podklad, aby nezmizela z dohledu.</p>
+<p><b>Zaškrtává se po listech, ne po hráčích.</b> Ferda má tři šablony, takže
+má tři řádky a každý vlastní zaškrtávátko — když chceš jen jeho brankářský
+list, zbylé dva odškrtneš. Zaškrtávátko v záhlaví označí a odznačí všechno.</p>
 <p>Přepínač <b>Kumulovaný list</b> to složí na <b>jednu stránku</b>: radary
 vedle sebe, každý podepsaný svou šablonou, slovní bloky a cíle poskládané ze
 všech šablon (a je u nich napsáno, ze které jsou). Radary zůstávají oddělené
@@ -417,6 +420,9 @@ author and lets you step between two of them.</p>
 goalkeeper, outfield and leader separately. The <i>Who gets printed</i> table
 therefore has a row per template and shows which one still has no evaluation;
 an empty one is printed as a blank form so it does not drop out of sight.</p>
+<p><b>Tick boxes work per sheet, not per player.</b> Ferda has three templates,
+so he has three rows, each with its own tick box — to print only his goalkeeper
+sheet, untick the other two. The tick box in the header toggles everything.</p>
 <p>The <b>Combined sheet</b> switch puts them on <b>one page</b>: the radars side
 by side, each captioned with its template, and the written notes and goals merged
 from all templates (saying which one each part came from). The radars stay

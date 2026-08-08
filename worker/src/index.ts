@@ -2363,8 +2363,20 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             });
         }
 
-        const filtr = ids && ids !== 'vse'
-            ? ids.split(',').map(Number).filter(Boolean)
+        /* `ids` je buď `vse`, nebo seznam oddělený čárkami. Položka je buď samotné
+           číslo hráče (= všechny jeho listy; tak to fungovalo dřív a tak to posílají
+           starší odkazy i příkazový řádek), nebo `id:sablona` pro jeden konkrétní
+           list. Ferda má tři šablony, ale tisknout se má jen to, co je zaškrtnuté —
+           ne vždycky všechno, co u sebe má. */
+        const vyber = ids && ids !== 'vse'
+            ? ids.split(',').flatMap(kus => {
+                const [cast, sablona] = kus.split(':');
+                const id = Number(cast);
+                if (!id) return [];
+                if (sablona === undefined) return [{ id, sablona: null as string | null }];
+                // Neznámou šablonu radši zahodit než tiše vytisknout všechno.
+                return sablona in SABLONY ? [{ id, sablona: sablona as string | null }] : [];
+            })
             : null;
 
         const { results: hraci } = await env.DB.prepare(
@@ -2373,7 +2385,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null;
                 pozice: string; sablona: string; sablony: string }>();
 
-        const vybrani = (hraci ?? []).filter(h => !filtr || filtr.includes(h.id));
+        const vybrani = (hraci ?? []).filter(h => !vyber || vyber.some(v => v.id === h.id));
         const listy = [];
 
         for (const h of vybrani) {
@@ -2389,10 +2401,17 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             // které má hráč přiřazené v kartotéce. Přiřazená šablona bez hodnocení
             // dá prázdný list jako podklad — jinak by chybějící brankářská řada
             // z tisku tiše zmizela a nikdo by si jí nevšiml.
+            // Když si trenér vybral konkrétní listy (`id:sablona`), vytisknou se jen
+            // ty. Hráč zadaný bez šablony pořád znamená všechny jeho listy.
+            const zadane = vyber?.filter(v => v.id === h.id) ?? [];
+            const jenTyto = zadane.length && zadane.every(v => v.sablona)
+                ? new Set(zadane.map(v => v.sablona as string))
+                : null;
+
             const kVykresleni = [...new Set([
                 ...(sablony ?? []).map(s => s.sablona),
                 ...sablonyOsoby(h)
-            ])];
+            ])].filter(s => !jenTyto || jenTyto.has(s));
 
             for (const sablona of kVykresleni) {
                 // Na list jde uzavřená shoda trenérů, když existuje. Teprve když

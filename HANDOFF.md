@@ -2,6 +2,43 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-08 (17) — tiskne se po listech, ne po hráčích
+
+**Ferda má tři šablony a tiskly se vždycky všechny tři.** V tabulce *Kdo se vytiskne* byl
+řádek na každou šablonu (zápis 15), ale zaškrtávátko bylo jen jedno na celého hráče —
+přes `rowspan` přes všechny jeho řádky. Vybrat si z Ferdových listů jen brankářský nešlo.
+
+**Zaškrtávátko je teď na každém řádku**, tedy na každé kombinaci hráč × šablona. Sloupec se
+jménem si `rowspan` nechal, takže tabulka vypadá stejně; přibyla jen volba tam, kde chyběla.
+
+**`ids` v `/api/listy` umí položku `id:sablona`.** Samotné číslo hráče pořád znamená všechny
+jeho listy — kvůli starším odkazům a příkazovému řádku, který vybírá hráče, ne listy. Obojí
+jde míchat; kdo je zadaný aspoň jednou bez šablony, dostane všechno své. Neznámá šablona se
+zahodí: radši nevytisknout nic než tiše vytisknout všechno.
+
+| `ids` | výsledek |
+|---|---|
+| `vse` | všichni aktivní, všechny listy |
+| `7` | hráč 7, všechny jeho listy |
+| `7:brankar` | jen brankářský list |
+| `7:brankar,7:leader` | dva listy |
+| `7:brankar,7` | všechny listy hráče 7 (míchané zadání) |
+| `7:nesmysl` | nic |
+
+**Kumulovaný list se řídí výběrem** — když z Ferdových tří šablon zaškrtneš dvě, složí se
+na jednu stránku ty dvě. Jedna zaškrtnutá šablona dá obyčejný list, ne kumulovaný.
+
+**Ověřeno lokálně** (`wrangler dev` + lokální D1, zkušební hráč se třemi šablonami a
+hodnocením ke každé):
+- API 6 případů z tabulky výše — všechny sedí.
+- Tabulka proklikaná v headless Edge přes CDP: 3 řádky, **3 zaškrtávátka, žádný řádek bez
+  něj**, počty buněk `5 / 4 / 4` (jméno drží `rowspan`), hodnoty `2:brankar` / `2:pole` /
+  `2:leader`. Po odškrtnutí zbytku vygenerovalo tlačítko adresu `…&ids=2%3Abrankar`.
+
+**Nenasazeno** — pokračuje níž.
+
+---
+
 ## 2026-08-08 (16) — barva podle šablony a název šablony v hlavičce
 
 **Na listu nebylo poznat, kterou šesticí os je hodnocený.** Šablonu prozradily až popisky

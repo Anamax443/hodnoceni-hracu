@@ -424,6 +424,9 @@ Důsledky, které musí platit všude:
   token na tutéž šablonu se nezakládá podruhé (vrací se v `preskoceno`).
 - `/api/listy` vrací **jeden list na kombinaci hráč × šablona** — Ferda dostane tři.
   Kumulace na jednu stránku je až tisková volba ve frontendu.
+- **Vybírá se po listech, ne po hráčích.** V záložce Listy má každý řádek (hráč × šablona)
+  vlastní zaškrtávátko a do `ids` jde `id:sablona`. Dokud bylo zaškrtávátko na hráči, Ferdovy
+  tři šablony se tiskly vždycky všechny najednou.
 - **slovní bloky a cíle jsou na hodnocení**, takže vycházejí na každou šablonu vlastní;
   formulář je při přepnutí šablony nepřenáší
 - `/api/porovnani` a `/api/trend` pracují vždy v rámci jedné šablony; když hráč vyplnil
@@ -674,7 +677,21 @@ GET    /api/self/:token                           veřejné — jméno + klíče
 POST   /api/self/:token    {hodnoty, poznamka}    veřejné — uloží autor='hrac', token zneplatní
 ```
 
-`porovnani` = `minule` | `hrac` | `zadne`, `ids` = `vse` nebo seznam id oddělený čárkami.
+`porovnani` = `minule` | `hrac` | `zadne`.
+
+`ids` = `vse`, nebo seznam oddělený čárkami. Položka je buď **samotné id hráče** (= všechny
+jeho listy), nebo **`id:sablona`** pro jeden konkrétní list — Ferda má tři šablony a nemá
+smysl, aby se pokaždé tisklo všechno. Obojí jde míchat; hráč zadaný aspoň jednou bez šablony
+dostane všechny své listy. Neznámá šablona se zahodí (radši nic než tiše vytisknout všechno).
+Samotné id zůstalo kvůli starším odkazům a příkazovému řádku, který vybírá hráče, ne listy.
+
+| `ids` | co se vytiskne |
+|---|---|
+| `vse` | všichni aktivní hráči, všechny jejich listy |
+| `7` | hráč 7, všechny jeho listy |
+| `7:brankar` | jen brankářský list hráče 7 |
+| `7:brankar,7:leader` | dva listy hráče 7 |
+| `7:nesmysl` | nic |
 
 Odpovědi nesou klíče, ne texty: `/api/self` vrací `osy: ['prava', …]`, `/api/listy` vrací
 `porovnaniRezim` a `porovnaniObdobi` místo hotového popisku, `/api/trend` vrací počty
