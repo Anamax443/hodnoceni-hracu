@@ -49,6 +49,10 @@ trenér bránění 3, hráč 8):
   štítky šablon, 5 zvýrazněných řádků, odpověď se vykreslila, **žádná výjimka v konzoli**.
 - i18n kompletní: 522 klíčů česky i anglicky, nechybí ani jeden na obou stranách.
 
+**NASAZENO** 2026-08-08 v commitu `1b067ca` (Version ID `38cf2c8b-81bd-453d-928e-4e31411a608e`).
+Ověřeno živě: `/api/version` = `1b067ca`, `cisto: true`; `/api/analyzy` i `/api/ai/analyza`
+vrací bez přihlášení `401`; statika nese záložku i přepínač.
+
 **Pozor po nasazení:** `aiAnalyzy` je v ostré databázi `ne` (výchozí), takže záložka ukáže
 souhrny, ale ptát se nepůjde, dokud se to nezapne v Nastavení.
 

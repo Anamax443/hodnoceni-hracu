@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-08 (15) — Analýzy (souhrny v kódu + otázka modelu)
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+**Commit:** `1b067ca` · **NASAZENO** 2026-08-08, Version ID `38cf2c8b-81bd-453d-928e-4e31411a608e`; živě `/api/analyzy` i `/api/ai/analyza` bez přihlášení `401`. **Ověřeno** proti `wrangler dev` nad lokální D1.
 Nastražená data: hráč se slepým místem (trenér bránění 3, hráč si dal 8), druhý hráč zcela
 bez hodnocení, třetí řada `leader` bez sebehodnocení. Ostrá databáze nedotčena.
 
