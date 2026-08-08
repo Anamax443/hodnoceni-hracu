@@ -44,8 +44,15 @@ značky nesou správné názvy. **Tisk do PDF: 5 listů = 5 stránek, MediaBox 5
 (A4 na výšku) — kumulovaný se třemi radary se pořád vejde na jednu. Štítky v aplikaci mají
 ve světlém i tmavém vzhledu kontrast 5,0–10,6, tedy nad hranicí čitelnosti.
 
-**Nenasazeno.** Změna je jen ve `web/` (žádná migrace, žádný zásah do Workeru), takže stačí
-`npm run deploy`.
+**Ověřeno i naostro** (`wrangler dev` nad lokální D1 se všemi migracemi): stránka
+sebehodnocení vrátila v horní liště `<span class="znacka sab-brankar">brankář</span>` a šest
+os brankářské šablony, přihlašovací obrazovka se vykreslila (tedy `app.js` se načte a běží).
+
+**NASAZENO** 2026-08-08 v commitu `3378321` (`npm run deploy`, Version ID
+`d672d044-3954-4c68-9beb-67dcffda81a7`). Změna byla jen ve `web/` — žádná migrace, žádný
+zásah do Workeru. Ověřeno živě: `/api/version` hlásí `3378321` a `cisto: true` na vlastní
+doméně i na `workers.dev`, servírovaná statika nese `sab-znacka`, `stitekSablony`,
+`.znacka.sab-brankar` i pořadí pravidel v `styl.css`.
 
 **Pozn. k dořešení:** štítek role „hráč" a štítek šablony „hráč v poli" jsou v Lidech vedle
 sebe a mají tutéž modrou. Text je odlišuje, barva ne.

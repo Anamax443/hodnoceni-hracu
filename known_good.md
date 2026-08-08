@@ -7,8 +7,10 @@ Nový záznam nahoru.
 
 ## 2026-08-08 (13) — barva podle šablony a název šablony v hlavičce
 
-**Commit:** rozpracováno, nenasazeno. **Ověřeno** headless Edgem nad listy vyrenderovanými
-mimo prohlížeč (import `web/src/list.js` v Node, vzorová data — žádná ostrá, žádná D1).
+**Commit:** `3378321` · **NASAZENO** 2026-08-08, Version ID `d672d044-3954-4c68-9beb-67dcffda81a7`.
+Živě `/api/version` = `3378321`, `cisto: true` na `hodnoceni.maxferit.cz` i na `workers.dev`.
+**Ověřeno** headless Edgem nad listy vyrenderovanými mimo prohlížeč (import `web/src/list.js`
+v Node, vzorová data — žádná ostrá, žádná D1) a pak ještě proti běžícímu Workeru.
 Změna je jen ve `web/`: bez migrace a bez zásahu do Workeru.
 
 Měřily se **spočtené** barvy (`getComputedStyle`), ne to, co je napsané v CSS.
@@ -27,6 +29,9 @@ Měřily se **spočtené** barvy (`getComputedStyle`), ne to, co je napsané v C
 | štítky v aplikaci — světlý vzhled | kontrast text/pozadí 5,03 / 6,60 / 7,85 |
 | štítky v aplikaci — tmavý vzhled | kontrast 8,87 / 9,66 / 10,64 |
 | syntaxe (`node --check`) | `list.js`, `radar.js`, `sablony.js`, `app.js`, `h.js`, `listy.js` — bez chyby |
+| `wrangler dev` + lokální D1 (migrace 001–013) | `/h/<token>` vrátil `<span class="znacka sab-brankar">brankář</span>` a 6 os brankářské šablony |
+| přihlašovací obrazovka | vykreslila se → `app.js` se načte a běží (žádný pád modulu) |
+| živá statika po nasazení | `app.css`, `app.js`, `src/styl.css`, `src/list.js`, `src/radar.js` nesou novou verzi; pořadí `.page` před `.sab-*` sedí |
 
 **Chyba, kterou test odhalil (opraveno):** záložní pravidlo `.page` stálo v `styl.css` **za**
 třídami `.sab-*`. Při stejné specificitě rozhoduje pořadí, takže je přebilo a brankářský
