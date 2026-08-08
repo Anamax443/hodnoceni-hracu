@@ -1863,6 +1863,12 @@ async function odkazy(kam) {
     const seznam = await api(`/api/tokens?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
     const zaklad = location.origin;
 
+    /* Komu se bude generovat. Zaškrtávátko je na KAŽDÉ kombinaci hráč × šablona,
+       stejně jako u tiskových listů — odkaz nese jednu šestici os, takže „vybrat
+       hráče" je málo: Ferda potřebuje tři odkazy, ale nemusíš chtít všechny. */
+    const hraci = stav.lide.filter(o => o.role === 'hrac' && o.aktivni);
+    const cekaNaVyplneni = new Set(seznam.filter(x => !x.pouzit).map(x => `${x.player_id}:${x.sablona || 'pole'}`));
+
     kam.innerHTML = `
         <div class="karta">
             <h2>${t('odkazy.nadpis')}</h2>
@@ -1870,9 +1876,32 @@ async function odkazy(kam) {
             <div class="radek">
                 <div class="pole"><label for="t-dni">${t('odkazy.platnost')}</label>
                     <input type="number" id="t-dni" value="30" min="1" max="365"></div>
-                <div class="pole" style="align-self:end">
-                    <button class="hl" id="generovat" title="${t('odkazy.generovat.tip')}">${t('odkazy.generovat')}</button></div>
             </div>
+
+            <h3 style="margin:14px 0 4px;font-size:14px">${t('odkazy.komu')}</h3>
+            <p class="popis">${t('odkazy.komu.popis')}</p>
+            <table>
+                <thead><tr>
+                    <th class="cisla"><input type="checkbox" id="vsichni-komu" checked title="${t('listy.vsichni.tip')}"></th>
+                    <th>${t('hodnotit.hrac')}</th><th>${t('odkazy.sablona')}</th><th>${t('odkazy.stav')}</th>
+                </tr></thead>
+                <tbody>${hraci.length ? hraci.map(o => {
+                    const sablony = sablonyOsoby(o);
+                    return sablony.map((s, i) => `
+                    <tr>
+                        <td class="cisla">
+                            <input type="checkbox" class="komu" value="${o.id}:${s}"
+                                   title="${t('odkazy.komu.tip')}" checked></td>
+                        ${i === 0 ? `<td rowspan="${sablony.length}">${jmenoHtml(o)}</td>` : ''}
+                        <td>${stitekSablony(s)}</td>
+                        <td>${cekaNaVyplneni.has(`${o.id}:${s}`)
+                            ? `<span class="ne">${t('odkazy.uzCeka')}</span>` : ''}</td>
+                    </tr>`).join('');
+                }).join('') : `<tr><td colspan="4">${t('odkazy.bezHracu')}</td></tr>`}</tbody>
+            </table>
+            <p style="margin-top:12px">
+                <button class="hl" id="generovat" title="${t('odkazy.generovat.tip')}">${t('odkazy.generovat')}</button>
+            </p>
         </div>
 
         <div class="karta">
@@ -1895,9 +1924,16 @@ async function odkazy(kam) {
             </table>
         </div>`;
 
+    $('#vsichni-komu').onchange = e =>
+        kam.querySelectorAll('.komu').forEach(c => { c.checked = e.target.checked; });
+
     $('#generovat').onclick = async () => {
+        const ids = [...kam.querySelectorAll('.komu:checked')].map(c => c.value);
+        if (!ids.length) { hlaska(kam, 'chyba', t('odkazy.nikdo')); return; }
         try {
-            const r = await api('/api/tokens', { telo: { obdobi: stav.nastaveni.obdobi, dni: Number($('#t-dni').value) } });
+            const r = await api('/api/tokens', {
+                telo: { obdobi: stav.nastaveni.obdobi, dni: Number($('#t-dni').value), ids: ids.join(',') }
+            });
             await prekresli();
             hlaska($('#obsah'), r.vytvoreno ? 'ok' : 'pozor', t('odkazy.vytvoreno', r.vytvoreno)
                 + (r.preskoceno ? t('odkazy.preskoceno', r.preskoceno) : ''));

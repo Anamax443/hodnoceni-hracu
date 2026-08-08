@@ -211,6 +211,15 @@ not to a team group: whoever has it can fill the self-evaluation in for them.
 template — the *Template* column says which is which. An unused link for the same template is
 not created twice; how many were skipped is reported after generating.
 
+**Generate for whom** is the table above the button, and **tick boxes work per link, not per
+player**: someone with three templates has three rows and you can generate just one of them.
+Everything is ticked by default; the box in the header selects and deselects the whole column.
+A combination that already has an unfilled link says so — it cannot be generated again, that
+would only blur which one is valid.
+
+**The app does not send the link.** You copy it and send it yourself. Notification channels
+are configured for coaches only and carry just who did what, never content.
+
 ### Settings
 
 Tolerance, period, season, club, category, the bar, the goals heading, your own password,

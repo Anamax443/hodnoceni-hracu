@@ -2,6 +2,51 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (23) — odkazy se generují vybraným, ne vždycky všem
+
+**Zadání:** „chci generovat pro konkrétní lidi." Tlačítko v Odkazech generovalo natvrdo
+celému aktivnímu kádru; API sice `player_id` + `sablona` umělo, ale UI to nenabízelo
+a šlo jen po jednom.
+
+**Řešení je stejné jako u tisku (zápis 17): co odkaz, to volba.** Nad tlačítkem je tabulka
+*Komu vygenerovat* se zaškrtávátkem na **každé kombinaci hráč × šablona** — Ferdovi jde
+vygenerovat jen brankářský odkaz, i když má šablony tři. Výchozí stav je všechno zaškrtnuté
+(chování jako dřív), v záhlaví je označit/odznačit vše. U kombinace, na kterou už nevyplněný
+odkaz visí, to je v tabulce napsané, takže je dopředu vidět, co se přeskočí.
+
+**Sdílená logika místo druhé kopie.** `ids` má u odkazů **tentýž tvar jako u tiskových
+listů** (`id` nebo `id:sablona`) — je to tatáž otázka „koho a kterou řadu". Rozebrání se
+proto vytáhlo do `rozeberIds()` + `sablonyZVyberu()` a používají ho obě místa; v `/api/listy`
+tím zmizela inline kopie. `player_id` + `sablona` zůstávají funkční kvůli starším voláním.
+
+**Chyba, kterou odhalil test API:** neznámá šablona (`9:nesmysl`) hlásila „Vybraní hráči
+nejsou v aktivním kádru", což je nesmysl — ten hráč v kádru je. Prázdný výběr po rozebrání
+má teď vlastní hlášku.
+
+**Ověřeno lokálně** (`wrangler dev` + lokální D1, hráč 9 se šablonami `pole`+`leader`,
+hráč 10 `brankar`):
+
+| `ids` | Očekáváno | Naměřeno |
+|---|---|---|
+| `9:leader` | jeden odkaz | `vytvoreno=1` — jen leader |
+| `9:leader` podruhé | přeskočit | `vytvoreno=0, preskoceno=1` |
+| `9` | doplnit chybějící | `vytvoreno=1` (pole), `preskoceno=1` (leader) |
+| bez `ids` | celý kádr | `vytvoreno=0, preskoceno=3` — vše už viselo |
+| `9:nesmysl` | srozumitelná chyba | „Ve výběru není platná kombinace hráč + šablona." |
+| `999` | chyba | „Vybraní hráči nejsou v aktivním kádru." |
+
+**Proklikáno v headless Edge přes CDP:** 3 zaškrtávátka s hodnotami `10:brankar`, `9:pole`,
+`9:leader`, všechna zaškrtnutá, označit-vše v záhlaví; po odškrtnutí zbytku odešlo na server
+`ids:"9:pole"`; bez zaškrtnutí hláška „Není vybraný ani jeden odkaz."; marker „už visí" se
+u existujícího odkazu ukázal. Žádná výjimka v konzoli, i18n 526 klíčů CS i EN.
+
+**Do dokumentace přibylo i to, co v ní chybělo:** že **aplikace odkaz neposílá** — kopíruje
+se a rozesílá ručně, protože notifikační kanály má aplikace jen na trenéry. Ověřeno i to, že
+z 18 aktivních hráčů nemá **nikdo** vyplněný telefon ani e-mail, takže automatické rozesílání
+by dnes stejně nemělo kam.
+
+---
+
 ## 2026-08-09 (22) — gpt-oss neodpovídal: uvažující model vyčerpal limit tokenů
 
 **Hlášení z provozu:** „gpt-oss model neodpovídá." V ostrém nastavení byl

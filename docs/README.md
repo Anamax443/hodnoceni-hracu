@@ -277,12 +277,22 @@ je jiná optika. Kdo tou šablonou v období hodnocení nemá, vypíše se pod t
 
 ### Odkazy
 
-Vygenerují se odkazy na sebehodnocení pro všechny aktivní hráče na dané období. U každého
-tlačítko *Kopírovat* a *Zneplatnit*, plus stav (čeká / vyplněno).
+Odkazy na sebehodnocení na dané období. U každého tlačítko *Kopírovat* a *Zneplatnit*, plus
+stav (čeká / vyplněno).
 
 **Odkaz nese jednu šestici os**, takže hráč s víc šablonami dostane odkaz na každou z nich —
 brankářský i polní i leader. Ve sloupci *Šablona* je vidět, který je který. Nevyplněný odkaz
 na tutéž šablonu se podruhé nezakládá; kolik jich aplikace přeskočila, řekne po generování.
+
+**Komu vygenerovat** je tabulka nad tlačítkem a **zaškrtává se po odkazech, ne po hráčích**:
+kdo má tři šablony, má tři řádky a můžeš mu nechat vygenerovat jen jeden. Ve výchozím stavu
+je zaškrtnuté všechno, zaškrtávátko v záhlaví označí a odznačí celý sloupec. U kombinace,
+na kterou už nevyplněný odkaz visí, je to napsané — vygenerovat se znovu nedá, jen by
+zmátlo, který z nich platí.
+
+**Aplikace odkaz neposílá.** Zkopíruješ ho a rozešleš sám, jak jsi zvyklý. Notifikační
+kanály má nastavené jen na trenéry a nesou pouze „kdo a co", nikdy obsah. Posílej odkaz
+konkrétnímu hráči, ne do týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.
 
 Odkaz je jednorázový — po odeslání už podruhé nejde. Posílej ho **konkrétnímu hráči**, ne do
 týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.

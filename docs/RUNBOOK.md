@@ -30,7 +30,9 @@ po přihlášení rozeslat trenérům nové odkazy.
 
 1. **Záloha** — `npm run db:export`.
 2. **Nastavení** → přepiš `období` (např. „2025/2026 jaro") a nadpis nad cíli.
-3. **Odkazy** → vygenerovat pro všechny hráče, rozeslat jednotlivě.
+3. **Odkazy** → v tabulce *Komu vygenerovat* nechat zaškrtnuté všechno (nebo odškrtat, koho
+   teď nechceš) → *Vygenerovat vybrané odkazy* → **rozeslat jednotlivě**. Aplikace odkaz
+   neposílá, kopíruje se tlačítkem.
 4. **Hodnotit** → projít kádr. Naslepo, bez koukání na minulé kolo.
 5. Počkat, až hráči vyplní (stav vidíš v Odkazech i v Listech).
 6. **Porovnání** → u každého vybrat 2–3 témata k rozhovoru.

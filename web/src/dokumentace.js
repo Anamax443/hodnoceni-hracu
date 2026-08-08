@@ -118,6 +118,16 @@ z <b>tvých</b> hodnocení, aby se tiše nesmíchaly dva pohledy.</p>
 formulované v první osobě a na konci je nepovinná otázka, na čem chce hráč
 pracovat. Odkaz nese i šablonu, aby hráč vyplňoval tytéž osy, které známkoval
 trenér.</p>
+<p><b>Vybírá se po odkazech, ne po hráčích.</b> V tabulce <i>Komu vygenerovat</i>
+má každá kombinace hráč + šablona vlastní zaškrtávátko, takže jde vygenerovat
+jen brankářský odkaz, i když má hráč šablony tři. Ve výchozím stavu je
+zaškrtnuté všechno. U kombinace, na kterou už nevyplněný odkaz visí, je to
+napsané a znovu se nevygeneruje — dva platné odkazy na tutéž řadu by jen
+zmátly, který z nich platí.</p>
+<p><b>Aplikace odkaz neposílá</b> — zkopíruješ ho a pošleš sám. Notifikační
+kanály jsou nastavené jen na trenéry a nesou pouze „kdo a co”, nikdy obsah.
+Posílej ho konkrétnímu hráči, ne do týmové skupiny: kdo odkaz má, může
+sebehodnocení vyplnit za něj.</p>
 <p><b>Hráč nevidí hodnocení trenéra, dokud neodešle svoje.</b> To není
 nastavení, to hlídá server.</p>
 
@@ -395,6 +405,16 @@ silently mixed.</p>
 phrased in the first person and there is an optional question about what the
 player wants to work on. The link also carries the template, so the player fills
 in the same axes the coach scored.</p>
+<p><b>You pick links, not players.</b> In the <i>Generate for whom</i> table every
+player + template combination has its own tick box, so you can generate just the
+goalkeeper link even for a player with three templates. Everything is ticked by
+default. A combination that already has an unfilled link says so and is not
+generated again — two valid links for the same series would only blur which one
+counts.</p>
+<p><b>The app does not send the link</b> — you copy it and send it yourself.
+Notification channels are set up for coaches only and carry just who did what,
+never content. Send it to the individual player, not to a team group: whoever
+has the link can fill the self-evaluation in for them.</p>
 <p><b>A player cannot see the coach's scores before submitting their own.</b>
 That is enforced by the server, not by a setting.</p>
 

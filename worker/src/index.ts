@@ -712,6 +712,39 @@ function sablonyOsoby(r: any): string[] {
     return [r?.sablona && r.sablona in SABLONY ? r.sablona : 'pole'];
 }
 
+/**
+ * Rozebere parametr `ids` na výběr hráčů, případně i jejich šablon.
+ *
+ * Položka je buď samotné číslo hráče (= všechny jeho šablony; tak to fungovalo
+ * dřív a tak to posílají starší odkazy i příkazový řádek), nebo `id:sablona`
+ * pro jednu konkrétní řadu. Neznámá šablona se zahodí — radši nic než tiše
+ * všechno. Vrací `null`, když se nefiltruje (`vse` nebo prázdno).
+ *
+ * Používá se u tiskových listů i u odkazů na sebehodnocení; obě místa mají
+ * tutéž otázku „koho a kterou šablonu" a nemá smysl ji řešit dvakrát.
+ */
+function rozeberIds(ids: string | null | undefined): { id: number; sablona: string | null }[] | null {
+    if (!ids || ids === 'vse') return null;
+    return ids.split(',').flatMap(kus => {
+        const [cast, sablona] = kus.split(':');
+        const id = Number(cast);
+        if (!id) return [];
+        if (sablona === undefined) return [{ id, sablona: null as string | null }];
+        return sablona in SABLONY ? [{ id, sablona: sablona as string | null }] : [];
+    });
+}
+
+/**
+ * Které šablony vzít u konkrétního hráče podle výběru z `ids`.
+ * Hráč zadaný aspoň jednou bez šablony dostane všechny své.
+ */
+function sablonyZVyberu(vyber: { id: number; sablona: string | null }[] | null, playerId: number): Set<string> | null {
+    const zadane = vyber?.filter(v => v.id === playerId) ?? [];
+    return zadane.length && zadane.every(v => v.sablona)
+        ? new Set(zadane.map(v => v.sablona as string))
+        : null;
+}
+
 /** Řádek osoby z D1 → objekt pro API (pozice a šablony jako pole, ne JSON řetězec). */
 function osobaVen(r: any) {
     let pozice: string[] = [];
@@ -2647,21 +2680,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             });
         }
 
-        /* `ids` je buď `vse`, nebo seznam oddělený čárkami. Položka je buď samotné
-           číslo hráče (= všechny jeho listy; tak to fungovalo dřív a tak to posílají
-           starší odkazy i příkazový řádek), nebo `id:sablona` pro jeden konkrétní
-           list. Ferda má tři šablony, ale tisknout se má jen to, co je zaškrtnuté —
-           ne vždycky všechno, co u sebe má. */
-        const vyber = ids && ids !== 'vse'
-            ? ids.split(',').flatMap(kus => {
-                const [cast, sablona] = kus.split(':');
-                const id = Number(cast);
-                if (!id) return [];
-                if (sablona === undefined) return [{ id, sablona: null as string | null }];
-                // Neznámou šablonu radši zahodit než tiše vytisknout všechno.
-                return sablona in SABLONY ? [{ id, sablona: sablona as string | null }] : [];
-            })
-            : null;
+        // Ferda má tři šablony, ale tisknout se má jen to, co je zaškrtnuté —
+        // ne vždycky všechno, co u sebe má. Viz `rozeberIds`.
+        const vyber = rozeberIds(ids);
 
         const { results: hraci } = await env.DB.prepare(
             `SELECT id, jmeno, prezdivka, post, pozice, sablona, sablony FROM players
@@ -2685,12 +2706,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             // které má hráč přiřazené v kartotéce. Přiřazená šablona bez hodnocení
             // dá prázdný list jako podklad — jinak by chybějící brankářská řada
             // z tisku tiše zmizela a nikdo by si jí nevšiml.
-            // Když si trenér vybral konkrétní listy (`id:sablona`), vytisknou se jen
-            // ty. Hráč zadaný bez šablony pořád znamená všechny jeho listy.
-            const zadane = vyber?.filter(v => v.id === h.id) ?? [];
-            const jenTyto = zadane.length && zadane.every(v => v.sablona)
-                ? new Set(zadane.map(v => v.sablona as string))
-                : null;
+            // Když si trenér vybral konkrétní listy (`id:sablona`), vytisknou se jen ty.
+            const jenTyto = sablonyZVyberu(vyber, h.id);
 
             const kVykresleni = [...new Set([
                 ...(sablony ?? []).map(s => s.sablona),
@@ -3196,18 +3213,28 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
 
         if (metoda === 'POST') {
-            const telo = await request.json<{ player_id?: number; obdobi?: string; dni?: number; sablona?: string }>();
+            const telo = await request.json<{
+                player_id?: number; obdobi?: string; dni?: number; sablona?: string; ids?: string;
+            }>();
             const nas = await nastaveni(env);
             const obdobi = (telo.obdobi || nas.obdobi).trim();
             const dni = Number(telo.dni) > 0 ? Number(telo.dni) : 30;
             const platnyDo = new Date(Date.now() + dni * 86400_000).toISOString();
 
-            const cile = telo.player_id
-                ? ((await env.DB.prepare('SELECT id, sablona, sablony FROM players WHERE id = ?')
-                    .bind(Number(telo.player_id)).all<{ id: number; sablona: string; sablony: string }>()).results ?? [])
-                : ((await env.DB.prepare(
-                      `SELECT id, sablona, sablony FROM players WHERE role = 'hrac' AND aktivni = 1`
-                  ).all<{ id: number; sablona: string; sablony: string }>()).results ?? []);
+            /* Komu se generuje. `ids` má stejný tvar jako u tiskových listů
+               (`id` nebo `id:sablona`) — je to tatáž otázka „koho a kterou řadu".
+               `player_id` + `sablona` zůstávají kvůli starším voláním. */
+            const vyber = rozeberIds(telo.ids ?? (telo.player_id ? String(telo.player_id) : null));
+
+            // Prázdný výběr po rozebrání znamená, že v `ids` nebylo nic platného
+            // (třeba neznámá šablona). To je jiná chyba než „ten hráč tu není".
+            if (vyber && !vyber.length) return chyba('Ve výběru není platná kombinace hráč + šablona.', 400);
+
+            const vsichni = (await env.DB.prepare(
+                `SELECT id, sablona, sablony FROM players WHERE role = 'hrac' AND aktivni = 1`
+            ).all<{ id: number; sablona: string; sablony: string }>()).results ?? [];
+            const cile = vyber ? vsichni.filter(c => vyber.some(v => v.id === c.id)) : vsichni;
+            if (!cile.length) return chyba('Vybraní hráči nejsou v aktivním kádru.', 400);
 
             // Odkaz je na jednu šesticí os. Hráč s víc šablonami (chytá i hraje
             // v poli) dostane odkaz na každou — jeden formulář by se jinak ptal
@@ -3219,9 +3246,10 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             const nove = [];
             let preskoceno = 0;
             for (const c of cile) {
+                // Pořadí: výslovná šablona v těle > výběr z `ids` > všechny přiřazené.
                 const sablony = (telo.sablona && telo.sablona in SABLONY)
                     ? [telo.sablona]
-                    : sablonyOsoby(c);
+                    : [...(sablonyZVyberu(vyber, c.id) ?? new Set(sablonyOsoby(c)))];
                 for (const sablona of sablony) {
                     // Nevyplněný odkaz na tutéž šablonu už visí — druhý by jen
                     // zmátl, který z nich platí.

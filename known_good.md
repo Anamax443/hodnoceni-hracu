@@ -5,6 +5,39 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (18) — odkazy vybraným hráčům a šablonám
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+Hráč 9 má šablony `pole` + `leader`, hráč 10 `brankar`. Ostrá data nedotčena.
+
+| `ids` | Očekáváno | Naměřeno |
+|---|---|---|
+| `9:leader` | jeden odkaz | `vytvoreno=1`, jen leader |
+| `9:leader` podruhé | přeskočit | `vytvoreno=0, preskoceno=1` |
+| `9` | doplnit chybějící šablonu | `vytvoreno=1` (pole), `preskoceno=1` (leader) |
+| `10:brankar` | jeden odkaz | `vytvoreno=1` |
+| bez `ids` | celý aktivní kádr | `vytvoreno=0, preskoceno=3` (vše už viselo) |
+| `9:nesmysl` | srozumitelná chyba | „Ve výběru není platná kombinace hráč + šablona." |
+| `999` | chyba | „Vybraní hráči nejsou v aktivním kádru." |
+
+**Tabulka výběru proklikaná v headless Edge přes CDP:**
+
+| Kontrola | Výsledek |
+|---|---|
+| zaškrtávátek | 3 — `10:brankar`, `9:pole`, `9:leader` |
+| výchozí stav | všechna zaškrtnutá, v záhlaví označit/odznačit vše |
+| výběr jednoho → co odešlo | `{"obdobi":"2025/2026 zima","dni":30,"ids":"9:pole"}` |
+| nic nezaškrtnuto | „Není vybraný ani jeden odkaz.", nic se neodeslalo |
+| marker u existujícího odkazu | „už visí" na správném řádku |
+| konzole prohlížeče | žádná výjimka |
+| i18n | 526 klíčů CS i EN, nechybí ani jeden |
+
+**Chyba, kterou test odhalil (opraveno):** neznámá šablona hlásila „Vybraní hráči nejsou
+v aktivním kádru", přestože hráč v kádru byl. Prázdný výběr po rozebrání `ids` má teď
+vlastní hlášku.
+
+---
+
 ## 2026-08-09 (17) — gpt-oss odpovídá (uvažující model)
 
 **Commit:** `fd9b459` · **NASAZENO** 2026-08-09, Version ID `6bcd49ff-0742-418e-898e-70db78e8944c`; živě ověřeno 8× po sobě na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.

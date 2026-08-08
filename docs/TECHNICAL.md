@@ -784,7 +784,8 @@ GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs.
 GET    /api/trend?player_id=                      admin — vývoj v čase
 
 GET    /api/tokens?obdobi=                        admin
-POST   /api/tokens         {player_id?, obdobi, dni}   admin — na každou šablonu hráče,
+POST   /api/tokens    {ids?, obdobi, dni, sablona?}  admin — `ids` jako u listů (`id`
+                                                  nebo `id:sablona`); bez něj celý kádr,
                                                   nevyplněný odkaz se nezdvojí (`preskoceno`)
 DELETE /api/tokens/:token                         admin
 
@@ -799,6 +800,12 @@ jeho listy), nebo **`id:sablona`** pro jeden konkrétní list — Ferda má tři
 smysl, aby se pokaždé tisklo všechno. Obojí jde míchat; hráč zadaný aspoň jednou bez šablony
 dostane všechny své listy. Neznámá šablona se zahodí (radši nic než tiše vytisknout všechno).
 Samotné id zůstalo kvůli starším odkazům a příkazovému řádku, který vybírá hráče, ne listy.
+
+**Týž tvar používá i `POST /api/tokens`** — je to tatáž otázka „koho a kterou řadu", takže
+rozebrání sdílí funkce `rozeberIds()` + `sablonyZVyberu()`. U odkazů navíc platí, že prázdný
+výběr po rozebrání (`ids` bylo zadané, ale nic platného v něm nebylo) vrací jinou chybu než
+„vybraní hráči nejsou v aktivním kádru" — jinak by neznámá šablona vypadala jako neexistující
+hráč.
 
 | `ids` | co se vytiskne |
 |---|---|
