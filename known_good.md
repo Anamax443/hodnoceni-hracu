@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-08 (14) — tisk po listech, ne po hráčích
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1
+**Commit:** `56a0db8` · **NASAZENO** 2026-08-08, Version ID `778a4728-ac67-4aac-973f-caf7b3ca8ab1`. **Ověřeno** proti `wrangler dev` nad lokální D1
 (zkušební hráč se třemi šablonami a hodnocením ke každé; ostrá data nedotčena).
 
 | `ids` | Očekáváno | Naměřeno |

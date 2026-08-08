@@ -35,7 +35,11 @@ hodnocením ke každé):
   něj**, počty buněk `5 / 4 / 4` (jméno drží `rowspan`), hodnoty `2:brankar` / `2:pole` /
   `2:leader`. Po odškrtnutí zbytku vygenerovalo tlačítko adresu `…&ids=2%3Abrankar`.
 
-**Nenasazeno** — pokračuje níž.
+**NASAZENO** 2026-08-08 v commitu `56a0db8` (Version ID `778a4728-ac67-4aac-973f-caf7b3ca8ab1`).
+Ověřeno živě: `/api/version` = `56a0db8`, `cisto: true` na vlastní doméně i na `workers.dev`;
+servírovaný `app.js` nese zaškrtávátko s hodnotou `id:sablona`, `i18n.js` nový klíč
+`listy.vyber.tip`. (Znovu potvrzeno: `/api/version` na custom doméně vracel ~30 s po
+nasazení ještě předchozí commit, statika už novou. Nepřenasazovat, počkat.)
 
 ---
 
