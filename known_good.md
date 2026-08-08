@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (16) — jedno pole na dotazy (příkazový řádek)
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1,
+**Commit:** `74946c4` · **NASAZENO** 2026-08-09, Version ID `f3808fce-9f9c-4307-ab6e-1956084e2b1f`; živě `/api/version` = `74946c4` (5× po sobě), `app.js` nese novou logiku a staré `an-otazka` je pryč. **Ověřeno** proti `wrangler dev` nad lokální D1,
 proklikáním v headless Edge přes CDP. Nastražený hráč: trenér bránění 3, hráč si dal 8.
 
 | Kontrola | Očekáváno | Naměřeno |

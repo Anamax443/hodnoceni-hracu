@@ -41,9 +41,15 @@ Edge přes CDP):
 - Analýzy: **žádné druhé pole**, 4 tabulky, 3 příklady, odkaz na lištu,
 - žádná výjimka v konzoli; i18n 520 klíčů česky i anglicky, nechybí ani jeden.
 
----
+**NASAZENO** 2026-08-09 v commitu `74946c4` (Version ID `f3808fce-9f9c-4307-ab6e-1956084e2b1f`).
+Ověřeno živě: `/api/version` = `74946c4` (5× po sobě), `cisto: true`; servírovaný `app.js`
+nese `odpovezNaOtazku` i `vypadaJakoOtazka` a **staré `an-otazka` je pryč**.
 
-## 2026-08-08 (20) — provozní dokumentace dohnala poslední tři změny
+**Pozn. k nasazování (potřetí a nejvýrazněji):** hned po deployi vracela custom doména
+**rozjeté kombinace** — `i18n.js` už nový, `app.js` ještě starý, a `/api/version` přeskakovala
+mezi `c89b499` a `74946c4` podle toho, který edge uzel odpověděl. Za pár desítek vteřin se to
+samo srovnalo. **Nepřenasazovat, ověřovat opakovaně** (nebo na `workers.dev`, která cache
+zóny obchází a měla novou verzi hned).
 
 Zápisy 16–19 srovnaly README, STATUS, TECHNICAL i dokumentaci v aplikaci, ale **BUILD
 a RUNBOOK zůstaly pozadu** — o barvách šablon, tisku po listech ani o Analýzách nevěděly nic.
