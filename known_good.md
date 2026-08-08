@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (19) — volné porovnání (cokoliv s čímkoliv)
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+**Commit:** `41cdc31` · **NASAZENO** 2026-08-09, Version ID `3faaa807-6527-400f-aa21-cec0ee2437a6`; živě ověřeno na obou adresách, oba nové endpointy bez přihlášení `401`. **Ověřeno** proti `wrangler dev` nad lokální D1.
 Data: hráč se dvěma obdobími (`zima` trenér + hráč, `jaro` trenér), druhý hráč (`zima`),
 plus brankářská řada na test odmítnutí míchání. Ostrá data nedotčena.
 

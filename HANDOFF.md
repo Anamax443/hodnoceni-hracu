@@ -43,6 +43,14 @@ hráč, plus brankářská řada na test odmítnutí):
 | UI (CDP) | 3 karty, 4 záznamy v nabídce, hlavičky sloupců, 1 zvýrazněná osa, přepnutí šablony přenačte nabídku, žádná výjimka |
 | i18n | 536 klíčů CS i EN |
 
+**NASAZENO** 2026-08-09 v commitu `41cdc31` (Version ID `3faaa807-6527-400f-aa21-cec0ee2437a6`).
+Ověřeno živě: `/api/version` = `41cdc31` na obou adresách, `/api/zaznamy` i `/api/porovnani-vice`
+bez přihlášení `401`, servírovaný `app.js` nese `tabulkaVolna` i `popisZaznamu`.
+
+**Pozn. k ověřování statiky (potřetí):** `i18n.js` vypadal po nasazení starý na OBOU adresách
+— byla to edge cache, ne chyba nasazení. S `?cachebust=…` vrátil nový soubor. Ověřovat
+statiku s obejitím cache, jinak to svádí k závěru, že se soubor nenahrál.
+
 ---
 
 ## 2026-08-09 (23) — odkazy se generují vybraným, ne vždycky všem
