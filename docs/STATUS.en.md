@@ -1,6 +1,6 @@
 # STATUS — where the project stands
 
-Snapshot as of **8 Aug 2026**. It answers three questions: what runs, what has been
+Snapshot as of **9 Aug 2026**. It answers three questions: what runs, what has been
 verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HANDOFF.md)
 (a diary, newest entry first — Czech only).
 
@@ -22,6 +22,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Player self-evaluation | ✅ | single-use link, blind guard verified live |
 | Coach × player comparison | ✅ | tolerance, sign, trend, version history |
 | Player × player comparison | ✅ | axis × player table with the gap |
+| Compare anything with anything | ✅ | 2–8 records (player × period × author) side by side; across periods and authors, within one template |
+| Links for selected | ✅ | tick boxes work per link (player × template), not per player |
 | Agreement between coaches | ✅ | axis × coach matrix, final wording for the sheet |
 | Printable A4 sheets | ✅ | 1 sheet = 1 page, verified by headless print to PDF |
 | Combined sheet | ✅ | optionally all of a player’s templates on one A4, verified by print to PDF |
@@ -32,16 +34,16 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Notifications — Telegram | ✅ | delivery confirmed |
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
 | Notifications — SMS | ⚠️ | built and wired, but the **GoSMS account is unverified and has no credit** |
-| Command bar | ✅ | resolved locally, no tokens spent |
+| Command bar | ✅ | **one field for commands and questions**, above every tab; resolved locally, the model only for awkward sentences |
 | Analyses — summaries | ✅ | weakest squad axes, biggest gaps, who is missing; computed in the app, nothing leaves |
-| Analyses — asking the model | ⚠️ | built and verified, but **switched off** — it sends full data out, enabled deliberately in Settings |
-| Language model | ⚠️ | Workers AI verified; Claude waiting for `ANTHROPIC_API_KEY` |
+| Analyses — asking the model | ✅ | **enabled in production** (`aiAnalyzy = ano`) — full player data is sent to the model, see Personal data below |
+| Language model | ✅ | production model `@cf/openai/gpt-oss-120b` (Workers AI, free); Claude waiting for `ANTHROPIC_API_KEY` |
 | Mobile | ✅ | hamburger menu, thumb-sized controls, tables scroll inside their card |
 | In-app documentation | ✅ | 📖 tab, Czech and English |
 
 ## How much data is in the app
 
-Aggregate numbers from the production database as of 8 Aug 2026 (counts only — no names, no scores):
+Aggregate numbers from the production database as of 9 Aug 2026 (counts only — no names, no scores):
 
 | | |
 |---|---|
@@ -95,11 +97,13 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 
 ## Open questions
 
-- **GDPR around model-driven analyses.** Once enabled, analyses send out scores, written
-  assessments and goals of minors. Decided deliberately (8 Aug 2026) and the switch is off by
-  default, but a record of processing activities and information for parents are still owed.
-  Workers AI (Cloudflare, same account) is the less problematic route here than Claude
-  (a US third party).
+- **GDPR around model-driven analyses — no longer hypothetical.** `aiAnalyzy` is **switched
+  on** in production, so every squad question sends the model scores, written assessments and
+  goals of minors. Decided deliberately (8 Aug 2026), but **a record of processing activities
+  and information for parents are still missing** — and with the switch on that is a debt, not
+  a note for later. Workers AI (Cloudflare, the same account as the app) is the less
+  problematic route than Claude (a US third party); the production model today is
+  `@cf/openai/gpt-oss-120b`, i.e. Cloudflare.
 - Should parents have access to the printed sheet, or only players?
 - WhatsApp as another channel: no monthly fee to run, but it needs a number that is not on
   regular WhatsApp, a Meta Business Portfolio and an approved template. Not built.

@@ -127,7 +127,7 @@
        i černobíle a barvoslepému čtenáři.</p>
   </div>
 
-  <h2 class="section">Kolik je v aplikaci dat — 8. 8. 2026</h2>
+  <h2 class="section">Kolik je v aplikaci dat — 9. 8. 2026</h2>
   <div class="scroll">
   <table>
     <thead><tr><th>Ukazatel</th><th>Počet</th><th>Poznámka</th></tr></thead>
@@ -174,6 +174,8 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
         <li class="yes">Hodnocení trenérem, hromadné hodnocení, <strong>úprava jako nová verze</strong></li>
         <li class="yes">Sebehodnocení za jednorázovým odkazem, <strong>blind guard ověřený naostro</strong></li>
         <li class="yes">Porovnání trenér × hráč, srovnání hráčů, shoda mezi trenéry</li>
+        <li class="yes"><strong>Porovnat cokoliv s čímkoliv</strong> — 2–8 záznamů (hráč × období × autor) vedle sebe</li>
+        <li class="yes"><strong>Jedno pole na povely i otázky</strong> — příkazový řádek nad každou záložkou</li>
         <li class="yes">Tiskové listy A4 — <strong>1 list = 1 stránka</strong>, kumulovaný list, výběr po listech</li>
         <li class="yes">Barva podle šablony + název šablony v hlavičce</li>
         <li class="yes">Účty po lidech, obnova hesla, zámek po 5 pokusech</li>
@@ -185,7 +187,7 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
         <li class="wait"><strong>SMS</strong> — zapojené, ale účet GoSMS je neověřený a bez kreditu; ostrá zpráva končí na <code>400</code></li>
         <li class="wait"><strong>Jazykový model</strong> — Workers AI ověřený a zdarma; Claude čeká na <code>ANTHROPIC_API_KEY</code></li>
         <li class="wait"><strong>Julek a Maso</strong> nemají vlastní heslo ani kanál — jede společné heslo</li>
-        <li class="wait"><strong>Otázky modelu v Analýzách</strong> — postavené a ověřené, ale <strong>vypnuté</strong>: posílají ven známky a posudky, zapíná se vědomě v Nastavení. GDPR záznam zbývá</li>
+        <li class="wait"><strong>GDPR k analýzám</strong> — otázky modelu jsou <strong>zapnuté</strong> a posílají ven známky i posudky nezletilých; záznam o činnosti zpracování a informace pro rodiče zatím nejsou</li>
         <li class="wait"><strong>Trendy v čase</strong> — šipky u os hotové, plný pohled až s druhým obdobím</li>
       </ul></div>
   </div>
@@ -198,8 +200,8 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
       <li>Doplnit pozice — vyplněné mají 4 z 18, tisknou se na list.</li>
       <li>Ověřit účet GoSMS a dobít kredit, pokud se má posílat SMS.</li>
       <li>Pozvat Julka a Masa na vlastní účet, pak zrušit společné heslo.</li>
-      <li>Rozhodnout o <strong>zapnutí otázek modelu v Analýzách</strong> — a než se zapnou,
-          dopsat GDPR záznam o činnosti zpracování a informaci pro rodiče.</li>
+      <li><strong>Dopsat GDPR záznam</strong> o činnosti zpracování a informaci pro rodiče —
+          otázky modelu jsou už zapnuté, takže tohle je dluh, ne příprava.</li>
     </ol>
   </div>
 
@@ -207,17 +209,19 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
   <div class="card">
     <p style="margin:0 0 10px">Aplikace je jinak uzavřená: frontend nesahá do D1, notifikace nesou
        jen „kdo a co", repozitář neobsahuje žádná osobní data. <strong>Jediná cesta ven vede přes
-       Analýzy</strong> — a jen se zapnutým vypínačem.</p>
+       Analýzy</strong> — a ta je <strong>od 9. 8. 2026 otevřená</strong>: vypínač <code>aiAnalyzy</code>
+       je v ostré databázi zapnutý, takže při každé otázce na kádr odcházejí modelu data konkrétních
+       nezletilých. Zbývá k tomu doplnit GDPR záznam o činnosti zpracování a informaci pro rodiče.</p>
     <div class="scroll">
     <table>
       <thead><tr><th>Vypínač</th><th>Výchozí</th><th>Co odemyká</th></tr></thead>
       <tbody>
-        <tr><td><code>aiPoskytovatel</code></td><td class="num">vypnuto</td>
-            <td>jazykový model vůbec; příkazovému řádku pak jde <strong>jen jedna věta a jména kádru</strong></td></tr>
-        <tr><td><code>aiAnalyzy</code></td><td class="num zero">ne</td>
-            <td><strong>otázky na kádr</strong> — modelu jdou jména, známky, slovní posudky i cíle</td></tr>
+        <tr><td><code>aiPoskytovatel</code></td><td class="num">workers</td>
+            <td><strong>zapnuto</strong> — model <code>gpt-oss-120b</code> na Cloudflare; povelům jde jen jedna věta a jména kádru</td></tr>
+        <tr><td><code>aiAnalyzy</code></td><td class="num zero">ano</td>
+            <td><strong>ZAPNUTO</strong> — při otázce na kádr jdou modelu jména, známky, slovní posudky i cíle</td></tr>
         <tr><td><code>smsAktivni</code></td><td class="num">0</td>
-            <td>odesílání SMS (mimořádný placený kanál)</td></tr>
+            <td>vypnuto — odesílání SMS (mimořádný placený kanál)</td></tr>
       </tbody>
     </table>
     </div>
@@ -237,7 +241,7 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
 
   <footer>
     <span>Podrobnosti: <code>docs/STATUS.md</code> · deník <code>HANDOFF.md</code> · doklady <code>known_good.md</code></span>
-    <span>Snímek k 8. 8. 2026 · živě na hodnoceni.maxferit.cz</span>
+    <span>Snímek k 9. 8. 2026 · živě na hodnoceni.maxferit.cz</span>
   </footer>
 
 </div>

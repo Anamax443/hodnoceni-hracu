@@ -2,6 +2,33 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (25) — STATUS srovnaný: analýzy už NEJSOU vypnuté
+
+Zápisy 21–24 srovnaly README, TECHNICAL, RUNBOOK i dokumentaci v aplikaci, ale **STATUS
+soubory zůstaly u stavu z 8. 8.** — neznaly volné porovnání, výběr odkazů, jedno pole na
+dotazy ani opravu gpt-oss.
+
+**Podstatnější než chybějící řádky je jedna věta, která přestala platit.** STATUS.md,
+STATUS.en.md i STATUS.html tvrdily, že otázky modelu jsou **vypnuté**. V ostré databázi je
+ale `aiAnalyzy = ano` a `aiPoskytovatel = workers` s modelem `@cf/openai/gpt-oss-120b` —
+uživatel to zapnul. Od té chvíle při každé otázce na kádr **odcházejí modelu známky,
+slovní posudky a cíle konkrétních nezletilých**.
+
+Z toho plyne posun v GDPR položce: dokud byl vypínač vypnutý, byl chybějící záznam
+o činnosti zpracování a informace pro rodiče **příprava na budoucno**. Teď je to **dluh**.
+Přeformulováno ve všech třech souborech; v STATUS.html to navíc přešlo z „postavené, ale
+nedotažené" do „co dál".
+
+**Ověřená čísla z ostré databáze k 9. 8. 2026** (jen počty): 22 osob, 16 hodnocení od
+trenéra u 11 hráčů, **0 sebehodnocení, 0 vygenerovaných odkazů**, 1 období, 4 z 18 hráčů
+mají pozice, 1 účet v `auth`. Proti včerejšku beze změny — hráčská strana pořád nezačala.
+
+**Srovnáno:** `docs/STATUS.md`, `docs/STATUS.en.md`, `STATUS.html` (nové řádky v „co běží",
+přepsaná tabulka vypínačů, datum). STATUS.html ověřen headless renderem: 10 sekcí, 2 tabulky,
+žádná chyba parsování. Změna je čistě dokumentační, kód se nedotkl.
+
+---
+
 ## 2026-08-09 (24) — porovnat cokoliv s čímkoliv
 
 **Zadání:** „chci mít možnost porovnávat cokoliv s čímkoliv." Dosud uměla aplikace čtyři

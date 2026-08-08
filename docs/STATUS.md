@@ -1,6 +1,6 @@
 # STATUS — kde projekt stojí
 
-Snímek k **8. 8. 2026**. Odpovídá na tři otázky: co běží, co je ověřené a co chybí.
+Snímek k **9. 8. 2026**. Odpovídá na tři otázky: co běží, co je ověřené a co chybí.
 Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, nejnovější nahoře).
 
 **Živě:** https://hodnoceni.maxferit.cz · záloha `hodnoceni-hracu.bass443.workers.dev`
@@ -21,6 +21,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Sebehodnocení hráče | ✅ | jednorázový odkaz, blind guard ověřený naostro |
 | Porovnání trenér × hráč | ✅ | tolerance, znaménko, trend, historie verzí |
 | Srovnání hráčů mezi sebou | ✅ | tabulka osa × hráč, rozptyl |
+| Porovnat cokoliv s čímkoliv | ✅ | 2–8 záznamů (hráč × období × autor) vedle sebe; napříč obdobími i autory, v rámci jedné šablony |
+| Odkazy vybraným | ✅ | zaškrtává se po odkazech (hráč × šablona), ne po hráčích |
 | Shoda mezi trenéry | ✅ | matice osa × trenér, finální znění na list |
 | Tiskové listy A4 | ✅ | 1 list = 1 stránka, ověřeno headless tiskem do PDF |
 | Kumulovaný list | ✅ | volitelně všechny šablony hráče na jedné A4, ověřeno tiskem do PDF |
@@ -31,16 +33,16 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Notifikace — Telegram | ✅ | ověřeno doručením |
 | Notifikace — e-mail | ✅ | Cloudflare Email Sending |
 | Notifikace — SMS | ⚠️ | postaveno a zapojeno, ale **účet GoSMS neověřený a bez kreditu** |
-| Příkazový řádek | ✅ | rozřazení lokálně, bez tokenů |
+| Příkazový řádek | ✅ | **jedno pole na povely i otázky**, nad každou záložkou; rozřazení lokálně, model až na zapeklité věty |
 | Analýzy — souhrny | ✅ | nejslabší osy kádru, největší rozpory, kdo chybí; počítá aplikace, nic neodchází |
-| Analýzy — otázka modelu | ⚠️ | postaveno a ověřeno, ale **vypnuté** — posílá ven plná data, zapíná se vědomě v Nastavení |
-| Jazykový model | ⚠️ | Workers AI ověřené; Claude čeká na `ANTHROPIC_API_KEY` |
+| Analýzy — otázka modelu | ✅ | **zapnuto v ostré databázi** (`aiAnalyzy = ano`) — modelu odcházejí plná data hráčů, viz Osobní údaje níž |
+| Jazykový model | ✅ | ostrý model `@cf/openai/gpt-oss-120b` (Workers AI, zdarma); Claude čeká na `ANTHROPIC_API_KEY` |
 | Mobil | ✅ | hamburger, ovládání na palec, tabulky se posouvají v kartě |
 | Dokumentace v aplikaci | ✅ | záložka 📖, česky i anglicky |
 
 ## Kolik je v aplikaci dat
 
-Souhrnná čísla z ostré databáze k 8. 8. 2026 (jen počty, žádná jména ani známky):
+Souhrnná čísla z ostré databáze k 9. 8. 2026 (jen počty, žádná jména ani známky):
 
 | | |
 |---|---|
@@ -77,6 +79,12 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
   tisk do PDF 5 listů = 5 stránek, kontrast štítků 5,0–10,6 ve světlém i tmavém vzhledu
 - výběr tisku po listech: 6 případů `ids` přes API + tabulka proklikaná v headless Edge
   (3 řádky, 3 zaškrtávátka, výběr jednoho listu dal `ids=2:brankar`)
+- odkazy vybraným: 7 případů `ids` (jeden odkaz, přeskočení, doplnění chybějící šablony,
+  neznámá šablona, neexistující hráč) + proklik tabulky výběru
+- volné porovnání: 10 případů; **pořadí sloupců nezávisí na pořadí zadání** (`16,17`
+  i `17,16` dá stejný výsledek), míchané šablony `400`, dvě období vždy starší první
+- jazykový model `gpt-oss-120b`: odpovídá po zvýšení stropu tokenů (uvažování se do něj
+  počítá) — analýza trefila `+5 (3 vs 8)` za 4,1 s, rozřazení povelu za 2,7 s
 
 ## Co chybí
 
@@ -96,10 +104,13 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 
 ## Otevřené otázky
 
-- **GDPR u analýz jazykovým modelem.** Zapnuté analýzy posílají ven známky, slovní posudky
-  a cíle nezletilých. Rozhodnuto vědomě (8. 8. 2026), vypínač je ve výchozím stavu vypnutý,
-  ale zbývá záznam o činnosti zpracování a informace pro rodiče. Workers AI (Cloudflare,
-  týž účet) je pro tohle méně problematická cesta než Claude (americká třetí strana).
+- **GDPR u analýz jazykovým modelem — teď už to není hypotetické.** `aiAnalyzy` je
+  v ostré databázi **zapnuté**, takže při každé otázce na kádr odcházejí modelu známky,
+  slovní posudky a cíle nezletilých. Rozhodnuto vědomě (8. 8. 2026), ale **záznam o činnosti
+  zpracování a informace pro rodiče pořád chybí** — a od chvíle, kdy je vypínač zapnutý,
+  je to dluh, ne poznámka do budoucna. Workers AI (Cloudflare, týž účet jako aplikace) je
+  pro tohle méně problematická cesta než Claude (americká třetí strana); ostrý model je
+  dnes `@cf/openai/gpt-oss-120b`, tedy Cloudflare.
 - Mají mít k tištěnému listu přístup rodiče, nebo jen hráči?
 - WhatsApp jako další kanál: provozně bez paušálu, ale chce číslo mimo běžný WhatsApp,
   Meta Business Portfolio a schválenou šablonu. Nepostaveno.
