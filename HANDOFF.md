@@ -2,6 +2,47 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (21) — jedno pole na dotazy: ptá se z příkazového řádku
+
+**Nález z provozu.** Uživatel napsal do příkazového řádku „kolik máme hráčů" a dostal
+*„Tomuhle nerozumím. Zkus jméno hráče…"*. Analýzy přitom měl zapnuté (`aiAnalyzy = ano`,
+model `gpt-oss-120b`) a fungovaly — jenže otázka patřila do **jiného pole**, o kus níž
+v záložce Analýzy.
+
+**Chyba návrhu, ne uživatele.** Na obrazovce byla dvě vstupní pole; nápadnější byla lišta
+nahoře, která otázce nerozumí a nikam neodkázala. Zadání: *„chci se ptát odevšud v rámci
+příkazového řádku, jen jedno pole na dotazy."*
+
+**Řešení:** textarea z Analýz **zmizela**. Ptá se jedním polem — lištou, která je nad
+každou záložkou, takže se odkudkoli. Odpověď se vypíše rovnou v liště a nese tlačítko
+**Ukázat čísla**, které otevře Analýzy s tabulkami, ze kterých vznikla. V Analýzách zůstaly
+tabulky a příklady otázek — ty se nově vloží do lišty a rovnou spustí, ať je vidět, kam
+se otázky píšou.
+
+**Pořadí v `spustPovel()`:**
+1. **Vypadá to jako otázka?** → rovnou `/api/ai/analyza`.
+2. Jinak lokální rozřazení (jména + klíčová slova, nestojí token).
+3. Jinak rozřazovač `/api/ai/prikaz`.
+4. Vrátí-li `nevim` → ber to jako otázku.
+
+**Druhá chyba, kterou odhalil až proklik v prohlížeči:** otázka „u koho **je** největší
+rozpor…" neodpověděla, ale otevřela kartu hráče „**Je**dna". `rozeberPovel` páruje slova
+na jména **podle začátku**, takže krátké slovo ve větě trefí hráče. S ostrým kádrem by to
+dělalo totéž. Proto se otázka pozná **jako první** a ne podle délky slova (dvouznakové
+prefixy jsou v češtině běžné), ale podle **tázacího slova nebo otazníku** (`TAZACI_SLOVA`).
+
+**Ověřeno lokálně** (`wrangler dev`, nastražený hráč: trenér bránění 3, hráč 8; headless
+Edge přes CDP):
+- otázka „kolik máme hráčů" ze záložky **Lidé** → *„Máme 2 aktivních hráčů."* za 0,5 s,
+  s tlačítkem Ukázat čísla, **bez přepnutí záložky**,
+- otázka „u koho je největší rozpor…" ze záložky **Listy** → trefila se do čísel
+  („trenér dal 3 a hráč 8, rozdíl +5") za 1,6 s a zůstala na Listech,
+- povel „hodnotit Jedna" dál přepne na Hodnotit,
+- Analýzy: **žádné druhé pole**, 4 tabulky, 3 příklady, odkaz na lištu,
+- žádná výjimka v konzoli; i18n 520 klíčů česky i anglicky, nechybí ani jeden.
+
+---
+
 ## 2026-08-08 (20) — provozní dokumentace dohnala poslední tři změny
 
 Zápisy 16–19 srovnaly README, STATUS, TECHNICAL i dokumentaci v aplikaci, ale **BUILD

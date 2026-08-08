@@ -306,8 +306,28 @@ model vypnutý.
 dopočítávat. Kdyby počítal sám, spletl by se a věta by zněla stejně sebejistě jako
 správná — proto je aritmetika v kódu.
 
-Odpověď se v UI zobrazuje **nad** tabulkami s podklady a nese větu „ověř si čísla níž".
-Odpověď bez čísel pod sebou je dojem, ne analýza. `podklady` se proto vrací i v odpovědi API.
+Odpověď nese větu „ověř si čísla" a tlačítko do Analýz; `podklady` se vrací i v odpovědi
+API. Odpověď bez čísel pod sebou je dojem, ne analýza.
+
+### Jedno pole na dotazy: příkazový řádek
+
+Ptát se jde **odkudkoli** — lišta je nad každou záložkou. Původně byla pole dvě (lišta
+a textarea v Analýzách) a uživatel logicky psal do toho nápadnějšího nahoře, kde dostal
+„tomuhle nerozumím". Textarea z Analýz proto zmizela; zůstaly tam tabulky a příklady
+otázek, které se vloží do lišty a rovnou spustí.
+
+Pořadí v `spustPovel()`:
+
+1. **Vypadá to jako otázka?** (`vypadaJakoOtazka`) → rovnou `/api/ai/analyza`.
+2. Jinak **lokální rozřazení** (`rozeberPovel`) — jména a klíčová slova, nestojí token.
+3. Jinak **rozřazovač** `/api/ai/prikaz`.
+4. Vrátí-li `akce: 'nevim'` → ber to jako otázku.
+
+**Proč se otázka pozná jako první:** `rozeberPovel` páruje slova na jména podle začátku,
+takže krátké slovo v otázce trefí hráče — „u koho **je** největší rozpor" otevřelo kartu
+hráče „**Je**dna" místo odpovědi. Odchytil to až proklik v prohlížeči. Test podle délky
+slova je nespolehlivý (dvouznakové prefixy jsou v češtině běžné), proto se rozhoduje podle
+**tázacího slova nebo otazníku** (`TAZACI_SLOVA`).
 
 ### Popisky os posílá prohlížeč
 

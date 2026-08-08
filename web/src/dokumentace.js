@@ -180,9 +180,14 @@ takže list dává smysl i vytištěný černobíle. Kumulovaný list patří v�
 od nejnižší) a <b>kde se nejvíc rozchází pohled trenéra a hráče</b>. Počítá to aplikace,
 takže je to přesné, okamžité a nic to nikam neposílá. Průměr osy se počítá vždy v rámci
 jedné šablony — brankářské a polní osy se míchat nedají.</p>
-<p>Nad tabulkami je <b>otázka jazykovému modelu</b>. Model dostane tatáž spočítaná čísla
+<p><b>Ptát se jde odkudkoli — jedním polem, příkazovým řádkem nahoře.</b> Je nad každou
+záložkou, takže se nemusíš nikam přepínat: napiš otázku běžnou větou („kolik máme hráčů",
+„u koho je největší rozpor") a odpověď přijde rovnou tam. Tlačítko <i>Ukázat čísla</i>
+pod odpovědí otevře tabulky, ze kterých vznikla.</p>
+<p>Týž řádek dál plní povely — „Robin", „porovnej Robina a Ferdu", „listy". Otázku od
+povelu pozná podle tázacího slova nebo otazníku. Model dostane tatáž spočítaná čísla
 a jeho prací je formulace, ne výpočet — v pokynu má zákaz cokoli dopočítávat. Přesto platí:
-<b>ověř si čísla v tabulkách pod odpovědí</b>. Model umí být sebejistý i když se mýlí.</p>
+<b>ověř si čísla v tabulkách</b>. Model umí být sebejistý i když se mýlí.</p>
 <p><b>Otázky modelu jsou ve výchozím stavu vypnuté</b> a zapínají se v Nastavení zvlášť od
 příkazového řádku. Důvod: příkazovému řádku stačí jména kádru, ale analýze ne — modelu
 odejdou známky, slovní posudky i cíle konkrétních hráčů. Je to jediné místo v aplikaci,
@@ -455,10 +460,15 @@ the colours are carried by the individual radars.</p>
 evaluated players, lowest first) and <b>where the coach's and the player's views differ
 most</b>. The app computes this, so it is exact, instant and sends nothing anywhere. Axis
 averages are always computed within one template — goalkeeper and outfield axes cannot be mixed.</p>
-<p>Above the tables sits a <b>question to the language model</b>. The model gets the same
-computed numbers and its job is the wording, not the arithmetic — its instructions forbid
-computing anything. Even so: <b>check the numbers in the tables below the answer</b>.
-A model can be confident and wrong at the same time.</p>
+<p><b>You can ask from anywhere — one field, the command bar at the top.</b> It sits above
+every tab, so you never have to switch: type an ordinary sentence (“how many players do we
+have”, “who has the biggest gap”) and the answer appears right there. The <i>Show the
+numbers</i> button under the answer opens the tables it came from.</p>
+<p>The same bar still runs commands — “Robin”, “compare Robin and Ferda”, “sheets”. It tells
+a question from a command by an interrogative word or a question mark. The model gets the
+same computed numbers and its job is the wording, not the arithmetic — its instructions
+forbid computing anything. Even so: <b>check the numbers in the tables</b>. A model can be
+confident and wrong at the same time.</p>
 <p><b>Questions to the model are off by default</b> and are enabled in Settings separately
 from the command bar. The reason: the command bar only needs the squad names, an analysis
 does not — scores, written assessments and goals of individual players are sent to the

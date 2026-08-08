@@ -736,11 +736,84 @@ function nabidkaPovelu(hraci, zdroj) {
     </div>`;
 }
 
+/** Jsou otázky na kádr zapnuté? Model musí být zapnutý a analýzy povolené zvlášť. */
+const otazkyZapnute = () =>
+    stav.nastaveni.aiAnalyzy === 'ano' && stav.nastaveni.aiPoskytovatel !== 'vypnuto';
+
+/* Tázací slova bez diakritiky — `holyText` ji stejně shodí. */
+const TAZACI_SLOVA = [
+    'kdo', 'koho', 'komu', 'kym', 'kom',
+    'co', 'ceho', 'cemu', 'cim', 'cem',
+    'kolik', 'jak', 'jaky', 'jaka', 'jake', 'jakych', 'jakym',
+    'proc', 'kde', 'kam', 'kdy', 'ktery', 'ktera', 'ktere', 'kterych', 'kterem'
+];
+
+/**
+ * Vypadá to na otázku, ne na povel?
+ *
+ * Musí se to poznat DŘÍV, než parser povelů začne hledat jména. Ten totiž
+ * páruje slova podle začátku, takže krátké slovo v otázce trefí hráče —
+ * „u koho **je** největší rozpor" otevřelo kartu hráče „**Je**dna" místo
+ * odpovědi. Tázací slovo nebo otazník je spolehlivější znamení než délka slova.
+ */
+function vypadaJakoOtazka(text) {
+    if (text.trim().endsWith('?')) return true;
+    return holyText(text).split(/[\s,;]+/).some(s => TAZACI_SLOVA.includes(s));
+}
+
+/**
+ * Povel to nebyl — je to otázka na kádr. Odpoví se rovnou v příkazovém řádku.
+ *
+ * **Jedno pole na dotazy, dostupné odkudkoli.** Dřív byla pole dvě: nápadnější
+ * lišta, která otázce nerozumí, a pole v Analýzách o kus níž. Kdo napsal
+ * „kolik máme hráčů", dostal „tomuhle nerozumím" a nikam ho to neposlalo.
+ * Lišta je nad každou záložkou, takže se ptát jde odkudkoli a nemusí se
+ * nikam přepínat.
+ *
+ * Čísla, ze kterých odpověď vznikla, jsou v Analýzách — tlačítko pod odpovědí
+ * tam vede. Věta bez čísel pod sebou je dojem, ne analýza.
+ *
+ * @returns {Promise<boolean>} false, když jsou otázky vypnuté (pak platí „nerozumím")
+ */
+async function odpovezNaOtazku(otazka, cil) {
+    if (!otazkyZapnute()) return false;
+
+    cil.innerHTML = `<div class="hlaska info">${t('analyzy.pocitam')}</div>`;
+    try {
+        const r = await api('/api/ai/analyza', {
+            telo: { otazka, obdobi: stav.nastaveni.obdobi, popisky: popiskyProModel() }
+        });
+        if (!r.ok) {
+            cil.innerHTML = `<div class="hlaska pozor">${esc(r.popis || t('analyzy.nepovedlo'))}</div>`;
+            return true;
+        }
+        // Odstavce zachovat, ale nic z modelu nevykreslovat jako HTML.
+        const text = esc(r.odpoved).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
+        cil.innerHTML = `<div class="hlaska info">
+            <p>${text}</p>
+            <p class="popis">
+                ${t('analyzy.zdroj', esc(r.model), Math.round(r.trvaloMs / 100) / 10)}
+                ${r.zaloha ? `<br>⚠️ ${esc(r.zaloha)} ${t('analyzy.zaloha')}` : ''}
+                <br>${t('analyzy.overSi')}
+            </p>
+            <button class="vedlejsi" id="prikaz-cisla" title="${t('prikaz.ukazCisla.tip')}">${t('prikaz.ukazCisla')}</button>
+        </div>`;
+        $('#prikaz-cisla').onclick = async () => { stav.zalozka = 'analyzy'; await prekresli(); };
+        return true;
+    } catch (e) {
+        cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        return true;
+    }
+}
+
 async function spustPovel() {
     const vstup = $('#prikaz-vstup');
     const cil = $('#prikaz-vysledek');
     const text = vstup.value.trim();
     if (!text) { cil.innerHTML = ''; return; }
+
+    // Otázka má přednost před hledáním jmen — viz `vypadaJakoOtazka`.
+    if (vypadaJakoOtazka(text) && await odpovezNaOtazku(text, cil)) return;
 
     const { akce, hraci } = rozeberPovel(text);
 
@@ -760,6 +833,10 @@ async function spustPovel() {
     try {
         const r = await api('/api/ai/prikaz', { telo: { text } });
         if (!r.ok) {
+            // `nevim` od rozřazovače neznamená konec — nejspíš to není povel,
+            // ale otázka. Ostatní důvody (vypnutý model, chybějící binding)
+            // se ukážou rovnou; ty otázka nespraví.
+            if (r.akce === 'nevim' && await odpovezNaOtazku(text, cil)) return;
             cil.innerHTML = `<div class="hlaska pozor">${esc(r.popis || t('prikaz.nerozumim'))}</div>`;
             return;
         }
@@ -772,6 +849,8 @@ async function spustPovel() {
             });
             return;
         }
+        // Není to povel → ber to jako otázku na kádr.
+        if (await odpovezNaOtazku(text, cil)) return;
         cil.innerHTML = `<div class="hlaska pozor">${t('prikaz.nerozumim')}</div>`;
     } catch (e) {
         cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -1745,71 +1824,31 @@ function tabulkaPodkladu(p) {
 
 async function analyzy(kam) {
     const p = await api(`/api/analyzy?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
-    const zapnuty = stav.nastaveni.aiAnalyzy === 'ano' && stav.nastaveni.aiPoskytovatel !== 'vypnuto';
 
+    /* Žádné druhé pole na otázky. Ptá se jedním polem — příkazovým řádkem
+       nahoře, který je nad každou záložkou. Tady jsou čísla, proti kterým se
+       odpověď ověřuje. */
     kam.innerHTML = `
         <div class="karta">
             <h2>${t('analyzy.nadpis')}</h2>
             <p class="popis">${t('analyzy.popis')}</p>
-            ${zapnuty ? `
-                <div class="pole">
-                    <label for="an-otazka">${t('analyzy.otazka')}</label>
-                    <textarea id="an-otazka" maxlength="500" placeholder="${t('analyzy.otazka.placeholder')}"></textarea>
-                    <div class="popis">${t('analyzy.otazka.napoveda')}</div>
-                </div>
-                <p>
-                    <button class="hl" id="an-zeptat" title="${t('analyzy.zeptat.tip')}">${t('analyzy.zeptat')}</button>
-                </p>
+            ${otazkyZapnute() ? `
+                <div class="hlaska info">${t('analyzy.ptejSeNahore')}</div>
                 <div class="popis">${t('analyzy.priklady')}</div>
-                <p id="an-priklady">${[
-                    'analyzy.priklad1', 'analyzy.priklad2', 'analyzy.priklad3'
-                ].map(k => `<button class="vedlejsi" data-priklad="${esc(t(k))}">${t(k)}</button>`).join(' ')}</p>
+                <p>${['analyzy.priklad1', 'analyzy.priklad2', 'analyzy.priklad3']
+                    .map(k => `<button class="vedlejsi" data-priklad="${esc(t(k))}">${t(k)}</button>`).join(' ')}</p>
             ` : `<div class="hlaska pozor">${t('analyzy.vypnuto')}</div>`}
-            <div id="an-odpoved"></div>
         </div>
 
         ${tabulkaPodkladu(p)}`;
 
-    if (!zapnuty) return;
-
-    kam.querySelectorAll('[data-priklad]').forEach(b => b.onclick = () => {
-        $('#an-otazka').value = b.dataset.priklad;
-        $('#an-otazka').focus();
+    // Příklad se vloží do lišty a rovnou spustí — ať je vidět, kam se otázky píšou.
+    kam.querySelectorAll('[data-priklad]').forEach(b => b.onclick = async () => {
+        const vstup = $('#prikaz-vstup');
+        vstup.value = b.dataset.priklad;
+        vstup.scrollIntoView({ block: 'center' });
+        await spustPovel();
     });
-
-    $('#an-zeptat').onclick = async () => {
-        const otazka = $('#an-otazka').value.trim();
-        const cil = $('#an-odpoved');
-        if (!otazka) { cil.innerHTML = `<div class="hlaska chyba">${t('analyzy.prazdna')}</div>`; return; }
-
-        const tlacitko = $('#an-zeptat');
-        tlacitko.disabled = true;
-        cil.innerHTML = `<p class="popis">${t('analyzy.pocitam')}</p>`;
-        try {
-            const r = await api('/api/ai/analyza', {
-                telo: { otazka, obdobi: stav.nastaveni.obdobi, popisky: popiskyProModel() }
-            });
-            if (!r.ok) {
-                cil.innerHTML = `<div class="hlaska chyba">${esc(r.popis || t('analyzy.nepovedlo'))}</div>`;
-                return;
-            }
-            // Odstavce zachovat, ale nic z modelu nevykreslovat jako HTML.
-            const text = esc(r.odpoved).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
-            cil.innerHTML = `
-                <div class="hlaska info" style="margin-top:12px">
-                    <p>${text}</p>
-                    <p class="popis" style="margin-bottom:0">
-                        ${t('analyzy.zdroj', esc(r.model), Math.round(r.trvaloMs / 100) / 10)}
-                        ${r.zaloha ? `<br>⚠️ ${esc(r.zaloha)} ${t('analyzy.zaloha')}` : ''}
-                        <br>${t('analyzy.overSi')}
-                    </p>
-                </div>`;
-        } catch (e) {
-            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
-        } finally {
-            tlacitko.disabled = false;
-        }
-    };
 }
 
 /* ===================== záložka: Odkazy ===================== */

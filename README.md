@@ -34,11 +34,11 @@ se nikdy neznámkují.
 | **Shoda** | matice osa × trenér, uzavření finálního znění pro list; povinný trenér nevidí cizí čísla, dokud neodevzdá |
 | **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně; **každá šablona má svou barvu a název v hlavičce** |
 | **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, srovnání hráčů mezi sebou, vývoj v čase, historie verzí |
-| **Analýzy** | souhrny za celý kádr (nejslabší osy, největší rozpory) počítané v aplikaci; volitelně otázka jazykovému modelu nad plnými daty — **vypnuto, dokud se vědomě nezapne** |
+| **Analýzy** | souhrny za celý kádr (nejslabší osy, největší rozpory) počítané v aplikaci; čísla, proti kterým se ověřuje odpověď modelu |
 | **Odkazy** | jednorázové odkazy na sebehodnocení; odkaz nese jednu šestici os, takže hráč s víc šablonami dostane odkaz na každou |
 | **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace, jazykový model |
 | **Notifikace** | souhrn na Telegram, e-mail a SMS; zvlášť interval „když se něco děje" a „když se nic neděje" |
-| **Příkazový řádek** | „Robin" → Hodnotit / Porovnat / Listy; rozřazení dělá prohlížeč, model až na zapeklité věty |
+| **Příkazový řádek** | **jedno pole na povely i otázky, nad každou záložkou**: „Robin" → Hodnotit / Porovnat / Listy, „kolik máme hráčů" → odpověď rovnou v liště; rozřazení dělá prohlížeč, model až na zapeklité věty a na otázky |
 
 Účty jsou **po lidech**: každý trenér má přihlašovací jméno a vlastní heslo, obnova chodí
 na jeho vlastní kanál.

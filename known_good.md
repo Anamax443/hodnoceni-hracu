@@ -5,6 +5,30 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (16) — jedno pole na dotazy (příkazový řádek)
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1,
+proklikáním v headless Edge přes CDP. Nastražený hráč: trenér bránění 3, hráč si dal 8.
+
+| Kontrola | Očekáváno | Naměřeno |
+|---|---|---|
+| otázka „kolik máme hráčů" ze záložky Lidé | odpověď v liště, bez přepnutí | „Máme 2 aktivních hráčů." za **0,5 s**, záložka zůstala `lide` |
+| tlačítko *Ukázat čísla* u odpovědi | je | ano |
+| otázka „u koho je největší rozpor…" ze Listů | odpověď, ne karta hráče | trefila čísla `3` / `8` / `+5` za **1,6 s**, záložka zůstala `listy` |
+| povel „hodnotit Jedna" | pořád funguje | přepnulo na záložku `hodnotit` |
+| Analýzy — druhé pole na otázky | **není** | `an-otazka` i `an-zeptat` pryč |
+| Analýzy — tabulky a příklady | zůstávají | 4 tabulky, 3 příklady, odkaz na lištu |
+| konzole prohlížeče | čistá | žádná výjimka |
+| i18n | CS = EN | 520 klíčů na obou stranách |
+
+**Chyba, kterou test odhalil (opraveno):** otázka „u koho **je** největší rozpor…"
+otevřela kartu hráče „**Je**dna" místo odpovědi — `rozeberPovel` páruje slova na jména
+podle začátku, takže krátké slovo ve větě trefí hráče. Řešeno rozpoznáním otázky **před**
+hledáním jmen, podle tázacího slova nebo otazníku (ne podle délky slova — dvouznakové
+prefixy jsou v češtině běžné).
+
+---
+
 ## 2026-08-08 (15) — Analýzy (souhrny v kódu + otázka modelu)
 
 **Commit:** `1b067ca` · **NASAZENO** 2026-08-08, Version ID `38cf2c8b-81bd-453d-928e-4e31411a608e`; živě `/api/analyzy` i `/api/ai/analyza` bez přihlášení `401`. **Ověřeno** proti `wrangler dev` nad lokální D1.

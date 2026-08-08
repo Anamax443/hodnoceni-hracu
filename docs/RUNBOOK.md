@@ -92,7 +92,8 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | tiskne se druhá prázdná stránka | slovní blok se přelil, nebo vlastní CSS přebilo tiskovou sekci | zkrátit text; tisková pravidla musí zůstat na **konci** `web/src/styl.css` |
 | hráč tvrdí, že vyplnil, ale nevidím to | vyplnil odkaz na jiné období | zkontroluj `období` v Nastavení |
 | Porovnání hlásí, že něco chybí | jedna strana ještě nevyplnila | tabulka se ukáže, až budou obě |
-| v Analýzách nejde napsat otázku | `aiAnalyzy` je vypnuté (výchozí stav) | Nastavení → *Povolit otázky na kádr*; souhrny v tabulkách jedou i bez toho |
+| na otázku v liště přijde „tomuhle nerozumím" | `aiAnalyzy` je vypnuté (výchozí stav) | Nastavení → *Povolit otázky na kádr*; tabulky v Analýzách jedou i bez toho |
+| otázka místo odpovědi otevřela kartu hráče | ve větě je slovo, které trefilo jméno | přidej tázací slovo nebo otazník („**kolik** máme hráčů", „…?“) — podle nich se otázka pozná |
 | Analýzy hlásí „Jazykový model je vypnutý" | `aiPoskytovatel = vypnuto` | Nastavení → Jazykový model → Cloudflare Workers AI |
 | „Kde se pohledy nejvíc rozchází" je prázdné | hráči nevyplnili sebehodnocení | Odkazy → vygenerovat a rozeslat; bez druhé strany není co porovnávat |
 | model v analýze tvrdí něco, co v tabulce není | model formuluje, nepočítá — a mýlí se sebejistě | čísla pod odpovědí platí, věta ne; případně zkusit silnější model |
@@ -138,9 +139,16 @@ Zaškrtávátko v záhlaví označí a odznačí všechno.
 rozpory mezi pohledem trenéra a hráče, kdo ještě nemá hodnocení nebo sebehodnocení.
 Nic z toho nikam neodchází a nestojí to nic.
 
-**Otázka jazykovému modelu je vypnutá, dokud se nezapne.** Nastavení → *Povolit otázky
-na kádr v záložce Analýzy*. Je to zvlášť od volby modelu schválně: příkazovému řádku stačí
-jména kádru, ale analýze odejdou **známky, slovní posudky i cíle konkrétních hráčů**.
+**Ptá se jedním polem — příkazovým řádkem nahoře, z libovolné záložky.** Napiš otázku
+běžnou větou („kolik máme hráčů", „u koho je největší rozpor") a odpověď přijde rovnou
+v liště; tlačítko *Ukázat čísla* otevře tabulky, ze kterých vznikla. Týž řádek dál plní
+povely („Robin", „porovnej Robina a Ferdu") — otázku od povelu pozná podle tázacího slova
+nebo otazníku. V Analýzách žádné druhé pole na otázky není.
+
+**Otázky jsou vypnuté, dokud se nezapnou.** Nastavení → *Povolit otázky na kádr*. Je to
+zvlášť od volby modelu schválně: příkazovému řádku stačí na povely jména kádru, ale otázce
+odejdou **známky, slovní posudky i cíle konkrétních hráčů**. S vypnutými otázkami umí lišta
+jen přepínat záložky.
 
 Co od modelu čekat a co ne:
 
