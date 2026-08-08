@@ -2,6 +2,49 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (24) — porovnat cokoliv s čímkoliv
+
+**Zadání:** „chci mít možnost porovnávat cokoliv s čímkoliv." Dosud uměla aplikace čtyři
+oddělené způsoby (trenér × hráč, hráč × hráč, teď × minule, shoda mezi trenéry) a **každý
+z nich byl zamčený v jednom období**. Robin na podzim proti Ferdovi na jaře, moje známka
+proti Julkově, sebehodnocení z podzimu proti hodnocení z jara — nic z toho nešlo.
+
+**Rozhodnutí (dotaz na uživatele):** položka výběru = **hráč + období + kdo hodnotil**,
+a **jedna šablona zůstává tvrdou hranicí**. Brankářská a polní šestice nemají jedinou
+společnou osu; napříč nimi by šel srovnat leda orientační průměr, a to je přesně ta „známka
+na vysvědčení", které se projekt brání.
+
+**Postaveno:**
+- `GET /api/zaznamy?sablona=` — nabídne kombinace, které v databázi **opravdu jsou**
+  (poslední hodnocení každé kombinace; starší verze jsou opravy a pro porovnání šum).
+- `GET /api/porovnani-vice?ids=` — 2 až 8 záznamů vedle sebe. Míchané šablony `400`.
+- Třetí karta v Porovnání. Staré dvě zůstaly jako zkratky pro obvyklé případy.
+
+**Chyba, kterou odhalil až proklik:** sloupce se řadily podle pořadí v seznamu, takže
+znaménko u „rozdílu" určovala náhoda — a uživatel pořadí neovlivní, zaškrtávátka mají pevné
+pořadí. **Pořadí sloupců teď určuje server**: období chronologicky (podle nejstaršího
+záznamu v něm), uvnitř období `trener` → `shoda` → `hrac`. Díky tomu znamená `+` totéž co
+jinde v aplikaci: u dvou období **zlepšení**, u trenéra proti sebehodnocení **hráč si dal
+víc**. U tří a víc sloupců se znaménko neukazuje a počítá se rozptyl.
+
+**Ověřeno lokálně** (`wrangler dev`, data: hráč se dvěma obdobími a sebehodnocením, druhý
+hráč, plus brankářská řada na test odmítnutí):
+
+| Kontrola | Výsledek |
+|---|---|
+| `/api/zaznamy?sablona=pole` | 4 kombinace, správně popsané (jméno · období · autor) |
+| `/api/zaznamy?sablona=brankar` | 1 |
+| dva sloupce (trenér × hráč) | `braneni` 3/8, **rozdíl +5** |
+| tři sloupce | `rozdil: null`, rozptyl 5 u bránění, 3 u levé |
+| míchané šablony | `400` se srozumitelným vysvětlením |
+| jeden záznam | `400` „Vyber aspoň dva záznamy." |
+| **pořadí nezávisí na `ids`** | `16,17` i `17,16` → stejné pořadí i stejné `+5` |
+| dvě období | `zima → jaro`, rozdíl `+2` = zlepšení, obojí zadání |
+| UI (CDP) | 3 karty, 4 záznamy v nabídce, hlavičky sloupců, 1 zvýrazněná osa, přepnutí šablony přenačte nabídku, žádná výjimka |
+| i18n | 536 klíčů CS i EN |
+
+---
+
 ## 2026-08-09 (23) — odkazy se generují vybraným, ne vždycky všem
 
 **Zadání:** „chci generovat pro konkrétní lidi." Tlačítko v Odkazech generovalo natvrdo

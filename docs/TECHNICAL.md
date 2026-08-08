@@ -716,6 +716,19 @@ Ukládá a zobrazuje se **znaménko** rozdílu, ne absolutní hodnota:
 
 Když toleranci překročí víc než 3 osy, aplikace to napíše a doporučí vybrat 2–3 témata.
 
+**7.3b Volné porovnání.** `GET /api/zaznamy` nabídne kombinace **hráč × období × autor**
+v rámci jedné šablony (poslední hodnocení každé kombinace — starší verze jsou opravy a pro
+porovnání šum). `GET /api/porovnani-vice?ids=` postaví 2–8 z nich vedle sebe.
+
+- **Šablona je tvrdá hranice.** Míchané šablony vrací `400` — brankářská a polní šestice
+  nemají jedinou společnou osu, takže by se porovnávalo „Chytání 8" s „Levá noha 3".
+- **Pořadí sloupců určuje server, ne pořadí v `ids`.** Období chronologicky (podle
+  nejstaršího záznamu v něm), uvnitř období `trener` → `shoda` → `hrac`. Bez toho by
+  znaménko u dvou sloupců záviselo na tom, v jakém pořadí uživatel klikal.
+- **Znaménko jen u dvou sloupců** (druhý mínus první). Díky pořadí výše to znamená totéž co
+  jinde v aplikaci: u dvou období `+` = zlepšení, u trenéra proti sebehodnocení `+` = hráč
+  si dal víc. U tří a víc sloupců se místo znaménka počítá rozptyl.
+
 **7.4 Trend.** Žádné souhrnné číslo ani průměr os. Šipka u každé osy (↑ ↓ →) plus souhrn
 typu „4 osy nahoru, 1 dolů, 1 beze změny". Pásmo šumu: za změnu se považuje až rozdíl
 2 body (`PASMO_SUMU` ve Workeru).
@@ -782,6 +795,8 @@ POST   /api/ai/analyza    {otazka,obdobi,popisky} admin — otázka nad plnými 
 GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč
 GET    /api/trend?player_id=                      admin — vývoj v čase
+GET    /api/zaznamy?sablona=                      admin — co jde porovnat (hráč×období×autor)
+GET    /api/porovnani-vice?ids=                   admin — 2–8 záznamů vedle sebe
 
 GET    /api/tokens?obdobi=                        admin
 POST   /api/tokens    {ids?, obdobi, dni, sablona?}  admin — `ids` jako u listů (`id`

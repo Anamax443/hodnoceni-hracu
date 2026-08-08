@@ -1499,6 +1499,20 @@ async function porovnani(kam) {
             </div>
             <p><button class="hl" id="s-porovnat" title="${t('srovnani.porovnat.tip')}">${t('srovnani.porovnat')}</button></p>
             <div id="s-vysledek"></div>
+        </div>
+
+        <div class="karta">
+            <h2>${t('volne.nadpis')}</h2>
+            <p class="popis">${t('volne.popis')}</p>
+            <div class="pole" style="max-width:320px">
+                <label for="v-sablona">${t('hodnotit.sablona')}</label>
+                <select id="v-sablona">${Object.keys(SABLONY)
+                    .map(s => `<option value="${s}">${t('sablona.' + s)}</option>`).join('')}</select>
+                <div class="popis">${t('volne.sablona.napoveda')}</div>
+            </div>
+            <div id="v-nabidka"><p class="popis">${t('shell.nacitam')}</p></div>
+            <p><button class="hl" id="v-porovnat" title="${t('volne.porovnat.tip')}">${t('volne.porovnat')}</button></p>
+            <div id="v-vysledek"></div>
         </div>`;
 
     $('#s-porovnat').onclick = async () => {
@@ -1513,6 +1527,43 @@ async function porovnani(kam) {
             const s = await api(`/api/srovnani?sablona=${$('#s-sablona').value}`
                 + `&obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}&ids=${ids.join(',')}`);
             cil.innerHTML = tabulkaSrovnani(s);
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
+    /* --- volné porovnání: co záznam, to sloupec --- */
+
+    // Nabídka se plní z databáze, ne z kádru: vybírat jde jen to, co opravdu
+    // existuje. Prázdné kolonky by jinak vypadaly jako chyba aplikace.
+    const nactiNabidku = async () => {
+        const cil = $('#v-nabidka');
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            const { zaznamy } = await api(`/api/zaznamy?sablona=${$('#v-sablona').value}`);
+            if (!zaznamy.length) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('volne.prazdno')}</div>`;
+                return;
+            }
+            cil.innerHTML = `<div class="pozice-vyber">${zaznamy.map(z => `
+                <label class="volba"><input type="checkbox" class="v-zaznam" value="${z.id}">
+                    ${esc(popisZaznamu(z))}</label>`).join('')}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+
+    $('#v-sablona').onchange = nactiNabidku;
+    nactiNabidku();
+
+    $('#v-porovnat').onclick = async () => {
+        const cil = $('#v-vysledek');
+        const ids = [...kam.querySelectorAll('.v-zaznam:checked')].map(c => Number(c.value));
+        if (ids.length < 2) { cil.innerHTML = `<div class="hlaska pozor">${t('volne.malo')}</div>`; return; }
+        if (ids.length > 8) { cil.innerHTML = `<div class="hlaska pozor">${t('volne.moc')}</div>`; return; }
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        try {
+            cil.innerHTML = tabulkaVolna(await api(`/api/porovnani-vice?ids=${ids.join(',')}`));
         } catch (e) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
@@ -1573,6 +1624,62 @@ function tabulkaSrovnani(s) {
         </table>
         <p class="popis">${t('srovnani.legenda')}</p>
         ${chybi.length ? `<div class="hlaska pozor">${t('srovnani.chybi', esc(chybi.map(h => h.jmeno).join(', ')))}</div>` : ''}`;
+}
+
+/* ===================== volné porovnání =====================
+
+   Co záznam, to sloupec. Záznam = hráč × období × kdo hodnotil, takže vedle
+   sebe můžou stát dvě období téhož hráče, dva hráči, trenér proti
+   sebehodnocení i dva trenéři mezi sebou.
+
+   Šablona zůstává tvrdou hranicí: brankářská a polní šestice nemají jedinou
+   společnou osu, takže „Chytání 8" proti „Levá noha 3" by nebylo porovnání.  */
+
+/** Popis záznamu do výběru i do hlavičky sloupce: kdo, kdy, od koho. */
+function popisZaznamu(z) {
+    const kdo = z.autor === 'hrac' ? t('historie.autor.hrac')
+        : z.autor === 'shoda' ? t('historie.autor.shoda')
+        : `${t('historie.autor.trener')}${z.autorJmeno ? ' ' + z.autorJmeno : ''}`;
+    return `${jmenoText(z)} · ${z.obdobi} · ${kdo}`;
+}
+
+function tabulkaVolna(v) {
+    const dva = v.zaznamy.length === 2;
+
+    const radek = o => {
+        // U dvou sloupců nese informaci znaménko, u tří a víc rozptyl.
+        const zvyraznit = dva ? Math.abs(o.rozdil ?? 0) > Number(stav.nastaveni.tolerance) : (o.rozptyl ?? 0) >= 3;
+        return `
+        <tr class="${zvyraznit ? 'resit' : ''}">
+            <td>${esc(t('osa.' + o.klic))}</td>
+            ${v.zaznamy.map(z => {
+                const h = o.hodnoty[z.id];
+                if (h === null || h === undefined) return '<td class="cisla">—</td>';
+                const nej = o.nejlepe !== null && h === o.nejlepe && (o.rozptyl ?? 0) > 0;
+                return `<td class="cisla">${nej ? `<b class="ano">${h}</b>` : h}</td>`;
+            }).join('')}
+            <td class="cisla">${dva
+                ? (o.rozdil === null ? '—'
+                    : `<span class="${o.rozdil > 0 ? 'rozdil-plus' : o.rozdil < 0 ? 'rozdil-minus' : ''}">${o.rozdil > 0 ? '+' : ''}${o.rozdil}</span>`)
+                : (o.rozptyl === null ? '—' : o.rozptyl)}</td>
+        </tr>`;
+    };
+
+    return `
+        <div class="scroll-x">
+        <table>
+            <thead><tr><th>${t('porovnani.osa')}</th>
+                ${v.zaznamy.map(z => `<th class="cisla">${esc(popisZaznamu(z))}</th>`).join('')}
+                <th class="cisla">${dva ? t('porovnani.rozdil') : t('srovnani.rozptyl')}</th></tr></thead>
+            <tbody>
+                ${v.osy.map(radek).join('')}
+                <tr><td><b>${t('srovnani.prumer')}</b></td>
+                    ${v.zaznamy.map(z => `<td class="cisla"><b>${z.prumer ?? '—'}</b></td>`).join('')}
+                    <td class="cisla"></td></tr>
+            </tbody>
+        </table>
+        </div>
+        <p class="popis">${dva ? t('volne.legenda.dva') : t('volne.legenda.vic')}</p>`;
 }
 
 /* ===================== historie verzí ===================== */

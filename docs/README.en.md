@@ -201,6 +201,24 @@ worst, and axes with a gap of 3 or more highlighted. The last row is the average
 orientation figure, not a school grade. Only coach evaluations are compared, always within
 one template.
 
+#### Compare anything with anything
+
+The third card. Pick **two to eight records** and they are put side by side, axis by axis.
+A record is **player + period + who evaluated**, so this can compare what nothing else can:
+two periods of the same player, a self-evaluation against the coach, two coaches against each
+other, or players from different periods — or all of it at once. Only records that actually
+exist are offered.
+
+**The template is the one boundary this cannot cross.** The goalkeeper and outfield sets do
+not share a single axis, so "Catching 8" against "Left foot 3" would not be a comparison.
+
+**Columns sort themselves**, not by the order you ticked them: periods chronologically, and
+within a period the coach comes before the player. With two columns the *difference* is the
+second minus the first, so **+ means improvement** across periods and "the player scored
+themselves higher" for coach vs. self-evaluation — the same reading as the top card. With
+three or more columns the sign is not shown (there would be nothing to sign it against) and
+a gap column takes its place.
+
 ### Links
 
 Single-use self-evaluation links for the active players in the period, with *Copy* and

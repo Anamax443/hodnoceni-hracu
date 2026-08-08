@@ -186,6 +186,11 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 :root[data-theme="dark"] .znacka.sab-brankar { color: #80DEEA; border-color: #26C6DA; background: #0b2b30; }
 :root[data-theme="dark"] .znacka.sab-leader  { color: #F8BBD0; border-color: #EC407A; background: #301022; }
 
+/* Volné porovnání má až osm sloupců s dlouhými popisky („Robin · 2025/2026 zima
+   · trenér Milan"). Ať se posouvá tabulka sama v sobě, ne celá stránka —
+   na mobilu totéž dělá pravidlo pro každou tabulku v karta média query. */
+.scroll-x { overflow-x: auto; }
+
 .ano { color: var(--zelena); font-weight: bold; }
 .ne { color: var(--seda); opacity: .6; }
 .resit td { background: var(--pozor-poz); }

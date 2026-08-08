@@ -275,6 +275,29 @@ vysvědčení.
 Srovnávají se **jen hodnocení od trenérů** a vždy v rámci jedné šablony; sebehodnocení hráče
 je jiná optika. Kdo tou šablonou v období hodnocení nemá, vypíše se pod tabulkou.
 
+### Porovnat cokoliv s čímkoliv
+
+Třetí karta v Porovnání. Vybereš **dva až osm záznamů** a postaví se vedle sebe, osa po ose.
+Záznam je **hráč + období + kdo hodnotil**, takže tady jde srovnat i to, co jinde nejde:
+
+- dvě období téhož hráče (podzim proti jaru)
+- sebehodnocení proti hodnocení trenéra
+- dva trenéry mezi sebou
+- hráče z různých období, nebo klidně všechno dohromady
+
+Nabízejí se **jen záznamy, které opravdu existují** — vybírat jde z toho, co je v databázi,
+ne z prázdných kolonek.
+
+**Šablona je hranice, přes kterou to nejde.** Brankářská a polní šestice nemají jedinou
+společnou osu, takže „Chytání 8" proti „Levá noha 3" by nebylo porovnání. Šablona se vybírá
+nahoře a nabídka se jí řídí.
+
+**Sloupce se řadí samy**, ne podle toho, v jakém pořadí jsi klikal: období chronologicky
+a uvnitř období jde trenér před hráče. U dvou sloupců je pak sloupec *rozdíl* druhý mínus
+první, takže **+ znamená u dvou období zlepšení** a u trenéra proti sebehodnocení to, že si
+hráč dal víc než trenér — stejné čtení jako v horní kartě. U tří a víc sloupců se znaménko
+neukazuje (nebylo by proti čemu) a místo něj je rozptyl.
+
 ### Odkazy
 
 Odkazy na sebehodnocení na dané období. U každého tlačítko *Kopírovat* a *Zneplatnit*, plus

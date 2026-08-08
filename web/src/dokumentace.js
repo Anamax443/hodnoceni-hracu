@@ -145,6 +145,21 @@ má výklad:</p>
 Na víc není při jednom rozhovoru nikdo zvědavý.</p>
 
 <h2>Porovnat hráče mezi sebou</h2>
+<h2>Porovnat cokoliv s čímkoliv</h2>
+<p>Třetí karta v Porovnání. Vybereš <b>dva až osm záznamů</b> a postaví se vedle
+sebe, osa po ose. Záznam je <b>hráč + období + kdo hodnotil</b>, takže tady jde
+srovnat i to, co jinde nejde: dvě období téhož hráče, sebehodnocení proti
+trenérovi, dva trenéry mezi sebou, nebo hráče z různých období. Nabízejí se jen
+záznamy, které opravdu existují.</p>
+<p><b>Šablona je hranice, přes kterou to nejde</b> — brankářská a polní šestice
+nemají jedinou společnou osu.</p>
+<p><b>Sloupce se řadí samy</b>, ne podle pořadí klikání: období chronologicky
+a uvnitř období jde trenér před hráče. U dvou sloupců je <i>rozdíl</i> druhý
+mínus první, takže <b>+</b> znamená u dvou období zlepšení a u trenéra proti
+sebehodnocení to, že si hráč dal víc. U tří a víc sloupců se místo znaménka
+ukazuje rozptyl.</p>
+
+<h2>Srovnání hráčů mezi sebou</h2>
 <p>Druhá karta v Porovnání. Vybereš šablonu a zaškrtneš hráče (dva brankáře, dva
 stopery) a dostaneš tabulku osa × hráč: vyšší známka tučně, sloupec <b>Rozdíl</b>
 říká, o kolik se nejlepší a nejhorší liší, a osy s rozdílem 3 a víc se zvýrazní —
@@ -430,6 +445,20 @@ The sign carries meaning:</p>
 </ul>
 <p>When more than three axes disagree, the app suggests picking two or three
 topics. Nobody takes more than that from a single conversation.</p>
+
+<h2>Compare anything with anything</h2>
+<p>The third card under Comparison. Pick <b>two to eight records</b> and they are put
+side by side, axis by axis. A record is <b>player + period + who evaluated</b>, so this
+compares what nothing else can: two periods of the same player, a self-evaluation against
+the coach, two coaches against each other, or players from different periods. Only records
+that actually exist are offered.</p>
+<p><b>The template is the one boundary this cannot cross</b> — the goalkeeper and outfield
+sets do not share a single axis.</p>
+<p><b>Columns sort themselves</b>, not by the order you ticked: periods chronologically,
+and within a period the coach comes before the player. With two columns the
+<i>difference</i> is the second minus the first, so <b>+</b> means improvement across
+periods and “the player scored themselves higher” for coach vs. self-evaluation. With
+three or more columns a gap replaces the sign.</p>
 
 <h2>Comparing players with each other</h2>
 <p>The second card under Comparison. Pick a template and tick the players (two

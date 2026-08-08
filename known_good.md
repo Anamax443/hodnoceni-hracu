@@ -5,6 +5,33 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (19) — volné porovnání (cokoliv s čímkoliv)
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+Data: hráč se dvěma obdobími (`zima` trenér + hráč, `jaro` trenér), druhý hráč (`zima`),
+plus brankářská řada na test odmítnutí míchání. Ostrá data nedotčena.
+
+| Kontrola | Očekáváno | Naměřeno |
+|---|---|---|
+| `/api/zaznamy?sablona=pole` | jen existující kombinace | 4, popsané `jméno · období · autor` |
+| `/api/zaznamy?sablona=brankar` | 1 | 1 |
+| dva sloupce, trenér × hráč | znaménko dle konvence | `braneni` 3/8, **rozdíl +5** |
+| tři sloupce | bez znaménka, s rozptylem | `rozdil: null`, rozptyl 5 (bránění), 3 (levá) |
+| míchané šablony | odmítnout a vysvětlit | `400` „…jiná šestice os nemá s touhle společnou ani jednu osu." |
+| jeden záznam | odmítnout | `400` „Vyber aspoň dva záznamy." |
+| **pořadí sloupců** | nezávislé na pořadí v `ids` | `16,17` i `17,16` → `zima/trener → zima/hrac`, obojí `+5` |
+| dvě období | starší první, + = zlepšení | `zima → jaro`, `+2`, obojí zadání |
+| UI (CDP) | třetí karta | 3 karty, 4 záznamy, hlavičky sloupců s popisem, 1 zvýrazněná osa |
+| přepnutí šablony | přenačte nabídku | `brankar` → 1 záznam |
+| konzole prohlížeče | čistá | žádná výjimka |
+| i18n | CS = EN | 536 klíčů |
+
+**Chyba, kterou test odhalil (opraveno):** sloupce se řadily podle pořadí v seznamu, takže
+znaménko u rozdílu určovala náhoda — uživatel pořadí neovlivní. Pořadí teď určuje server
+(období chronologicky, uvnitř období trenér → shoda → hráč).
+
+---
+
 ## 2026-08-09 (18) — odkazy vybraným hráčům a šablonám
 
 **Commit:** `04ebd28` · **NASAZENO** 2026-08-09, Version ID `07a33467-63a3-4afb-b3ec-8fd9f8005680`; živě ověřeno na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.

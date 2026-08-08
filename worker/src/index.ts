@@ -3097,6 +3097,134 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json({ obdobi, sablona, osy, hraci });
     }
 
+    /* ---------- co všechno jde porovnat ----------
+       Nabídne jen to, co v databázi opravdu je: kombinace hráč × období ×
+       autor v rámci JEDNÉ šablony. Šablona je tvrdá hranice — brankářská
+       a polní šestice nemají jedinou společnou osu, takže „Chytání 8" proti
+       „Levá noha 3" by nebylo porovnání, ale nesmysl.
+
+       Vrací se `id` posledního hodnocení té kombinace. Append-only databáze
+       má u jedné kombinace i několik verzí (opravy); ty jsou pro porovnání
+       šum, od toho je historie verzí.                                        */
+    if (cesta === '/api/zaznamy' && metoda === 'GET') {
+        const sablona = q.get('sablona') && q.get('sablona')! in SABLONY ? q.get('sablona')! : 'pole';
+
+        const { results } = await env.DB.prepare(
+            `SELECT MAX(e.id) AS id, e.player_id, e.obdobi, e.autor, e.autor_id,
+                    p.jmeno, p.prezdivka, MAX(e.datum) AS datum
+               FROM evaluations e JOIN players p ON p.id = e.player_id
+              WHERE e.sablona = ?
+              GROUP BY e.player_id, e.obdobi, e.autor, e.autor_id
+              ORDER BY e.obdobi DESC, p.jmeno`
+        ).bind(sablona).all<{
+            id: number; player_id: number; obdobi: string; autor: string;
+            autor_id: number | null; jmeno: string; prezdivka: string | null; datum: string;
+        }>();
+
+        // Jméno trenéra se dohledá až tady, ať se v seznamu nepletou dva Trnkové.
+        const { results: lide } = await env.DB.prepare('SELECT id, jmeno FROM players').all<{ id: number; jmeno: string }>();
+        const jmenoPodleId = new Map((lide ?? []).map(o => [o.id, o.jmeno]));
+
+        return json({
+            sablona,
+            zaznamy: (results ?? []).map(r => ({
+                id: r.id, player_id: r.player_id, jmeno: r.jmeno, prezdivka: r.prezdivka,
+                obdobi: r.obdobi, autor: r.autor, autorId: r.autor_id,
+                // Klíč `autor` překládá prohlížeč; jméno konkrétního trenéra ne.
+                autorJmeno: r.autor_id ? (jmenoPodleId.get(r.autor_id) ?? null) : null,
+                datum: r.datum
+            }))
+        });
+    }
+
+    /* ---------- porovnání čehokoli s čímkoli (v rámci jedné šablony) ----------
+       `ids` jsou id hodnocení ze `/api/zaznamy`. Co položka, to sloupec —
+       takže vedle sebe můžou stát dvě období téhož hráče, dva hráči, trenér
+       proti sebehodnocení i dva trenéři. Míchané šablony se odmítají.        */
+    if (cesta === '/api/porovnani-vice' && metoda === 'GET') {
+        const ids = (q.get('ids') ?? '').split(',').map(Number).filter(Boolean).slice(0, 8);
+        if (ids.length < 2) return chyba('Vyber aspoň dva záznamy.', 400);
+
+        const otazniky = ids.map(() => '?').join(',');
+        const { results } = await env.DB.prepare(
+            `SELECT e.*, p.jmeno, p.prezdivka FROM evaluations e
+               JOIN players p ON p.id = e.player_id
+              WHERE e.id IN (${otazniky})`
+        ).bind(...ids).all<any>();
+
+        if ((results ?? []).length < 2) return chyba('Vybrané záznamy se nenašly.', 404);
+
+        const sablony = [...new Set((results ?? []).map(r => r.sablona))];
+        if (sablony.length > 1) {
+            return chyba('Porovnávat jde jen záznamy se stejnou šablonou — jiná šestice os '
+                + 'nemá s touhle společnou ani jednu osu.', 400);
+        }
+        const sablona = sablony[0];
+        const osyKlice = klice(sablona);
+        if (!osyKlice.length) return chyba(`Neznámá šablona: ${sablona}`, 400);
+
+        const { results: lide } = await env.DB.prepare('SELECT id, jmeno FROM players').all<{ id: number; jmeno: string }>();
+        const jmenoPodleId = new Map((lide ?? []).map(o => [o.id, o.jmeno]));
+
+        /* Pořadí sloupců. U dvou sloupců je rozdíl „druhý mínus první", takže na
+           pořadí záleží — a nesmí ho určovat náhoda v pořadí zaškrtnutí:
+           - období se řadí chronologicky (podle nejstaršího záznamu v něm),
+             takže u dvou období téhož hráče znamená + zlepšení,
+           - uvnitř období jde trenér před hráče, takže + znamená „hráč si dal
+             víc než trenér" — stejné čtení jako v porovnání trenér × hráč. */
+        const poradiAutora = (a: string) => (a === 'trener' ? 0 : a === 'shoda' ? 1 : 2);
+        const zacatekObdobi = new Map<string, string>();
+        for (const r of results ?? []) {
+            const d = zacatekObdobi.get(r.obdobi);
+            if (!d || r.datum < d) zacatekObdobi.set(r.obdobi, r.datum);
+        }
+
+        const zaznamy = (results ?? [])
+            .slice()
+            .sort((a, b) =>
+                (zacatekObdobi.get(a.obdobi) ?? '').localeCompare(zacatekObdobi.get(b.obdobi) ?? '')
+                || poradiAutora(a.autor) - poradiAutora(b.autor)
+                || String(a.jmeno).localeCompare(String(b.jmeno), 'cs')
+                || a.id - b.id)
+            .map(r => {
+                const v = rozbal(r);
+                const cisla = osyKlice.map(k => v.hodnoty[k]).filter(x => typeof x === 'number');
+                return {
+                    id: r.id, player_id: r.player_id, jmeno: r.jmeno, prezdivka: r.prezdivka,
+                    obdobi: v.obdobi, autor: v.autor, autorId: v.autorId,
+                    autorJmeno: v.autorId ? (jmenoPodleId.get(v.autorId) ?? null) : null,
+                    datum: v.datum, hodnoty: v.hodnoty,
+                    fyzicky: v.fyzicky, hlavou: v.hlavou, parta: v.parta,
+                    cile: v.cile, poznamka: v.poznamka,
+                    prumer: cisla.length
+                        ? Math.round((cisla.reduce((a, b) => a + b, 0) / cisla.length) * 10) / 10
+                        : null
+                };
+            });
+
+        /* U dvou sloupců dává smysl rozdíl se znaménkem (druhý minus první) —
+           je to tentýž způsob čtení jako u porovnání trenér × hráč. U tří a víc
+           se znaménko ztrácí, tam se ukazuje rozptyl. */
+        const osy = osyKlice.map(klic => {
+            const cisla = zaznamy.map(z => z.hodnoty[klic]).filter((x): x is number => typeof x === 'number');
+            const rozdil = zaznamy.length === 2
+                && typeof zaznamy[1].hodnoty[klic] === 'number'
+                && typeof zaznamy[0].hodnoty[klic] === 'number'
+                ? zaznamy[1].hodnoty[klic] - zaznamy[0].hodnoty[klic]
+                : null;
+            return {
+                klic,
+                hodnoty: Object.fromEntries(zaznamy.map(z => [z.id, z.hodnoty[klic] ?? null])),
+                nejlepe: cisla.length ? Math.max(...cisla) : null,
+                nejhure: cisla.length ? Math.min(...cisla) : null,
+                rozptyl: cisla.length > 1 ? Math.max(...cisla) - Math.min(...cisla) : null,
+                rozdil
+            };
+        });
+
+        return json({ sablona, zaznamy, osy });
+    }
+
     if (cesta === '/api/porovnani' && metoda === 'GET') {
         const playerId = Number(q.get('player_id'));
         if (!playerId) return chyba('Chybí player_id.', 400);
