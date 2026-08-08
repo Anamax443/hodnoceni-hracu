@@ -2,6 +2,54 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (22) — gpt-oss neodpovídal: uvažující model vyčerpal limit tokenů
+
+**Hlášení z provozu:** „gpt-oss model neodpovídá." V ostrém nastavení byl
+`@cf/openai/gpt-oss-120b`.
+
+**Příčina byla jinde, než to vypadalo.** Volání proběhlo v pořádku, ale odpověď měla
+`content: null`, `finish_reason: 'length'` a plný blok `reasoning`. **`gpt-oss` je
+uvažující model a vnitřní uvažování se počítá do `max_tokens`** — se stropy nastavenými
+pro běžný model (20 / 120 / 900) došly tokeny dřív, než začal psát odpověď.
+
+Diagnostika trvala tak dlouho hlavně proto, že hláška zněla „Model odpověděl prázdnotou —
+zkus jiný model", což příčinu zakrývalo. **Odchytilo se to až vypsáním syrové odpovědi.**
+
+**Co se opravilo:**
+- `textZWorkersAI()` — čtení textu podle rodiny modelu: `response`, `result.response`,
+  `choices[0].message.content` (tvar OpenAI, tudy jede gpt-oss) i Responses API
+  `output[].content[].text`. **`reasoning` se přeskakuje** — je to vnitřní monolog, ne
+  odpověď pro trenéra.
+- `jeUvazujici()` + `stropTokenu()` — uvažujícímu modelu se strop zečtyřnásobí, minimálně
+  na 2000. Ostatním se nemění, ať se neplýtvá free tierem.
+- `procNicNeprislo()` — místo „zkus jiný model" řekne důvod; u vyčerpaného limitu jmenovitě.
+  Prázdná odpověď u analýzy nově **vyhodí chybu**, takže důvod skončí v logu komunikace,
+  ne až v hlášení od uživatele.
+
+**Druhý nález, mimo zadání:** model si u os pod tolerancí **dopočítával rozdíly a pletl si
+znaménko** (u zápisu `3/4` hlásil −1 místo +1). Podklady mu proto nově dávají rozdíl
+spočítaný u **každé** osy (`8/6 (-2)`), ne jen u těch nad tolerancí. Po opravě sedí
+všechny: bránění +5, levá +1, přihrávka +1, zbytek 0. Znovu totéž pravidlo — co jde
+spočítat, počítá kód.
+
+**Třetí, kosmetika:** model píše markdown i po zákazu v pokynu. `**tučně**` se v odpovědi
+překládá na `<strong>` (až po escapování, nic jiného z markdownu se nepřekládá), aby
+v textu nezůstaly holé hvězdičky.
+
+**Ověřeno lokálně** (`wrangler dev`, nastražený hráč, headless Edge přes CDP):
+
+| | gpt-oss-120b | llama-3.3-70b-fp8-fast |
+|---|---|---|
+| zkouška spojení | ✅ „funguje", 1,1 s | ✅ „Ano", 0,2 s |
+| analýza | ✅ trefila `+5 (3 vs 8)`, 4,1 s | ✅ 1,6 s |
+| rozřazení povelu | ✅ „ukaž mi papíry pro Jednu" → `listy`, 2,7 s | ✅ |
+| otázka z lišty (UI) | ✅ 4,8 s a 9,5 s | ✅ 0,5 s a 1,6 s |
+
+**Latence je daň za uvažování** — gpt-oss je na povely v liště citelně pomalejší.
+Popis modelu v Nastavení to nově říká.
+
+---
+
 ## 2026-08-09 (21) — jedno pole na dotazy: ptá se z příkazového řádku
 
 **Nález z provozu.** Uživatel napsal do příkazového řádku „kolik máme hráčů" a dostal

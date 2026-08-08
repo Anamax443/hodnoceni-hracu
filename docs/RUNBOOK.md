@@ -87,6 +87,9 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | příkazový řádek hlásí, že nerozumí | jméno není v kádru, nebo je model vypnutý | zkus příjmení či přezdívku; volnější věty umí až model (Nastavení → Jazykový model) |
 | model hlásí vyčerpaný kredit u Claude | na účtu Anthropic není kredit | nic dělat nemusíš — povel dokončí model zdarma a důvod je v logu; trvale: dobít kredit, nebo přepnout na Workers AI |
 | model odpovídá `5028 … was deprecated` | Cloudflare model vyřadil | vybrat jiný v Nastavení; seznam v kódu (`AI_MODELY`) srovnat podle `npx wrangler ai models` |
+| „Model nevrátil text… spotřeboval limit na uvažování" | uvažující model (`gpt-oss`) nedostal dost tokenů | strop se mu zvedá automaticky; když to hlásí dál, vyber model, který neuvažuje (Llama) |
+| odpovědi z `gpt-oss` chodí pomalu (5–10 s) | uvažuje nahlas, než odpoví | je to daň za sílu; na povely a rychlé otázky je Llama 70B svižnější (pod 2 s) |
+| v odpovědi jsou hvězdičky `**takhle**` | model píše markdown i po zákazu | tučné se překládá, zbytek se zobrazí, jak přišel — na obsah to nemá vliv |
 | hromadné hodnocení někoho vynechalo | ten hráč nemá od tebe v období hodnocení | vypíše se jmenovitě — ohodnoť ho jednotlivě, pak hromadné doplní zbytek |
 | srovnání hráčů je prázdné | vybraní nemají hodnocení tou šablonou v období | zkontroluj šablonu a období; kdo chybí, je vypsaný pod tabulkou |
 | tiskne se druhá prázdná stránka | slovní blok se přelil, nebo vlastní CSS přebilo tiskovou sekci | zkrátit text; tisková pravidla musí zůstat na **konci** `web/src/styl.css` |

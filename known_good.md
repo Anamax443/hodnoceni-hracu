@@ -5,6 +5,30 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (17) — gpt-oss odpovídá (uvažující model)
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+
+| Kontrola | gpt-oss-120b | llama-3.3-70b-fp8-fast |
+|---|---|---|
+| zkouška spojení (`/api/ai/stav`) | ✅ „funguje", **1128 ms** | ✅ „Ano", 192 ms |
+| analýza — trefit čísla | ✅ `+5 (trenér 3, hráč 8)`, **4062 ms** | ✅ 1,6 s |
+| rozřazení povelu | ✅ „ukaž mi papíry pro Jednu" → `akce=listy`, 1 hráč, **2729 ms** | ✅ |
+| otázka z lišty, záložka Lidé (UI) | ✅ **4,8 s** | ✅ 0,5 s |
+| otázka z lišty, záložka Listy (UI) | ✅ **9,5 s** | ✅ 1,6 s |
+| znaménka rozdílů | ✅ bránění +5, levá +1, přihrávka +1, zbytek 0 | ✅ |
+| konzole prohlížeče | žádná výjimka | žádná výjimka |
+
+**Před opravou** vracel gpt-oss `content: null`, `finish_reason: 'length'` a plný blok
+`reasoning` — uvažování se počítá do `max_tokens` a se stropy 20 / 120 / 900 nezbylo na
+odpověď. Hláška „Model odpověděl prázdnotou — zkus jiný model" příčinu zakrývala; odhalilo
+ji až vypsání syrové odpovědi.
+
+**Druhá oprava:** model si u os pod tolerancí dopočítával rozdíly a **pletl si znaménko**
+(u `3/4` hlásil −1 místo +1). Podklady teď nesou rozdíl spočítaný u každé osy.
+
+---
+
 ## 2026-08-09 (16) — jedno pole na dotazy (příkazový řádek)
 
 **Commit:** `74946c4` · **NASAZENO** 2026-08-09, Version ID `f3808fce-9f9c-4307-ab6e-1956084e2b1f`; živě `/api/version` = `74946c4` (5× po sobě), `app.js` nese novou logiku a staré `an-otazka` je pryč. **Ověřeno** proti `wrangler dev` nad lokální D1,

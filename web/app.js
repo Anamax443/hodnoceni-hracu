@@ -787,8 +787,14 @@ async function odpovezNaOtazku(otazka, cil) {
             cil.innerHTML = `<div class="hlaska pozor">${esc(r.popis || t('analyzy.nepovedlo'))}</div>`;
             return true;
         }
-        // Odstavce zachovat, ale nic z modelu nevykreslovat jako HTML.
-        const text = esc(r.odpoved).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
+        /* Odstavce zachovat, ale nic z modelu nevykreslovat jako HTML — escapuje
+           se jako první. Až na escapovaný text se pustí jediné povolené zdobení:
+           `**tučně**`. Modely ho píšou i po zákazu v pokynu a holé hvězdičky
+           v odpovědi vypadají jako chyba. Nic jiného se z markdownu nepřekládá. */
+        const text = esc(r.odpoved)
+            .replace(/\*\*([^*\n]{1,120})\*\*/g, '<strong>$1</strong>')
+            .replace(/\n{2,}/g, '</p><p>')
+            .replace(/\n/g, '<br>');
         cil.innerHTML = `<div class="hlaska info">
             <p>${text}</p>
             <p class="popis">

@@ -329,7 +329,7 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
 const AI_MODELY = [
     { id: '@cf/meta/llama-3.1-8b-instruct-fp8', poskytovatel: 'workers', popis: 'Llama 3.1 8B — rychlý a levný, na pokyny stačí (výchozí)' },
     { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', poskytovatel: 'workers', popis: 'Llama 3.3 70B — silnější a lepší čeština, pomalejší' },
-    { id: '@cf/openai/gpt-oss-120b', poskytovatel: 'workers', popis: 'gpt-oss 120B — nejsilnější, latence kolísá' },
+    { id: '@cf/openai/gpt-oss-120b', poskytovatel: 'workers', popis: 'gpt-oss 120B — nejsilnější, ale uvažuje nahlas (pomalejší, spotřebuje víc tokenů)' },
     { id: '@cf/meta/llama-3.2-3b-instruct', poskytovatel: 'workers', popis: 'Llama 3.2 3B — nejlevnější, jen na jednoduché pokyny' },
     // Placené modely. Bez kreditu na účtu spadne volání na zálohu zdarma.
     { id: 'claude-opus-5', poskytovatel: 'claude', popis: 'Claude Opus 5 — nejlepší, placený' },
@@ -340,6 +340,72 @@ const AI_MODELY = [
 /** Výchozí model, když je vybraný poskytovatel, ale ne konkrétní model. */
 function vychoziModel(poskytovatel: string): string {
     return AI_MODELY.find(m => m.poskytovatel === poskytovatel)?.id ?? AI_MODELY[0].id;
+}
+
+/**
+ * Uvažující model? Ty „přemýšlí nahlas" a **vnitřní uvažování se počítá do
+ * `max_tokens`**. S limitem nastaveným pro běžný model dojdou tokeny dřív, než
+ * začnou psát odpověď: vrátí `content: null`, `finish_reason: 'length'` a
+ * aplikace hlásí „model neodpověděl". Přesně tohle dělal `gpt-oss-120b`.
+ */
+const jeUvazujici = (model: string) => /gpt-oss/i.test(model);
+
+/** Strop tokenů. Uvažujícím modelům se musí přidat, jinak nezbude na odpověď. */
+const stropTokenu = (model: string, bezny: number) =>
+    jeUvazujici(model) ? Math.max(bezny * 4, 2000) : bezny;
+
+/**
+ * Text z odpovědi Workers AI. Každá rodina modelů ho vrací jinde.
+ *
+ * Llama a spol. dávají `{response}`. `gpt-oss` odpovídá tvarem kompatibilním
+ * s OpenAI (`choices[0].message.content`), případně ve tvaru Responses API
+ * (`{output:[{content:[{type:'output_text',text}]}]}`). V obou případech vedle
+ * odpovědi leží i **uvažování** (`reasoning`, `reasoning_text`) — to se vzít
+ * NESMÍ, je to vnitřní monolog modelu, ne odpověď pro trenéra.
+ */
+function textZWorkersAI(r: any): string {
+    if (typeof r === 'string') return r;
+    if (typeof r?.response === 'string') return r.response;
+    if (typeof r?.result?.response === 'string') return r.result.response;
+
+    // Responses API (gpt-oss): jen bloky `message`, nikdy `reasoning`.
+    const vystup = Array.isArray(r?.output) ? r.output : (Array.isArray(r?.result?.output) ? r.result.output : null);
+    if (vystup) {
+        const kusy: string[] = [];
+        for (const blok of vystup) {
+            if (blok?.type && blok.type !== 'message') continue;
+            for (const c of (Array.isArray(blok?.content) ? blok.content : [])) {
+                if (typeof c?.text === 'string' && c.type !== 'reasoning_text') kusy.push(c.text);
+            }
+        }
+        if (kusy.length) return kusy.join('');
+    }
+
+    // Tvar kompatibilní s OpenAI chat.
+    const zprava = r?.choices?.[0]?.message?.content;
+    if (typeof zprava === 'string') return zprava;
+
+    return '';
+}
+
+/**
+ * Proč nepřišel text — srozumitelně. „Zkus jiný model" samo o sobě nepomůže;
+ * nejčastější příčina (uvažující model vyčerpal limit) má vlastní hlášku,
+ * zbytek se ukáže tak, jak přišel, ať je co reportovat.
+ */
+function procNicNeprislo(r: any, model: string): string {
+    const duvod = r?.choices?.[0]?.finish_reason;
+    const uvazoval = r?.choices?.[0]?.message?.reasoning || r?.choices?.[0]?.message?.reasoning_content;
+    if (duvod === 'length' && uvazoval) {
+        return `Model ${model} spotřeboval celý limit tokenů na vnitřní uvažování `
+             + 'a na odpověď mu nezbylo místo. Zvyš strop, nebo vyber model, který neuvažuje.';
+    }
+    try {
+        const klice = r && typeof r === 'object' ? Object.keys(r).join(', ') : typeof r;
+        return `Model ${model} nevrátil text. Odpověď: ${klice} · ${JSON.stringify(r).slice(0, 300)}`;
+    } catch {
+        return `Model ${model} vrátil nečitelnou odpověď.`;
+    }
 }
 
 /**
@@ -544,8 +610,14 @@ function podkladyDoTextu(p: any, popisky?: { osy?: Record<string, string>; sablo
         const kdo = `${z.jmeno}${z.prezdivka ? ` „${z.prezdivka}"` : ''} (${sab(z.sablona)})`;
         if (!z.maTrener) { r.push(`  ${kdo}: bez hodnocení trenéra`); continue; }
 
+        /* Rozdíl se u KAŽDÉ osy vypisuje spočítaný, ne jen u těch nad tolerancí.
+           Když ho model nemá, dopočítá si ho sám — a plete si znaménko
+           (u „3/4" hlásil −1 místo +1). Hotové číslo mu tu možnost bere. */
         const cisla = z.osy.filter((o: any) => o.trener !== null)
-            .map((o: any) => `${osa(o.klic)} ${o.trener}${o.hrac !== null ? `/${o.hrac}` : ''}${o.smer ? ` ${o.smer}` : ''}`)
+            .map((o: any) => {
+                const rozdil = o.rozdil !== null ? ` (${o.rozdil > 0 ? '+' : ''}${o.rozdil})` : '';
+                return `${osa(o.klic)} ${o.trener}${o.hrac !== null ? `/${o.hrac}` : ''}${rozdil}${o.smer ? ` ${o.smer}` : ''}`;
+            })
             .join(', ');
         r.push(`  ${kdo}: ${cisla}`);
         r.push(`    orientační průměr trenér ${z.prumerTrener ?? '—'}`
@@ -562,7 +634,8 @@ function podkladyDoTextu(p: any, popisky?: { osy?: Record<string, string>; sablo
         if (z.poznamkaHrace) r.push(`    hráč o sobě napsal: ${z.poznamkaHrace}`);
     }
 
-    r.push('', 'POZNÁMKA: hodnoty jsou 1–10. Dvojice „8/6" znamená trenér 8, hráč 6.',
+    r.push('', 'POZNÁMKA: hodnoty jsou 1–10. Zápis „8/6 (-2)" znamená trenér 8, hráč 6, rozdíl −2.',
+        'Rozdíl je vždy hráč minus trenér a je už spočítaný — nepřepočítávej ho.',
         'Šipka ↑ ↓ → je posun proti minulému období, za změnu se počítá až rozdíl 2 bodů.');
     return r.join('\n');
 }
@@ -2695,9 +2768,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const pres_workers = async (m: string) => {
             const r = await env.AI!.run(m, {
                 messages: [{ role: 'system', content: pokyn }, { role: 'user', content: dotaz }],
-                max_tokens: 120, temperature: 0
+                max_tokens: stropTokenu(m, 120), temperature: 0
             });
-            return String(r?.response ?? r?.result?.response ?? '');
+            return textZWorkersAI(r);
         };
 
         /* Placený model. Když na účtu není kredit nebo je vyčerpaný limit, spadne
@@ -2814,7 +2887,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             'Nehodnoť povahu hráče. Osy popisují chování, které je vidět, ne charakter.',
             'Rozdíl se znaménkem: + znamená, že si hráč dal víc než trenér (slepé místo),',
             '− že si dal míň (může jít o sebedůvěru nebo o něco mimo fotbal).',
-            'Neuváděj souhrnnou známku hráče. Průměr je orientační, ne vysvědčení.'
+            'Neuváděj souhrnnou známku hráče. Průměr je orientační, ne vysvědčení.',
+            // Odpověď se vypisuje jako text, ne jako markdown — hvězdičky by zůstaly vidět.
+            'Piš prostým textem bez markdownu: žádné hvězdičky, mřížky ani odrážky.'
         ].join(' ');
 
         const dotaz = `${podkladyDoTextu(podklady, popisky)}\n\nOTÁZKA TRENÉRA: ${dotazTrenera}`;
@@ -2822,9 +2897,13 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const pres_workers = async (m: string) => {
             const r = await env.AI!.run(m, {
                 messages: [{ role: 'system', content: pokyn }, { role: 'user', content: dotaz }],
-                max_tokens: 900, temperature: 0.2
+                max_tokens: stropTokenu(m, 900), temperature: 0.2
             });
-            return String(r?.response ?? r?.result?.response ?? '').trim();
+            const text = textZWorkersAI(r).trim();
+            // Prázdno není „model mlčí" — má to konkrétní příčinu a ta patří
+            // do logu komunikace, ne až do hlášení od uživatele.
+            if (!text) throw new Error(procNicNeprislo(r, m));
+            return text;
         };
         const pres_claude = async (m: string) => {
             if (!env.ANTHROPIC_API_KEY) throw new Error('Chybí secret ANTHROPIC_API_KEY.');
@@ -2936,15 +3015,15 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     { role: 'system', content: 'Odpovídej česky, jedním slovem.' },
                     { role: 'user', content: 'Napiš slovo: funguje' }
                 ],
-                max_tokens: 20
+                max_tokens: stropTokenu(zvoleny, 20)
             });
-            const odpoved = String(r?.response ?? r?.result?.response ?? '').trim();
+            const odpoved = textZWorkersAI(r).trim();
             return json({
                 ok: !!odpoved, poskytovatel: 'workers', model: zvoleny,
                 odpoved: odpoved.slice(0, 120), trvaloMs: Date.now() - zacatek,
                 popis: odpoved
                     ? 'Model odpověděl. Volání z Workeru funguje.'
-                    : 'Model odpověděl prázdnotou — zkus jiný model.'
+                    : procNicNeprislo(r, zvoleny)
             });
         } catch (e) {
             // Nejčastěji: model neexistuje, nebo je vyčerpaný denní limit free tieru.

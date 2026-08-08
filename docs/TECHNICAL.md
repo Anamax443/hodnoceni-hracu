@@ -287,6 +287,34 @@ Seznam modelů (`AI_MODELY`) je **v kódu, ne z katalogu**: Cloudflare modely vy
 vyřazený model má být vidět v commitu, ne až v runtime chybě. Aktuální nabídku účtu
 vypíše `npx wrangler ai models`.
 
+### Odpověď se čte podle rodiny modelu (`textZWorkersAI`)
+
+Workers AI nemá jeden tvar odpovědi:
+
+| Rodina | Kde je text |
+|---|---|
+| Llama a spol. | `response` |
+| REST obal | `result.response` |
+| `gpt-oss` | `choices[0].message.content` (tvar OpenAI) |
+| Responses API | `output[].content[].text` u bloků `type: 'message'` |
+
+Vedle textu leží u uvažujících modelů i **`reasoning` / `reasoning_content`** — vnitřní
+monolog modelu. Do odpovědi se brát **nesmí**, `textZWorkersAI` ho přeskakuje.
+
+### Uvažující modely potřebují vyšší strop tokenů
+
+**`gpt-oss` počítá vnitřní uvažování do `max_tokens`.** Se stropem nastaveným pro běžný
+model (20 / 120 / 900) došly tokeny dřív, než začal psát odpověď: vrátil
+`content: null`, `finish_reason: 'length'` — a aplikace hlásila „model neodpověděl“,
+přestože volání proběhlo v pořádku.
+
+`jeUvazujici()` pozná model podle id (`gpt-oss`) a `stropTokenu()` mu strop **zečtyřnásobí,
+minimálně na 2000**. Když text i tak nepřijde, `procNicNeprislo()` to nehlásí jako „zkus
+jiný model“, ale řekne důvod — u vyčerpaného limitu jmenovitě.
+
+Cena za to je **latence**: naměřeno `gpt-oss-120b` 4,8 s a 9,5 s tam, kde
+`llama-3.3-70b-fp8-fast` zvládl 0,5 s a 1,6 s. Na povely v liště je to znát.
+
 `@anthropic-ai/sdk` vyžaduje `"compatibility_flags": ["nodejs_compat"]`; bundle Workeru
 je s ním 513 kB / 108 kB gzip.
 
@@ -322,6 +350,11 @@ Pořadí v `spustPovel()`:
 2. Jinak **lokální rozřazení** (`rozeberPovel`) — jména a klíčová slova, nestojí token.
 3. Jinak **rozřazovač** `/api/ai/prikaz`.
 4. Vrátí-li `akce: 'nevim'` → ber to jako otázku.
+
+**Rozdíly dostane model spočítané u každé osy**, ne jen u těch nad tolerancí. Když je
+neměl, dopočítal si je sám a **pletl si znaménko** (u zápisu `3/4` hlásil −1 místo +1).
+Zápis je proto `8/6 (-2)` = trenér 8, hráč 6, rozdíl −2, a v poznámce stojí, že rozdíl je
+už spočítaný. Platí i tady, že co jde spočítat, se počítá v kódu.
 
 **Proč se otázka pozná jako první:** `rozeberPovel` páruje slova na jména podle začátku,
 takže krátké slovo v otázce trefí hráče — „u koho **je** největší rozpor" otevřelo kartu
