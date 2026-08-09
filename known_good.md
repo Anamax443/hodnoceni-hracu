@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (20) — oslovení hráče v 5. pádě
 
-**Commit:** doplní se při nasazení. **Ověřeno** jednotkovým během `vokativ()` a `osloveni()`
+**Commit:** `113a511` · **NASAZENO** 2026-08-09, Version ID `9a988b96-aab5-4ea3-b825-b90b3808f4a0`; živě ověřeno na obou adresách. **Ověřeno** jednotkovým během `vokativ()` a `osloveni()`
 nad 40 jmény (kádr ze snímku, trenéři, běžná česká jména, dvě ženská) — **40/40**.
 
 | Skupina | Příklady | Výsledek |

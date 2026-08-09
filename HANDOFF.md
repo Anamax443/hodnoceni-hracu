@@ -35,6 +35,10 @@ Plus oslovení: s přezdívkou i bez ní, a že anglicky zůstane jméno holé.
 **Pozn.:** kdyby pravidla u nějakého jména selhala, stačí trenérovi napsat přezdívku rovnou
 v 5. pádě — projde beze změny, protože se chová jako každé jiné jméno.
 
+**NASAZENO** 2026-08-09 v commitu `113a511` (Version ID `9a988b96-aab5-4ea3-b825-b90b3808f4a0`).
+Ověřeno živě: `/api/version` = `113a511` na obou adresách, servírovaný `i18n.js` nese
+`vokativ()` i `osloveni()` a `h.js` je používá.
+
 ---
 
 ## 2026-08-09 (25) — STATUS srovnaný: analýzy už NEJSOU vypnuté
