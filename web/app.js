@@ -2130,10 +2130,11 @@ async function nastaveni(kam) {
                         <option value="claude"${stav.nastaveni.aiPoskytovatel === 'claude' ? ' selected' : ''}>${t('ai.claude')}</option>
                     </select>
                     <div class="popis">${t('ai.poskytovatel.napoveda')}</div></div>
-                <div class="pole"><label for="n-aiModel">${t('ai.model')}</label>
-                    <select id="n-aiModel"></select>
-                    <div class="popis">${t('ai.model.napoveda')}</div></div>
             </div>
+            <!-- Model podle úkolu. Nabídku plní /api/ai/modely, takže přidání
+                 dalšího úkolu ve Workeru se sem promítne samo.
+                 (Bez zpětných apostrofů — jsme uvnitř template literálu.) -->
+            <div class="radek" id="ai-ukoly"></div>
             <div class="pole"><label><input type="checkbox" id="n-aiAnalyzy" style="width:auto"
                 ${stav.nastaveni.aiAnalyzy === 'ano' ? 'checked' : ''}> ${t('ai.analyzy')}</label>
                 <div class="popis">${t('ai.analyzy.napoveda')}</div></div>
@@ -2195,16 +2196,27 @@ async function nastaveni(kam) {
 
     // Nabídka modelů se plní podle poskytovatele — modely Workers AI a Claude
     // se nesmí míchat, ID jednoho u druhého nefunguje.
-    api('/api/ai/modely').then(({ modely }) => {
-        const vyber = $('#n-aiModel');
-        if (!vyber) return;
+    api('/api/ai/modely').then(({ modely, ukoly }) => {
+        const kam = $('#ai-ukoly');
+        if (!kam) return;
+
+        kam.innerHTML = ukoly.map(u => `
+            <div class="pole">
+                <label for="n-model-${esc(u.klic)}">${t('ai.ukol.' + u.klic)}</label>
+                <select id="n-model-${esc(u.klic)}" class="ai-model" data-nastaveni="${esc(u.nastaveni)}"></select>
+                <div class="popis">${t('ai.ukol.' + u.klic + '.napoveda')}</div>
+            </div>`).join('');
+
         const naplnit = () => {
             const p = $('#n-ai').value === 'claude' ? 'claude' : 'workers';
             const vhodne = modely.filter(m => m.poskytovatel === p);
-            vyber.innerHTML = vhodne.map(m =>
-                `<option value="${esc(m.id)}"${m.id === stav.nastaveni.aiModel ? ' selected' : ''}>${esc(m.popis)}</option>`
-            ).join('');
-            vyber.disabled = $('#n-ai').value === 'vypnuto';
+            for (const u of ukoly) {
+                const vyber = $(`#n-model-${u.klic}`);
+                vyber.innerHTML = vhodne.map(m =>
+                    `<option value="${esc(m.id)}"${m.id === u.zvoleny ? ' selected' : ''}>${esc(m.popis)}</option>`
+                ).join('');
+                vyber.disabled = $('#n-ai').value === 'vypnuto';
+            }
         };
         naplnit();
         $('#n-ai').onchange = naplnit;
@@ -2212,12 +2224,20 @@ async function nastaveni(kam) {
 
     $('#ai-zkouska').onclick = async () => {
         const cil = $('#ai-vysledek');
+        const vybery = [...document.querySelectorAll('.ai-model')];
         cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
         try {
-            // Ověřuje spojení jednou holou větou — nic o hráčích neodchází.
-            const r = await api(`/api/ai/stav?model=${encodeURIComponent($('#n-aiModel').value)}`);
-            cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'pozor'}">${esc(r.popis)}`
-                + (r.trvaloMs ? ` <span class="popis">(${r.trvaloMs} ms)</span>` : '') + '</div>';
+            /* Zkouší se model každého úkolu zvlášť — po rozdělení může jeden
+               odpovídat a druhý ne (typicky uvažující model s malým stropem).
+               Ověřuje se holou větou, nic o hráčích neodchází. */
+            const radky = [];
+            for (const v of vybery) {
+                const r = await api(`/api/ai/stav?model=${encodeURIComponent(v.value)}`);
+                radky.push(`<div class="hlaska ${r.ok ? 'ok' : 'pozor'}">`
+                    + `<b>${esc(v.previousElementSibling.textContent)}:</b> ${esc(r.popis)}`
+                    + (r.trvaloMs ? ` <span class="popis">(${r.trvaloMs} ms)</span>` : '') + '</div>');
+            }
+            cil.innerHTML = radky.join('');
         } catch (e) {
             cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
         }
@@ -2231,9 +2251,11 @@ async function nastaveni(kam) {
             notifDnyTicho: $('#n-dnyTicho').value,
             smsAktivni: $('#n-sms').checked ? '1' : '0',
             aiPoskytovatel: $('#n-ai').value,
-            aiModel: $('#n-aiModel').value,
             aiAnalyzy: $('#n-aiAnalyzy').checked ? 'ano' : 'ne'
         };
+        // Model za každý úkol; klíč nastavení nese samo pole, takže přidání
+        // dalšího úkolu ve Workeru se uloží bez zásahu sem.
+        document.querySelectorAll('.ai-model').forEach(v => { telo[v.dataset.nastaveni] = v.value; });
         try {
             stav.nastaveni = await api('/api/settings', { telo, method: 'PUT' });
             hlaska($('#karta-notifikaci'), 'ok', t('nastaveni.ulozeno'));

@@ -5,6 +5,37 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (21) — model podle úkolu
+
+**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+
+**Porovnání modelů na povelu** „ukaž mi papíry pro Jednu" (kádr 2 hráči; správně = akce
+`listy`, jeden hráč). Jedno zadání a malý kádr — orientační, ne benchmark:
+
+| Model | Akce | Hráči | Čas |
+|---|---|---|---|
+| `llama-3.2-3b-instruct` | `odkaz` ❌ | 1 ✅ | 234 ms |
+| `llama-3.1-8b-instruct-fp8` | `listy` ✅ | **2** ❌ | 1784 ms |
+| **`llama-3.3-70b-instruct-fp8-fast`** | `listy` ✅ | 1 ✅ | **477 ms** |
+| `gpt-oss-120b` | `listy` ✅ | 1 ✅ | 2135 ms |
+
+| Kontrola | Výsledek |
+|---|---|
+| `/api/ai/modely` vrací úkoly | 2 — `povely → aiModelPovely`, `analyzy → aiModel`, s `zvoleny` i `pouzity` |
+| povel jede na svém modelu | `llama-3.3-70b`, akce `listy`, 1855 ms |
+| analýza jede na svém modelu | `gpt-oss-120b`, ok, 5365 ms |
+| UI: výběry v Nastavení | 2, popisky „Model na povely" / „Model na analýzy", 4 možnosti |
+| UI: uložení | poslalo `aiModelPovely` i `aiModel` zvlášť |
+| UI: zkouška spojení | dvě hlášky s popiskem úkolu (312 ms / 1811 ms) |
+| konzole prohlížeče | žádná výjimka |
+| i18n | 540 klíčů CS i EN |
+
+**Chyba, kterou test odhalil (opraveno):** HTML komentář se zpětnými apostrofy uvnitř
+template literálu ten literál ukončil → záložka Nastavení spadla na „ai is not defined".
+`node --check` prošel, syntakticky to bylo platné; chytlo to až vykreslení stránky.
+
+---
+
 ## 2026-08-09 (20) — oslovení hráče v 5. pádě
 
 **Commit:** `113a511` · **NASAZENO** 2026-08-09, Version ID `9a988b96-aab5-4ea3-b825-b90b3808f4a0`; živě ověřeno na obou adresách. **Ověřeno** jednotkovým během `vokativ()` a `osloveni()`

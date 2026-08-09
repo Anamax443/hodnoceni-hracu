@@ -2,6 +2,55 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (27) — model podle úkolu (místo „dirigenta")
+
+**Otázka uživatele:** nemá silný model dirigovat slabší, zadávat jim jednoduché úkoly
+a jen kontrolovat výsledek — aby se šetřily tokeny?
+
+**Odpověď: dirigent by přidal náklady, ne ubral.** Silný model by běžel dvakrát (zadat
+a zkontrolovat) a k tomu by se platil ten levný; kontrola odpovědi stojí zhruba tolik co
+její vytvoření. Navíc to nejdražší je ušetřené už teď — běžné povely rozřadí prohlížeč
+zadarmo a model se nezavolá vůbec.
+
+**Skutečná ztráta byla o patro níž:** na rozřazení povelu jel model vybraný pro analýzy,
+tedy uvažující `gpt-oss-120b`, který si i k „kterou záložku otevřít" napsal vnitřní úvahu.
+
+**Postaveno: model podle úkolu.** `AI_UKOLY` páruje úkol s klíčem nastavení
+(`povely → aiModelPovely`, `analyzy → aiModel`), `modelProUkol()` ho vrátí a při nesouladu
+s poskytovatelem spadne na jeho výchozí. **Přidání dalšího úkolu = jeden řádek v `AI_UKOLY`
+a klíč ve `VYCHOZI_NASTAVENI`** — nabídka v Nastavení i ukládání se poskládají samy
+z `/api/ai/modely` (uživatel řekl „klidně N voleb, je-li potřeba"). Poskytovatel zůstal
+společný: ten rozhoduje, jestli se platí a kam data jdou, a to nemá smysl mít po úkolech.
+
+**Měření, které vyvrátilo můj vlastní předpoklad.** Čekal jsem, že na povely stačí nejmenší
+model. Na povelu „ukaž mi papíry pro Jednu" (kádr 2 hráči):
+
+| Model | Akce | Hráči | Čas |
+|---|---|---|---|
+| Llama 3.2 3B | `odkaz` ❌ | 1 ✅ | 234 ms |
+| Llama 3.1 8B | `listy` ✅ | **2** ❌ | 1784 ms |
+| **Llama 3.3 70B fp8-fast** | `listy` ✅ | 1 ✅ | **477 ms** |
+| gpt-oss 120B | `listy` ✅ | 1 ✅ | 2135 ms |
+
+**Nejmenší modely tu nešetří, jen se pletou** — a 70B je zároveň nejrychlejší ze správných.
+Výchozí model na povely je proto 70B, ne 3B. (Jeden povel a malý kádr: orientační měření,
+ne benchmark. Popisy modelů v Nastavení to teď říkají místo dřívějšího „na pokyny stačí".)
+
+**Zkouška spojení** testuje **oba modely zvlášť** a píše, který je který — po rozdělení může
+jeden odpovídat a druhý ne.
+
+**Chyba, kterou odhalil až proklik:** do template literálu jsem napsal HTML komentář se
+zpětnými apostrofy kolem cesty k API. Ty literál **ukončily**, zbytek se parsoval jako kód
+a celá záložka Nastavení spadla na „ai is not defined". `node --check` to nechytil —
+syntakticky to bylo platné. Odchytilo to až vykreslení stránky.
+
+**Ověřeno lokálně:** povel jel na `llama-3.3-70b` (1855 ms), analýza na `gpt-oss-120b`
+(5365 ms) — každý na svém. UI: dva výběry se správnými klíči `aiModelPovely` / `aiModel`,
+uložení pošle oba, zkouška spojení vrátila dvě hlášky (312 ms / 1811 ms). Žádná výjimka
+v konzoli, i18n 540 klíčů CS i EN.
+
+---
+
 ## 2026-08-09 (26) — „Ahoj Ferdo", ne „Ahoj Ferda"
 
 **Nález z provozu** (snímek od uživatele): stránka sebehodnocení zdravila **„Ahoj Ferda"**.

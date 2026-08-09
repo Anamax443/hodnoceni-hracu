@@ -285,6 +285,40 @@ neporadí — a jen když `settings.aiPoskytovatel` není `vypnuto`.
 skutečný kádr na serveru, takže ID hráčů nevidí a vymyslet si je nemůže. Akci spouští
 aplikace.
 
+### Model podle úkolu, poskytovatel společný
+
+Rozdělení vzniklo z otázky „nemá silný model dirigovat slabší?". **Dirigent by přidal
+náklady, ne ubral**: silný model by běžel dvakrát (zadat a zkontrolovat) a k tomu by se
+platil ten levný — a kontrola odpovědi stojí zhruba tolik co její vytvoření. Skutečná
+ztráta byla jinde: na rozřazení povelu jel model vybraný pro analýzy.
+
+`AI_UKOLY` proto páruje úkol s klíčem nastavení; `modelProUkol()` vrátí model a při
+nesouladu s poskytovatelem spadne na jeho výchozí (jinak by volání padlo na neznámém ID).
+**Přidání dalšího úkolu = řádek v `AI_UKOLY` + klíč ve `VYCHOZI_NASTAVENI`**; nabídka
+v Nastavení i ukládání se poskládají samy z `/api/ai/modely`.
+
+| Úkol | Klíč | Co to je |
+|---|---|---|
+| `povely` | `aiModelPovely` | rozřazení věty do čtyř akcí |
+| `analyzy` | `aiModel` | otázky na kádr |
+
+**Poskytovatel zůstává společný** (`aiPoskytovatel`) — rozhoduje, jestli se vůbec platí
+a kam data odcházejí; to nedává smysl mít jinak pro každý úkol.
+
+**Naměřeno** na povelu „ukaž mi papíry pro Jednu" (kádr 2 hráči, správně = akce `listy`,
+jeden hráč):
+
+| Model | Akce | Hráči | Čas |
+|---|---|---|---|
+| Llama 3.2 3B | `odkaz` ❌ | 1 ✅ | 234 ms |
+| Llama 3.1 8B | `listy` ✅ | **2** ❌ | 1784 ms |
+| **Llama 3.3 70B fp8-fast** | `listy` ✅ | 1 ✅ | **477 ms** |
+| gpt-oss 120B | `listy` ✅ | 1 ✅ | 2135 ms |
+
+Proto je výchozí model na povely **70B, ne ten nejmenší**: nejmenší tu nešetří, jen se
+pletou, a 70B je zároveň nejrychlejší ze správných. Je to měření na jednom povelu a malém
+kádru — orientační, ne benchmark.
+
 **Poskytovatel je přepínač** (`settings.aiPoskytovatel`, výchozí `vypnuto`):
 
 | Hodnota | Chování |

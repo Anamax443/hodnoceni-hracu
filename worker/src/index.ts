@@ -311,7 +311,18 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     // Jazykový model pro příkazový řádek. Výchozí 'vypnuto': v aplikaci jsou
     // údaje nezletilých a odesílat je ven se musí zapnout vědomě.
     aiPoskytovatel: 'vypnuto', // 'vypnuto' | 'workers' (zdarma) | 'claude' (placený)
-    aiModel: '@cf/meta/llama-3.1-8b-instruct-fp8',  // stejná výchozí volba jako faxx-hr
+    /* Model se volí PODLE ÚKOLU, ne jeden na všechno. Rozřazení povelu je
+       klasifikace do čtyř kategorií — pouštět na ni uvažující model znamená,
+       že si k „kterou záložku otevřít" napíše vnitřní úvahu a spotřebuje strop
+       (naměřeno: gpt-oss 2,7 s a ~2000 tokenů proti Llamě pod vteřinu).
+       Analýza naopak z rozumnějšího modelu těží. Viz AI_UKOLY. */
+    aiModel: '@cf/meta/llama-3.1-8b-instruct-fp8',                  // analýzy
+    /* Na povely NENÍ výchozí ten nejmenší. Naměřeno na jednom povelu
+       („ukaž mi papíry pro Jednu", kádr 2 hráči): 3B zvolil špatnou akci,
+       8B našel dva hráče místo jednoho a trval 1784 ms, 70B odpověděl správně
+       za 477 ms a 120B taky správně, ale za 2135 ms. Nejmenší modely tu
+       nešetří, jen se pletou — a 70B je zároveň nejrychlejší ze správných. */
+    aiModelPovely: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'       // rozřazení povelů
     /* Analýzy nad plnými daty. Příkazovému řádku stačí jména kádru, ale
        analýza bez známek a posudků není analýza — musí je dostat celé.
        Je to jediné místo, kde z aplikace odcházejí ven údaje o konkrétním
@@ -327,10 +338,10 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
  * účtu vypíše `npx wrangler ai models`.
  */
 const AI_MODELY = [
-    { id: '@cf/meta/llama-3.1-8b-instruct-fp8', poskytovatel: 'workers', popis: 'Llama 3.1 8B — rychlý a levný, na pokyny stačí (výchozí)' },
-    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', poskytovatel: 'workers', popis: 'Llama 3.3 70B — silnější a lepší čeština, pomalejší' },
-    { id: '@cf/openai/gpt-oss-120b', poskytovatel: 'workers', popis: 'gpt-oss 120B — nejsilnější, ale uvažuje nahlas (pomalejší, spotřebuje víc tokenů)' },
-    { id: '@cf/meta/llama-3.2-3b-instruct', poskytovatel: 'workers', popis: 'Llama 3.2 3B — nejlevnější, jen na jednoduché pokyny' },
+    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', poskytovatel: 'workers', popis: 'Llama 3.3 70B — na povely nejlepší poměr: správně a rychle (~0,5 s)' },
+    { id: '@cf/meta/llama-3.1-8b-instruct-fp8', poskytovatel: 'workers', popis: 'Llama 3.1 8B — levný, ale u povelů si vymýšlí hráče navíc' },
+    { id: '@cf/openai/gpt-oss-120b', poskytovatel: 'workers', popis: 'gpt-oss 120B — nejsilnější na analýzy, uvažuje nahlas (pomalý, žere tokeny)' },
+    { id: '@cf/meta/llama-3.2-3b-instruct', poskytovatel: 'workers', popis: 'Llama 3.2 3B — nejrychlejší, ale plete si i akci; jen na zkoušení' },
     // Placené modely. Bez kreditu na účtu spadne volání na zálohu zdarma.
     { id: 'claude-opus-5', poskytovatel: 'claude', popis: 'Claude Opus 5 — nejlepší, placený' },
     { id: 'claude-sonnet-5', poskytovatel: 'claude', popis: 'Claude Sonnet 5 — levnější než Opus, placený' },
@@ -340,6 +351,33 @@ const AI_MODELY = [
 /** Výchozí model, když je vybraný poskytovatel, ale ne konkrétní model. */
 function vychoziModel(poskytovatel: string): string {
     return AI_MODELY.find(m => m.poskytovatel === poskytovatel)?.id ?? AI_MODELY[0].id;
+}
+
+/**
+ * Úkoly, které mají vlastní volbu modelu.
+ *
+ * Poskytovatel zůstává společný — ten rozhoduje, jestli se vůbec platí a kam
+ * data odcházejí. Model se ale liší úkol od úkolu: na rozřazení povelu stačí
+ * ten nejmenší, analýza z rozumnějšího těží.
+ *
+ * **Přidání dalšího úkolu = jeden řádek tady + klíč do `VYCHOZI_NASTAVENI`.**
+ * Nabídka v Nastavení i uložení se poskládají samy, `popis` překládá prohlížeč.
+ */
+const AI_UKOLY = [
+    { klic: 'povely',  nastaveni: 'aiModelPovely' },
+    { klic: 'analyzy', nastaveni: 'aiModel' }
+] as const;
+
+/**
+ * Model pro daný úkol. Když uložená volba nepatří zvolenému poskytovateli
+ * (typicky po přepnutí Workers AI ↔ Claude), vezme se výchozí model toho
+ * poskytovatele — jinak by volání spadlo na neznámém ID.
+ */
+function modelProUkol(nas: Record<string, string>, ukol: string): string {
+    const klic = AI_UKOLY.find(u => u.klic === ukol)?.nastaveni ?? 'aiModel';
+    const zvoleny = nas[klic];
+    const sedi = AI_MODELY.find(m => m.id === zvoleny)?.poskytovatel === nas.aiPoskytovatel;
+    return sedi ? zvoleny : vychoziModel(nas.aiPoskytovatel);
 }
 
 /**
@@ -2802,7 +2840,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             return odpoved.content.filter(b => b.type === 'text').map(b => (b as any).text).join('');
         };
 
-        let model = nas.aiModel || vychoziModel(nas.aiPoskytovatel);
+        // Rozřazení povelu je klasifikace do čtyř kategorií — jede na modelu
+        // pro povely, ne na tom, který si trenér vybral na analýzy.
+        let model = modelProUkol(nas, 'povely');
         let poskytovatel = nas.aiPoskytovatel;
         let zaloha: string | null = null;
         const zacatek = Date.now();
@@ -2932,7 +2972,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             return odpoved.content.filter(b => b.type === 'text').map(b => (b as any).text).join('').trim();
         };
 
-        let model = nas.aiModel || vychoziModel(nas.aiPoskytovatel);
+        let model = modelProUkol(nas, 'analyzy');
         let poskytovatel = nas.aiPoskytovatel;
         let zaloha: string | null = null;
         const zacatek = Date.now();
@@ -2981,7 +3021,17 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     /* ---------- nabídka modelů pro Nastavení ---------- */
     if (cesta === '/api/ai/modely' && metoda === 'GET') {
         const nas = await nastaveni(env);
-        return json({ modely: AI_MODELY, zvoleny: nas.aiModel, poskytovatel: nas.aiPoskytovatel });
+        return json({
+            modely: AI_MODELY,
+            poskytovatel: nas.aiPoskytovatel,
+            // Co úkol, to vlastní volba. Prohlížeč z toho poskládá nabídku sám,
+            // takže přidání dalšího úkolu ve Workeru nevyžaduje zásah do UI.
+            ukoly: AI_UKOLY.map(u => ({
+                klic: u.klic, nastaveni: u.nastaveni,
+                zvoleny: nas[u.nastaveni], pouzity: modelProUkol(nas, u.klic)
+            })),
+            zvoleny: nas.aiModel   // kvůli starším voláním
+        });
     }
 
     /* ---------- ověření jazykového modelu (nic o hráčích neposílá) ----------
