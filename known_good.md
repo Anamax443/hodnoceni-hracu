@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-09 (21) — model podle úkolu
 
-**Commit:** doplní se při nasazení. **Ověřeno** proti `wrangler dev` nad lokální D1.
+**Commit:** `aa908bc` · **NASAZENO** 2026-08-09, Version ID `bd58a68e-20ff-4e16-b6ac-7096693728ba`; živě ověřeno na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.
 
 **Porovnání modelů na povelu** „ukaž mi papíry pro Jednu" (kádr 2 hráči; správně = akce
 `listy`, jeden hráč). Jedno zadání a malý kádr — orientační, ne benchmark:

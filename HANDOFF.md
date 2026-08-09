@@ -49,6 +49,19 @@ syntakticky to bylo platné. Odchytilo to až vykreslení stránky.
 uložení pošle oba, zkouška spojení vrátila dvě hlášky (312 ms / 1811 ms). Žádná výjimka
 v konzoli, i18n 540 klíčů CS i EN.
 
+**NASAZENO** 2026-08-09 v commitu `aa908bc` (Version ID `bd58a68e-20ff-4e16-b6ac-7096693728ba`).
+Ověřeno živě: `/api/version` = `aa908bc`, `cisto: true` na obou adresách; `app.js` nese
+kontejner `ai-ukoly` i třídu `ai-model`; `/api/ai/modely` a `/api/ai/prikaz` bez přihlášení `401`.
+
+**Nasazení napodruhé — a dvě poučení:**
+1. **`node --check` nekontroluje TypeScript.** Za `aiModelPovely` chyběla čárka; `.js`
+   soubory prošly, ale `worker/src/index.ts` je TS a chybu zachytil až esbuild při deployi.
+   Lokální `wrangler dev` běžel ještě na verzi před tou úpravou, takže testy prošly.
+2. **`wrangler deploy` napřed spadl na `Assertion failed … src\win\async.c`** (libuv na
+   Windows) a skutečnou chybu tím zakryl. Pomohlo pustit `npx wrangler deploy` přímo
+   s `WRANGLER_SEND_METRICS=false` — tehdy se ukázalo `Expected "}" but found "aiAnalyzy"`.
+   Když deploy spadne bez rozumné hlášky, zkusit tohle.
+
 ---
 
 ## 2026-08-09 (26) — „Ahoj Ferdo", ne „Ahoj Ferda"
