@@ -17,6 +17,36 @@
 const DOK = '/dok/';
 
 const CS = `
+<h2>Kde je co napsané</h2>
+<p>Tahle stránka je příručka pro trenéra. Ostatní dokumenty mají vlastní stránky
+a každý odpovídá na jinou otázku:</p>
+<table class="dok-odkazy">
+  <tr><td><a href="${DOK}status" target="_blank" rel="noopener">STATUS</a></td>
+      <td><b>Co běží, co je ověřené a co chybí.</b> Zdroj pravdy o stavu; anglicky
+          <a href="${DOK}status-en" target="_blank" rel="noopener">STATUS (English)</a>.</td></tr>
+  <tr><td><a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a></td>
+      <td>Podrobný návod k obsluze. Anglicky
+          <a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a>.</td></tr>
+  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
+      <td><b>Když něco nefunguje.</b> Tabulka příznak → příčina → co s tím.</td></tr>
+  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
+      <td><b>Deník.</b> Nejnovější nahoře, u každé změny <b>proč</b> se udělala a co
+          se přitom ukázalo. Sem se chodí, když někoho zajímá „kdo tohle vymyslel".</td></tr>
+  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
+      <td>Doklady o tom, co bylo ověřené a čím — čísla, ne dojmy. Bod návratu,
+          když se něco rozbije.</td></tr>
+  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
+      <td>Jak je to postavené uvnitř. Pro toho, kdo bude sahat do kódu.</td></tr>
+  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
+      <td>Jak to rozjet a nasadit, včetně secretů.</td></tr>
+  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">ZADÁNÍ</a></td>
+      <td>Původní zadání — proti čemu se měří, jestli aplikace dělá, co má.</td></tr>
+</table>
+<p class="dok-pozn">Dokumenty se otevřou v nové kartě, <b>za týmž přihlášením jako
+aplikace</b> — na veřejný web nepatří, i když osobní údaje neobsahují. Každý má nahoře
+rozcestník na ostatní a dlouhé soubory i seznam kapitol. Zdrojem pravdy zůstávají
+soubory <code>.md</code> v repozitáři; tohle je jejich převod do čitelné podoby.</p>
+
 <h2>Co tahle aplikace dělá</h2>
 <p>Vede hodnocení mládežnických fotbalistů: trenér každému hráči dá známky
 1–10 na šesti osách, hráč si nezávisle vyplní stejné osy sám za sebe a
@@ -395,38 +425,40 @@ odcházejí modelu známky i slovní posudky nezletilých. Je to vědomé rozhod
 ale <b>záznam o činnosti zpracování a informace pro rodiče zatím chybí</b> —
 viz Ochrana údajů.</p>
 
-<h2>Kde je co napsané</h2>
-<p>Tahle stránka je příručka pro trenéra. Zbytek dokumentace žije v repozitáři
-a každý soubor odpovídá na jinou otázku:</p>
-<table class="dok-odkazy">
-  <tr><td><a href="${DOK}status" target="_blank" rel="noopener">STATUS</a></td>
-      <td><b>Co běží, co je ověřené a co chybí.</b> Zdroj pravdy o stavu; anglicky
-          <a href="${DOK}status-en" target="_blank" rel="noopener">STATUS (English)</a>.</td></tr>
-  <tr><td><a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a></td>
-      <td>Podrobný návod k obsluze. Anglicky
-          <a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a>.</td></tr>
-  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
-      <td><b>Když něco nefunguje.</b> Tabulka příznak → příčina → co s tím.</td></tr>
-  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
-      <td><b>Deník.</b> Nejnovější nahoře, u každé změny <b>proč</b> se udělala a co
-          se přitom ukázalo. Sem se chodí, když někoho zajímá „kdo tohle vymyslel".</td></tr>
-  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
-      <td>Doklady o tom, co bylo ověřené a čím — čísla, ne dojmy. Bod návratu,
-          když se něco rozbije.</td></tr>
-  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
-      <td>Jak je to postavené uvnitř. Pro toho, kdo bude sahat do kódu.</td></tr>
-  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
-      <td>Jak to rozjet a nasadit, včetně secretů.</td></tr>
-  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">ZADÁNÍ</a></td>
-      <td>Původní zadání — proti čemu se měří, jestli aplikace dělá, co má.</td></tr>
-</table>
-<p class="dok-pozn">Dokumenty se otevřou v nové kartě, <b>za týmž přihlášením jako
-aplikace</b> — na veřejný web nepatří, i když osobní údaje neobsahují. Každý má nahoře
-rozcestník na ostatní a dlouhé soubory i seznam kapitol. Zdrojem pravdy zůstávají
-soubory <code>.md</code> v repozitáři; tohle je jejich převod do čitelné podoby.</p>
 `;
 
 const EN = `
+<h2>Where everything is written down</h2>
+<p>This page is the coach's handbook. The other documents have pages of their own
+and each answers a different question:</p>
+<table class="dok-odkazy">
+  <tr><td><a href="${DOK}status-en" target="_blank" rel="noopener">STATUS</a></td>
+      <td><b>What runs, what is verified and what is missing.</b> The source of truth
+          on status; in Czech <a href="${DOK}status" target="_blank" rel="noopener">STATUS (Czech)</a>.</td></tr>
+  <tr><td><a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a></td>
+      <td>The detailed manual. In Czech
+          <a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a>.</td></tr>
+  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
+      <td><b>When something does not work.</b> A symptom → cause → fix table (Czech).</td></tr>
+  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
+      <td><b>The diary</b> (Czech). Newest on top, and for each change <b>why</b> it
+          was made and what turned up along the way.</td></tr>
+  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
+      <td>Evidence of what was verified and how — numbers, not impressions. The point
+          to return to when something breaks.</td></tr>
+  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
+      <td>How it is built inside. For whoever touches the code.</td></tr>
+  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
+      <td>How to run and deploy it, secrets included.</td></tr>
+  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">The brief</a></td>
+      <td>The original brief — what the app is measured against.</td></tr>
+</table>
+<p class="dok-pozn">The documents open in a new tab, <b>behind the same sign-in as the
+app</b> — they do not belong on the public web even though they hold no personal data.
+Each one carries a signpost to the others at the top, and long ones a list of chapters.
+The <code>.md</code> files in the repository stay the source of truth; this is their
+rendering.</p>
+
 <h2>What this app does</h2>
 <p>It keeps evaluations of youth footballers: the coach scores each player
 1–10 on six axes, the player fills in the same axes independently, and the app
@@ -814,36 +846,6 @@ squad sends the model scores and written assessments of minors. That was a
 deliberate decision, but <b>the record of processing activities and the notice
 for parents are still missing</b> — see Data protection.</p>
 
-<h2>Where everything is written down</h2>
-<p>This page is the coach's handbook. The rest of the documentation lives in the
-repository, and each file answers a different question:</p>
-<table class="dok-odkazy">
-  <tr><td><a href="${DOK}status-en" target="_blank" rel="noopener">STATUS</a></td>
-      <td><b>What runs, what is verified and what is missing.</b> The source of truth
-          on status; in Czech <a href="${DOK}status" target="_blank" rel="noopener">STATUS (Czech)</a>.</td></tr>
-  <tr><td><a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a></td>
-      <td>The detailed manual. In Czech
-          <a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a>.</td></tr>
-  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
-      <td><b>When something does not work.</b> A symptom → cause → fix table (Czech).</td></tr>
-  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
-      <td><b>The diary</b> (Czech). Newest on top, and for each change <b>why</b> it
-          was made and what turned up along the way.</td></tr>
-  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
-      <td>Evidence of what was verified and how — numbers, not impressions. The point
-          to return to when something breaks.</td></tr>
-  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
-      <td>How it is built inside. For whoever touches the code.</td></tr>
-  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
-      <td>How to run and deploy it, secrets included.</td></tr>
-  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">The brief</a></td>
-      <td>The original brief — what the app is measured against.</td></tr>
-</table>
-<p class="dok-pozn">The documents open in a new tab, <b>behind the same sign-in as the
-app</b> — they do not belong on the public web even though they hold no personal data.
-Each one carries a signpost to the others at the top, and long ones a list of chapters.
-The <code>.md</code> files in the repository stay the source of truth; this is their
-rendering.</p>
 `;
 
 /**
