@@ -35,6 +35,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
 | Notifications — SMS | ✅ | **confirmed for real on 9 Aug 2026** — dry run plus a delivered message; channel on (`smsAktivni = 1`), cap 50/day |
 | SMS header | ✅ | editable in Settings, preview with segment count and a warning for characters outside GSM-7; empty = club name |
+| Curves distinguishable in B&W | ✅ | coach solid line + filled dot, second view dashed + hollow square; the legend draws the real line, not a coloured chip |
 | SMS test to any number | ✅ | in Settings, no link to the roster; dry run free, real send behind a confirmation |
 | Communication log | ✅ | collapsed (the page no longer grows), search and CSV export of the **whole** log |
 | Command bar | ✅ | **one field for commands and questions**, above every tab; resolved locally, the model only for awkward sentences |

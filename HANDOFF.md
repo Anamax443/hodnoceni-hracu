@@ -2,6 +2,56 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (29) — křivky rozlišené tvarem, ne barvou; cena SMS opravena
+
+**Podnět od uživatele:** „když se to tiskne na čb tiskárně, tak to nějak tolik nevyzní."
+Ukázal printscreen listu, kde jsou obě křivky po převodu do šedi skoro k nerozeznání.
+
+**Kde byla chyba v úvaze.** List byl na barvoslepost i černobílý tisk myšlený od začátku,
+ale jen u **šablon** — proto je v hlavičce vedle barvy vždycky název. U **křivek v grafu**
+se na to zapomnělo: rozlišovala je barva (modrá vs. šedá) a průhlednost výplně, tedy dvě
+věci, které převod do šedi smaže. Legenda to dokonce zhoršovala — byly to dva **barevné
+obdélníčky**, ze kterých po vytištění zbyly dva stejné šedé čtverečky.
+
+**Rozlišení teď nese tvar.** Tabulka `STYLY_RAD` v `radar.js`: plná/kolečko,
+čárkovaná/čtvereček, tečkovaná/kosočtverec, čerchovaná/trojúhelník. Typ čáry i tvar značky
+přežijí kopírku. Značky porovnávacích řad jsou **bílé s obrysem**, aby v místě křížení
+nepřekryly tu druhou — plná značka by schovala právě to, na čem záleží.
+
+**Výplň má nově jen hlavní řada** (28 %), porovnání žádnou. Dvě poloprůhledné výplně přes
+sebe daly na papíře **tři** odstíny šedi a nešlo poznat, čí je která.
+
+**Legenda kreslí kus skutečné čáry se značkou** (`vzorekRady()`), ze stejné tabulky jako
+graf — nemůže se s ním tedy rozejít.
+
+**Na scénář „dva trenéři a hráč":** styly to unesou, datová cesta ne. Server posílá jedno
+`porovnani` a víc trenérů se řeší přes Shodu, kde se dohodnou na jednom výsledném
+hodnocení. Nedodělával jsem cestu, kterou nikdo nevolá.
+
+**Ověřeno:** vyrenderováno headless Edge do PNG v barvě i s filtrem `grayscale(1)`.
+V šedé škále jdou obě křivky rozeznat na první pohled — plná s plnými kolečky proti
+čárkované s prázdnými čtverečky — a legenda platí i po převodu.
+
+**Cena SMS opravena.** Uživatel upozornil na rozpor: dokumentace psala „od 0,41 Kč", ale
+portál u konkrétní zprávy ukazuje **0,93 Kč bez DPH / 1,13 Kč s DPH**. To „od" je objemová
+sazba ceníku, ne sazba tohohle účtu. Dvě věci z toho plynou:
+
+1. **Denní strop 50 je nad možnosti kreditu.** 21 Kč vystačí zhruba na 18 zpráv, takže
+   pojistka by nikdy nezasáhla — kredit dojde dřív. Doporučeno snížit na 15, **zatím
+   nezměněno** (čeká na rozhodnutí).
+2. **Rozeslání odkazů SMS by spolklo celý kredit.** 18 hráčů × 1,13 Kč ≈ 20 Kč za jedno
+   kolo. Telegram i e-mail jsou zdarma a ověřené; SMS patří jako záchrana pro toho, kdo
+   nemá ani jedno.
+
+**Odesílatel přenastaven uživatelem** z `GoSMS-test` na obecného `GoSMS.info`, takže zpráva
+už nevypadá jako test. Zároveň zaškrtl *Povolit přístup k detailu zprávy přes API* — je
+možné, že se tím doplní i ID zprávy, které se dnes do logu ukládá jako `ok`. Neověřeno,
+ověření stojí jednu ostrou SMS.
+
+**NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.
+
+---
+
 ## 2026-08-09 (28) — SMS naostro, hlavička zpráv, log komunikace se sbalil
 
 **Zlom: dobitý kredit odblokoval bránu.** Účet GoSMS byl do dneška neověřený a bez

@@ -141,10 +141,10 @@ body {
     font-size: .9em; color: #555; margin-bottom: 8px;
 }
 .legend span { display: flex; align-items: center; gap: 5px; }
-.swatch { width: 15px; height: 9px; display: inline-block; border-radius: 2px; }
-/* Vzorky v legendě musí sedět s polygony v radaru — obojí bere barvu šablony. */
-.swatch.trener { background: var(--sab-zaklad); opacity: .6; }
-.swatch.porovnani { background: #9e9e9e; opacity: .5; }
+/* Vzorek je kus skutečné čáry se značkou, ne barevný čtvereček: barvy po
+   převodu do šedi splynou a legenda by přestala platit zrovna na papíře.
+   Kreslí ho vzorekRady() v radar.js, ať se nedá rozejít s grafem. */
+.vzorek { flex: 0 0 auto; display: block; overflow: visible; }
 
 /* ===== TŘI SLOVNÍ BLOKY VEDLE SEBE (zbylé rohy modelu) ===== */
 .blocks { display: flex; gap: 8px; margin-bottom: 8px; }

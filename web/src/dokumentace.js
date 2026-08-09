@@ -199,6 +199,11 @@ jsou i v aplikaci u štítků v tabulkách a na stránce sebehodnocení, kterou
 vyplňuje hráč. Na barvu samotnou se nespoléhej — název je vedle ní vždycky,
 takže list dává smysl i vytištěný černobíle. Kumulovaný list patří všem třem
 šablonám najednou, proto má hlavičku šedou a barvy nesou jednotlivé radary.</p>
+<p><b>Dvě křivky v grafu rozlišuje tvar, ne barva.</b> Trenér má plnou čáru
+s plnými kolečky a lehkou výplň, druhý pohled čárkovanou čáru s prázdnými
+čtverečky a bez výplně. Na černobílé tiskárně by odstíny šedi splynuly, kdežto
+typ čáry a tvar značky přežijí i kopírku. Ze stejného důvodu je ve <b>vzorku
+v legendě</b> kousek skutečné čáry se značkou, ne barevný obdélníček.</p>
 
 <h2>Analýzy</h2>
 <p>Souhrny za celý kádr: <b>kde je mužstvo nejslabší</b> (průměr osy přes všechny hodnocené,
@@ -559,6 +564,12 @@ self-evaluation page the player fills in. Do not rely on colour alone — the na
 is always next to it, so the sheet still works printed in black and white. The
 combined sheet belongs to all templates at once, so its header stays grey and
 the colours are carried by the individual radars.</p>
+<p><b>The two curves in the chart are told apart by shape, not colour.</b> The
+coach gets a solid line with filled dots and a light fill; the second view gets
+a dashed line with hollow squares and no fill. On a black-and-white printer the
+shades of grey would merge, whereas a line type and a marker shape survive even
+a photocopier. For the same reason the <b>legend swatch</b> is a piece of the
+real line with its marker, not a coloured rectangle.</p>
 
 <h2>Analyses</h2>
 <p>Squad-wide summaries: <b>where the team is weakest</b> (average of an axis across all

@@ -463,12 +463,29 @@ Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.htm
 - osa 0 je nahoře, pokračuje po směru hodinových ručiček: `úhel = 2π·i/n − π/2`
 - 5 soustředných úrovní mřížky (`KRUHY`), střídavě bílá a `#fafafa`
 - popisky os vně grafu (poloměr + 22), zalomené na dva řádky nad 17 znaků, s hodnotou `x/10`
-- aktuální hodnocení: výplňový polygon @ 40 % + body, **barva podle šablony** (viz 4c)
-- porovnávací hodnocení: šedý čárkovaný obrys pod ním — zůstává šedý vždy, aby se nepletl
-  s barvou šablony
+- aktuální hodnocení: plná čára, plné kolečko, výplň @ 28 %, **barva podle šablony** (viz 4c)
+- porovnávací hodnocení: šedá **čárkovaná** čára s **prázdnými čtverečky**, bez výplně —
+  šedá zůstává vždy, aby se nepletla s barvou šablony
 
-**Na jednom listu jsou maximálně dva polygony.** Buď trenér + hráč (rozhovor), nebo trenér
-nyní + trenér minule (vývoj). Vybírá se v záložce Listy. Tři polygony jsou nečitelné.
+**Rozlišení řad nese tvar, ne barva** (`STYLY_RAD` v `radar.js`). Na černobílé tiskárně
+vyjdou dvě poloprůhledné výplně skoro stejně a na kopírce úplně; typ čáry a tvar značky
+přežijí obojí. Tabulka má čtyři řady — plná/kruh, čárkovaná/čtverec, tečkovaná/kosočtverec,
+čerchovaná/trojúhelník — takže přidat další polygon je řádek, ne přepis kreslení.
+
+Značky porovnávacích řad se kreslí **bílou výplní s obrysem**: plná značka by pod sebou
+schovala tu druhou právě v místě, kde se řady kříží a kde na tom nejvíc záleží.
+
+Výplň má **jen hlavní řada**. Dvě poloprůhledné výplně přes sebe daly na papíře tři
+odstíny šedi, ve kterých nešlo poznat, čí je která.
+
+**Legenda kreslí skutečný kousek čáry se značkou** (`vzorekRady()`), ne barevný čtvereček.
+Čtverečky po převodu do šedi splynuly, takže legenda přestávala platit zrovna na papíře.
+Vzorek bere styl z téže tabulky jako graf, takže se s ním nemůže rozejít.
+
+**Na jednom listu jsou dnes dva polygony.** Buď trenér + hráč (rozhovor), nebo trenér
+nyní + trenér minule (vývoj). Vybírá se v záložce Listy. Víc řad (dva trenéři a hráč)
+by styly unesly, ale datová cesta pro ně nevede: server posílá jedno `porovnani` a víc
+trenérů se řeší přes Shodu, kde se dohodnou na jednom výsledném hodnocení.
 
 Když se geometrie změní tady, musí se změnit i v `docs/vzor-list.html` — jinak přestane být
 referenční. Barvy se změnit smějí: vzor je list hráče v poli, tedy modrý.
@@ -957,7 +974,7 @@ poměru „co to dá" / „co to stojí za byrokracii":
 |---|---|---|---|---|
 | **E-mail** (Cloudflare Email Sending) | zdarma | binding `[[send_email]]`, onboardovaná doména | příjemce musí být **ověřená destination address** | **běží** |
 | **Telegram** (Bot API) | zdarma | bot od `@BotFather`, token jako secret | bot **nesmí napsat první** — uživatel mu musí poslat zprávu | **běží** |
-| **SMS** (GoSMS) | od 0,41 Kč/SMS, **žádný paušál** | účet na gosms.cz, OAuth2 klíče, ID kanálu | odesílatel je jméno brány (`GoSMS-info`), ne klub | **běží**, v Nastavení vypnuto |
+| **SMS** (GoSMS) | **0,93 Kč bez DPH / 1,13 Kč s DPH** za segment (ověřeno v portálu 2026-08-09), **žádný paušál** | účet na gosms.cz, OAuth2 klíče, ID kanálu | odesílatel je jméno brány, ne klub | **běží a ověřeno naostro**, kanál zapnutý |
 | **SMS** (Twilio) | $0,0706/segment (~1,50 Kč) | + **12 $/měs. za české číslo** nebo 30 $/měs. za jméno | bez registrovaného odesílatele končí do ČR na `21612` | **postaveno**, nepoužívá se |
 | **WhatsApp** (Twilio) | $0,005 Twilio + $0,0034 Meta za utility mimo 24h okno, **bez paušálu** | číslo, které není na běžném WhatsAppu, Meta Business Portfolio, schválená šablona | neověřený subjekt smí 250 příjemců/24 h; sandbox má opt-in jen na 3 dny | **nepostaveno** |
 | **SMS z MikroTiku** (`/tool sms send`) | v paušálu, prakticky zdarma | dosažitelný router + komponenta, která tahá frontu | router pod CGNAT; SMS je u LTE modemů vedlejší funkce bez doručenek | **zamítnuto** pro notifikace |
@@ -1084,7 +1101,8 @@ Krátká čísla (short codes) v ČR nejdou vůbec.
 pozná stejně dobře, o co jde.
 
 **Místo placení paušálu se přešlo na českou bránu GoSMS** (2026-08-07). Registrace i vedení
-účtu jsou zdarma, platí se jen odeslané zprávy (od 0,41 Kč), a hlavně: posílá se pod
+účtu jsou zdarma, platí se jen odeslané zprávy (ceník uvádí „od 0,41 Kč", ale to je
+objemová sazba — **tenhle účet platí 0,93 Kč bez DPH / 1,13 Kč s DPH za segment**), a hlavně: posílá se pod
 **systémovým odesílatelem brány**, který u T-Mobile a O2 registrovaný je. Tím padá celý
 problém s `21612`, aniž by se cokoli platilo měsíčně. Daň je, že příjemce uvidí jako
 odesílatele `GoSMS-info`, ne klub — vlastní jméno u nich stojí aktivaci a měsíční poplatek

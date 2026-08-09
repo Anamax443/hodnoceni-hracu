@@ -5,6 +5,32 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (23) — křivky rozlišené tvarem (černobílý tisk)
+
+**NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.
+
+**Vyrenderováno headless Edge** (`--headless=new --screenshot`) ze skutečných modulů
+`radar.js` + `vzorekRady()`, šablona leader, trenér `6,5,6,6,6,7` proti hráči `8,4,7,5,8,5`.
+Dvě varianty vedle sebe: bez filtru a s `filter: grayscale(1)`.
+
+| Kontrola v šedé škále | Výsledek |
+|---|---|
+| křivka trenéra | plná čára, plná kolečka, výplň 28 % |
+| křivka hráče | čárkovaná (`7,4`), prázdné bílé čtverečky, bez výplně |
+| rozeznatelnost na první pohled | ✅ i v místech, kde se křivky kříží |
+| značka pod značkou | ✅ bílá výplň čtverečku nepřekryje kolečko pod ním |
+| legenda | ✅ vzorky nesou skutečný typ čáry i tvar značky, ne barevný čtvereček |
+
+Tím padá stav před opravou, kdy rozlišení stálo na barvě (modrá vs. šedá) a průhlednosti
+výplně — obojí převod do šedi smaže — a legenda byla dva barevné obdélníčky, ze kterých
+po vytištění zbyly dva stejné šedé.
+
+**Cena SMS ověřená v portálu GoSMS** na konkrétní zprávě (57 znaků, 1 část, 1 příjemce):
+**0,93 Kč bez DPH, 1,13 Kč s DPH**. Dokumentace dřív uváděla „od 0,41 Kč" — to je objemová
+sazba ceníku, ne sazba tohohle účtu. Opraveno v `docs/TECHNICAL.md`.
+
+---
+
 ## 2026-08-09 (22) — SMS ověřená naostro, hlavička zpráv, sbalený log
 
 **Commit:** `5452411` · **NASAZENO** 2026-08-09, Version ID `1e5d8abc-be15-496b-8528-7c5813521006`.

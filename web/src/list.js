@@ -13,7 +13,7 @@
    papír, ne obrazovka.
    ===================================================================== */
 
-import { radar } from './radar.js';
+import { radar, vzorekRady } from './radar.js';
 import { t, osy, kotvy, locale } from './i18n.js';
 
 /** Escapuje text z databáze, aby `&` nebo `<` v komentáři nerozbily HTML. */
@@ -82,8 +82,8 @@ export function list(h, nas) {
 
         <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
         <div class="legend">
-            <span><i class="swatch trener"></i> ${t('list.trener')}</span>
-            ${h.porovnani ? `<span><i class="swatch porovnani"></i> ${esc(popisekPorovnani(h))}</span>` : ''}
+            <span>${vzorekRady(0, 'var(--sab-tmava, #1565C0)')} ${t('list.trener')}</span>
+            ${h.porovnani ? `<span>${vzorekRady(1)} ${esc(popisekPorovnani(h))}</span>` : ''}
         </div>
 
         <div class="blocks">
@@ -182,10 +182,13 @@ export function listKumulovany(hraci, nas) {
                 </div>`;
             }).join('')}
         </div>
+        <!-- Legenda je společná pro všechny grafy na stránce, takže barvu
+             šablony brát nemůže — kterou z nich by ukázala? Vzorek je proto
+             neutrální; šablonu říká nadpis nad každým grafem. -->
         <div class="legend">
-            <span>${hraci.map(h => `<i class="swatch trener sab-${esc(h.sablona)}"></i>`).join('')} ${t('list.trener')}</span>
+            <span>${vzorekRady(0)} ${t('list.trener')}</span>
             ${hraci.some(h => h.porovnani)
-                ? `<span><i class="swatch porovnani"></i> ${
+                ? `<span>${vzorekRady(1)} ${
                     esc(popisekPorovnani(hraci.find(h => h.porovnani)))}</span>`
                 : ''}
         </div>
