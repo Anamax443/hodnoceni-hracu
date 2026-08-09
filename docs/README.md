@@ -389,12 +389,28 @@ takže značka klubu patří do textu zprávy.
 Tlačítko *SMS nanečisto* v Lidech ověří spojení s bránou, kanál i tvar čísla, ale **nic
 neodešle a nic nestojí**. Funguje i při vypnutém kanálu.
 
+**Hlavička SMS.** Protože odesílatele určuje brána, je hlavička jediné místo, podle
+kterého příjemce pozná, kdo mu píše. Nastavuje se v Nastavení a přilepí se stejně na
+všechny zprávy; prázdné pole znamená název klubu. Náhled pod polem ukáže zprávu tak, jak
+dojde, a spočítá segmenty. **Pozor na dlouhou pomlčku, české uvozovky a výpustku** —
+odstranění diakritiky je nechytí, ale v abecedě SMS nejsou, takže zdvojnásobí cenu
+zprávy. Náhled na to upozorní.
+
+**Zkouška na libovolné číslo** je v Nastavení a nemusí být v kartotéce — ověřuje se
+brána, ne hráč. Vedle sebe jsou zkouška nanečisto (zdarma) a ostrá SMS, která se ptá,
+protože strhne kredit.
+
 ### Odeslaná komunikace
 
 V Nastavení je posledních sto pokusů o odeslání: kdy, kanál, **platforma** (GoSMS,
 Telegram, Cloudflare), komu, typ a výsledek. U neúspěchu je vidět i důvod, který vrátil
 poskytovatel — proto se „nic mi nepřišlo" dá dohledat. Ukládají se údaje o odeslání, ne
 obsah zpráv; odkazy s tokeny se nelogují nikdy.
+
+Karta je **sbalená** a rozbalí se kliknutím, aby stránka Nastavení nerostla podle toho,
+kolik toho aplikace rozeslala — na telefonu by se pod ni jinak nedalo dorolovat.
+**Hledání** filtruje průběžně (najde i „chyba" nebo „přeskočeno") a **Export do CSV**
+stáhne celý log z databáze, ne jen zobrazenou stovku.
 
 ---
 

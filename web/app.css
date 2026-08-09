@@ -191,6 +191,16 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
    na mobilu totéž dělá pravidlo pro každou tabulku v karta média query. */
 .scroll-x { overflow-x: auto; }
 
+/* Sbalovací blok — sto řádků logu by z Nastavení udělalo nekonečnou stránku,
+   na telefonu obzvlášť. Zavřený zabere jeden řádek, otevřený se posouvá sám
+   v sobě, takže délka karty nezávisí na tom, kolik toho appka rozeslala. */
+details.sbalene > summary {
+    cursor: pointer; padding: 4px 0; list-style: revert;
+    user-select: none;
+}
+details.sbalene > summary:hover { color: var(--modra-tmava); }
+.log-scroll { max-height: 46vh; overflow: auto; }
+
 .ano { color: var(--zelena); font-weight: bold; }
 .ne { color: var(--seda); opacity: .6; }
 .resit td { background: var(--pozor-poz); }

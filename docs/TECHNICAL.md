@@ -1009,10 +1009,33 @@ ID kanálu není tajemství a je ve `wrangler.jsonc` jako `GOSMS_KANAL` (dnes `5
 najde se v portálu v Kanály → Upravit, je v adrese). Dokud něco chybí, vrátí se
 `NO_CREDENTIALS` / `NO_CHANNEL` a je to vidět v Nastavení i v logu — ne ticho.
 
-**Zkouška nanečisto.** `POST /api/sms/test` s `{"nanecisto": true}` (v Lidech tlačítko
-*SMS nanečisto*) posílá na `…/api/v1/messages/test`: GoSMS požadavek ověří, ale nic
-neodešle a nic to nestojí. Projde i při vypnutém kanálu a do denního stropu se nepočítá —
-je to jediný způsob, jak ověřit klíče a kanál, aniž by někomu pípl telefon.
+**Zkouška nanečisto.** `POST /api/sms/test` s `{"nanecisto": true}` posílá na
+`…/api/v1/messages/test`: GoSMS požadavek ověří, ale nic neodešle a nic to nestojí. Projde
+i při vypnutém kanálu a do denního stropu se nepočítá — je to jediný způsob, jak ověřit
+klíče a kanál, aniž by někomu pípl telefon. Tlačítka jsou v Lidech (u vyplněného telefonu)
+i v Nastavení, kde se dá zadat **libovolné číslo bez vazby na kartotéku**: ověřuje se brána,
+ne hráč.
+
+> **Chyba opravená 2026-08-09:** `posliSmsHlidane` nepředávala příznak `nanecisto` dál do
+> `posliSms`, takže „zkouška" mířila na ostrý endpoint. Protože nanečisto zároveň záměrně
+> přeskakuje vypínač i denní strop, poslalo by tlačítko skutečnou SMS mimo obě pojistky.
+> Maskoval to neověřený účet, který vracel `400` na obou cestách. Zkoušky nanečisto se
+> nově do stropu nepočítají (`kod NOT IN ('console','nanecisto')`).
+
+**Hlavička zprávy.** `settings.smsHlavicka` se přilepí na začátek **každé** SMS ve funkci
+`sHlavickou()`, volané z jednoho místa v `posliSmsHlidane`. Prázdná hodnota = `settings.klub`.
+Do 2026-08-09 se úvod skládal na třech místech zvlášť (zkouška `klub:`, obnova
+`Hodnoceni hracu:`, souhrn vůbec nic) — protože odesílatele drží brána, byla to jediná
+informace o tom, kdo píše, a byla pokaždé jiná.
+
+**Segmenty a abeceda GSM 03.38.** `bezDiakritiky()` odstraňuje kombinující diakritiku
+(`[̀-ͯ]` nad NFD), protože háčky přepnou zprávu na UCS-2 a segment spadne
+ze 160 znaků na 70. **Nestačí to ale samo o sobě:** znaky jako `–` (en dash), `„` nebo `…`
+nejsou písmena s diakritikou, takže normalizaci přežijí, a přesto v GSM-7 nejsou — jediný
+takový znak zdvojnásobí cenu celé zprávy. Náhled v Nastavení (`GSM7` a `GSM7_ROZSIRENI`
+ve `web/app.js`) proto počítá stejně jako brána: znaky mimo abecedu vyjmenuje, znaky
+z rozšiřovací tabulky (`^{}\[~]|€`) počítá za dvě místa a dělí po 160/153 (GSM-7),
+resp. 70/67 (UCS-2).
 
 Pozor na doménu: API je na **`app.gosms.eu`**. `app.gosms.cz` jen přesměrovává a POST by
 se cestou zvrhl na GET. Token se bere form-encoded, přesně jak GoSMS ukazuje v samoobsluze.
@@ -1083,6 +1106,18 @@ vidět v Nastavení, takže „nic mi nepřišlo" nekončí u `wrangler tail`.
 **Logují se metadata, ne obsah.** Výjimkou je SMS, kde se ukládá text kvůli počtu segmentů
 a sporům o fakturaci — obsah hodnocení v něm stejně nikdy není. **Tokeny a obnovovací odkazy
 se nelogují nikdy**: záznam s platným odkazem je reset hesla čekající na zneužití.
+
+**Sbalený, s hledáním a exportem** (2026-08-09). Karta je `<details>` a zavřená zabírá jeden
+řádek — sto řádků v otevřené kartě nafukovalo stránku Nastavení natolik, že se na telefonu
+nedalo dorolovat pod ni. Otevřená se tabulka posouvá sama v sobě (`.log-scroll`,
+`max-height: 46vh`). Hledání filtruje v prohlížeči nad už načtenými sto záznamy a staví
+seno z **přeložených popisků**, ne ze syrových hodnot, takže „chyba" a „přeskočeno" najdou
+to, co je v tabulce vidět. `GET /api/komunikace/export.csv` proti tomu jde **bez limitu**
+do celé tabulky — sto zobrazených řádků je strop pohledu, ne archivu; formát je stejný
+jako u exportu kádru (středník, CRLF, BOM kvůli Excelu), čas se vyváží v UTC se sufixem `Z`.
+
+Pozor při úpravách: uvnitř toho bloku se kdysi jmenovala lokální mapa tříd `stav` a stínila
+globální stav aplikace. Dnes je to `tridaStavu`.
 
 **MikroTik jako SMS provider** (LTE router s SIM, `/tool sms send`): zvažováno a odloženo.
 Router je za LTE pravděpodobně pod CGNAT, takže z Workeru nedosažitelný; WireGuard to neřeší

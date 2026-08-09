@@ -83,7 +83,9 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | PIN nebere, ačkoli byl právě nastavený | odkaz na obnovu měnil **společné** heslo, ne účet | přihlásit se s prázdným „Kdo jsi", nebo si nechat poslat nový odkaz na svoje jméno / e-mail — stránka nového hesla píše, čí heslo nastavuje |
 | SMS neodchází, v logu `VYPNUTO` | `smsAktivni = 0`, mimořádný kanál je vypnutý | Nastavení → *Povolit odesílání SMS* |
 | SMS: `NO_CREDENTIALS` / `NO_CHANNEL` | chybí `GOSMS_*` secrety nebo `GOSMS_KANAL` | doplnit dle `docs/BUILD.md`; *SMS nanečisto* to ověří zdarma |
-| GoSMS vrací `400` u ostrého odeslání | účet neověřený a bez kreditu (odesílatel `GoSMS-test`) | ověřit účet v portálu a dobít kredit; text chyby je v logu komunikace |
+| GoSMS vrací `400` u ostrého odeslání | účet neověřený nebo bez kreditu | dobít kredit v portálu — 2026-08-09 to `400` odstranilo; text chyby je v logu komunikace |
+| SMS dorazila, ale stála dvakrát tolik | v textu je znak mimo GSM-7 (`–`, `„`, `…`) → UCS-2, segment jen 70 znaků místo 160 | náhled u *Hlavička SMS* v Nastavení viníka pojmenuje; nahradit za `-`, `"`, `...` |
+| potřebuju dohledat starší odeslání než posledních 100 | tabulka v Nastavení je jen pohled, ne archiv | *Export do CSV* u logu komunikace — jde bez limitu do celé tabulky |
 | v Excelu je z telefonu `4,20605E+11` | otevřel se **CSV**, které formát buněk nenese | použít **Export do Excelu** (`.xlsx`), tam je sloupec Text |
 | import z Excelu udělal duplikáty | v souboru chyběl sloupec `id` a lišilo se jméno | v souboru nechat `id`; párování je id → login → jméno + role |
 | příkazový řádek hlásí, že nerozumí | jméno není v kádru, nebo je model vypnutý | zkus příjmení či přezdívku; volnější věty umí až model (Nastavení → Jazykový model) |

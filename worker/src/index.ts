@@ -308,6 +308,10 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     // a zapíná se vědomě v Nastavení — přepínač u osoby sám o sobě nestačí.
     smsAktivni: '0',
     smsDenniStrop: '50',       // pojistka proti smyčce, i když je kanál zapnutý
+    // Úvod každé SMS. Odesílatele drží brána (příjemce vidí GoSMS-info, ne klub),
+    // takže tohle je jediné místo, podle kterého pozná, kdo mu píše.
+    // Prázdné = použije se název klubu, ať přejmenování nezanechá starý text.
+    smsHlavicka: '',
     // Jazykový model pro příkazový řádek. Výchozí 'vypnuto': v aplikaci jsou
     // údaje nezletilých a odesílat je ven se musí zapnout vědomě.
     aiPoskytovatel: 'vypnuto', // 'vypnuto' | 'workers' (zdarma) | 'claude' (placený)
@@ -1317,8 +1321,9 @@ async function posliObnovu(env: Env, u: Ucet, zaklad: string, lang: string): Pro
     }
     if (u.telefon) {
         // SMS nese jen krátkou pobídku a odkaz; delší text by zbytečně přidal segmenty.
+        // Kdo píše, řekne hlavička — tady stačí, k čemu odkaz je.
         const r = await posliSmsHlidane(env, u.telefon,
-            `${en ? 'Player evaluation' : 'Hodnoceni hracu'}: ${odkaz}`, 'obnova', u.id);
+            `${en ? 'password reset' : 'obnova hesla'} ${odkaz}`, 'obnova', u.id);
         zpravy.push(`SMS → ${u.jmeno} (${u.telefon}): ${r.popis}`);
     }
     if (!zpravy.length) {
@@ -1469,6 +1474,16 @@ function bezDiakritiky(text: string): string {
 }
 
 /**
+ * Přilepí úvod zprávy. Skládá se na jednom místě, aby se souhrn, pozvánka
+ * i zkouška hlásily stejně — dřív měl každý svůj vlastní natvrdo psaný začátek
+ * a příjemce dostával pokaždé něco jiného. Prázdné nastavení = název klubu.
+ */
+function sHlavickou(nas: Record<string, string>, text: string): string {
+    const hlavicka = (nas.smsHlavicka ?? '').trim() || (nas.klub ?? '').trim();
+    return hlavicka ? `${hlavicka}: ${text}` : text;
+}
+
+/**
  * Čísla lidé píšou různě („777 123 456", „+420 777-123-456"). Brány chtějí E.164.
  * Devítimístné číslo bez předvolby je české — jiné se nikdy nezadávalo.
  */
@@ -1609,12 +1624,12 @@ async function posliSmsTwilio(env: Env, cislo: string, zprava: string, nanecisto
 }
 
 /** Pojistka proti smyčce: kolik SMS opravdu odešlo za posledních 24 h.
- *  Zprávy z režimu `console` se nepočítají — nic nestály. */
+ *  Zprávy z režimu `console` ani zkoušky nanečisto se nepočítají — nic nestály. */
 async function smsZaDen(env: Env): Promise<number> {
     const r = await env.DB.prepare(
         `SELECT COUNT(*) AS pocet FROM komunikace
           WHERE kanal = 'sms' AND vysledek = 'ok'
-            AND (kod IS NULL OR kod <> 'console')
+            AND (kod IS NULL OR kod NOT IN ('console', 'nanecisto'))
             AND cas > datetime('now', '-1 day')`
     ).first<{ pocet: number }>();
     return r?.pocet ?? 0;
@@ -1705,12 +1720,15 @@ async function posliSmsHlidane(env: Env, cislo: string, text: string,
         return { ok: false, popis: `Denní strop ${strop} SMS je vyčerpaný, zpráva se neodeslala.` };
     }
 
-    const r = await posliSms(env, cislo, text);
+    // Hlavička se přilepí až tady, aby ji dostaly všechny zprávy stejně —
+    // a aby se do logu zapsalo přesně to, co odešlo, i s ní.
+    const zprava = sHlavickou(nas, text);
+    const r = await posliSms(env, cislo, zprava, nanecisto);
     await zalogujKomunikaci(env, {
         kanal: 'sms', platforma: nanecisto ? `${platforma} (nanečisto)` : platforma,
         playerId, adresa: cislo, typ,
         vysledek: r.ok ? 'ok' : 'chyba', kod: r.kod ?? null,
-        poznamka: bezDiakritiky(text).slice(0, 300),  // text kvůli segmentům; hodnocení v něm není
+        poznamka: bezDiakritiky(zprava).slice(0, 300),  // text kvůli segmentům; hodnocení v něm není
         podrobnosti: r.ok ? null : (r.popis ?? null)  // proč to brána odmítla, ať se to nedohledává jinde
     });
     return { ok: r.ok, popis: r.ok ? (r.popis ?? 'Odesláno.') : `${r.kod ?? 'chyba'} — ${r.popis ?? ''}` };
@@ -2008,6 +2026,42 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json(results ?? []);
     }
 
+    /* ---------- export celého logu komunikace ----------
+       V tabulce je posledních sto záznamů; když se dohledává, co komu odešlo
+       před měsícem, je tohle jediná cesta k tomu zbytku. */
+    if (cesta === '/api/komunikace/export.csv' && metoda === 'GET') {
+        const { results } = await env.DB.prepare(
+            `SELECT k.cas, k.kanal, k.platforma, k.adresa, k.typ, k.vysledek, k.kod,
+                    k.poznamka, k.podrobnosti, p.jmeno
+               FROM komunikace k LEFT JOIN players p ON p.id = k.player_id
+              ORDER BY k.id DESC`
+        ).all<Record<string, unknown>>();
+
+        const en = q.get('lang') === 'en';
+        const radky: string[][] = [en
+            ? ['time', 'channel', 'platform', 'to', 'type', 'result', 'code', 'message', 'details']
+            : ['čas', 'kanál', 'platforma', 'komu', 'typ', 'výsledek', 'kód', 'zpráva', 'podrobnosti']];
+        for (const z of results ?? []) {
+            radky.push([
+                // Čas je v databázi v UTC; do souboru jde s Z, ať je to poznat.
+                String(z.cas ?? '') + 'Z',
+                String(z.kanal ?? ''), String(z.platforma ?? ''),
+                String(z.jmeno ?? z.adresa ?? ''), String(z.typ ?? ''),
+                String(z.vysledek ?? ''), String(z.kod ?? ''),
+                String(z.poznamka ?? ''), String(z.podrobnosti ?? '')
+            ]);
+        }
+
+        const datum = new Date().toISOString().slice(0, 10);
+        return new Response(csvSoubor(radky), {
+            headers: {
+                'content-type': 'text/csv; charset=utf-8',
+                'content-disposition': `attachment; filename="komunikace-${datum}.csv"`,
+                'cache-control': 'no-store'
+            }
+        });
+    }
+
     /* ---------- kontrola přihlašovacích údajů brány (nic neodesílá) ---------- */
     if (cesta === '/api/sms/ucet' && metoda === 'GET') {
         const provider = (env.SMS_PROVIDER || 'console').toLowerCase();
@@ -2097,9 +2151,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     if (cesta === '/api/sms/test' && metoda === 'POST') {
         const { telefon, nanecisto } = await request.json<{ telefon?: string; nanecisto?: boolean }>();
         if (!telefon) return chyba('Chybí telefon.', 400);
-        const nas = await nastaveni(env);
+        // Hlavičku i klub dosadí posliSmsHlidane — tady jde jen o tělo zprávy.
         const r = await posliSmsHlidane(env, String(telefon),
-            `${nas.klub}: zkusebni zprava z aplikace Hodnoceni hracu.`, 'test', null, !!nanecisto);
+            'zkusebni zprava z aplikace Hodnoceni hracu.', 'test', null, !!nanecisto);
         return json({ ok: r.ok, popis: r.popis });
     }
 

@@ -18,6 +18,16 @@ const $ = s => document.querySelector(s);
    kterou chce trenér opravit, a Hodnotit ji hned po překreslení vybere. */
 const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null };
 
+/* Abeceda GSM 03.38. Zpráva složená jen z těchhle znaků se vejde do 160 znaků
+   na segment; jediný znak mimo ni (pomlčka „–", české uvozovky, výpustka „…")
+   přepne celou SMS na UCS-2 a segment spadne na 70 znaků — tedy dvojnásobná
+   cena za totéž. Odstranění diakritiky tyhle znaky nechytí, jsou to písmena
+   jiná než latinka s háčkem. */
+const GSM7 = '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?'
+    + '¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà';
+/* Rozšiřovací tabulka: znak projde, ale zabere v segmentu dvě místa. */
+const GSM7_ROZSIRENI = '^{}\\[~]|€';
+
 /* ===================== komunikace ===================== */
 
 async function api(cesta, volby = {}) {
@@ -2120,6 +2130,26 @@ async function nastaveni(kam) {
                 ${stav.nastaveni.smsAktivni === '1' ? 'checked' : ''}> ${t('notif.smsAktivni')}</label>
                 <div class="popis">${t('notif.smsAktivni.napoveda')}</div></div>
 
+            <!-- Úvod zprávy. Odesílatele drží brána, takže tohle je jediné místo,
+                 podle kterého příjemce pozná, kdo mu píše. -->
+            <div class="pole"><label for="n-sms-hlavicka">${t('notif.smsHlavicka')}</label>
+                <input type="text" id="n-sms-hlavicka" maxlength="40" autocomplete="off"
+                    value="${esc(stav.nastaveni.smsHlavicka ?? '')}"
+                    placeholder="${esc(stav.nastaveni.klub ?? '')}">
+                <div class="popis">${t('notif.smsHlavicka.napoveda')}</div>
+                <div class="popis" id="n-sms-nahled"></div></div>
+
+            <!-- Zkouška na libovolné číslo, bez vazby na kartotéku: ověřuje se brána,
+                 ne hráč. Do Lidí se kvůli tomu nemusí zakládat falešná osoba. -->
+            <div class="pole"><label for="n-sms-cislo">${t('notif.smsZkouska.cislo')}</label>
+                <input type="text" id="n-sms-cislo" autocomplete="off" placeholder="+420777123456">
+                <div class="popis">${t('notif.smsZkouska.napoveda')}</div></div>
+            <p>
+                <button class="vedlejsi" id="n-sms-nanecisto" title="${t('notif.smsZkouska.nanecisto.tip')}">${t('notif.smsZkouska.nanecisto')}</button>
+                <button class="vedlejsi" id="n-sms-ostra" title="${t('notif.smsZkouska.ostra.tip')}">${t('notif.smsZkouska.ostra')}</button>
+            </p>
+            <div id="n-sms-vysledek"></div>
+
             <h3 style="margin:16px 0 4px;font-size:14px">${t('ai.nadpis')}</h3>
             <p class="popis">${t('ai.popis')}</p>
             <div class="radek">
@@ -2167,31 +2197,73 @@ async function nastaveni(kam) {
     }).catch(() => { /* informativní */ });
 
     // Log odeslané komunikace — ať „nic mi nepřišlo" nekončí u wrangler tail.
+    // Sbalený a s vlastním posuvem: sto řádků by z Nastavení udělalo nekonečnou
+    // stránku a na telefonu by se k ničemu pod ním nedalo dorolovat.
     api('/api/komunikace').then(zaznamy => {
-        const stav = { ok: 'ano', chyba: 'rozdil-plus', preskoceno: 'ne' };
+        // Pozor: `stav` je tu globální stav aplikace, proto se třídy jmenují jinak.
+        const tridaStavu = { ok: 'ano', chyba: 'rozdil-plus', preskoceno: 'ne' };
+
+        const radek = (z) => `
+            <tr>
+                <td>${esc(new Date(z.cas + 'Z').toLocaleString(locale()))}</td>
+                <td>${esc(z.kanal)}</td>
+                <td>${esc(z.platforma || '—')}</td>
+                <td>${esc(z.jmeno || z.adresa || '—')}</td>
+                <td>${t('komunikace.typ.' + z.typ)}</td>
+                <td><span class="${tridaStavu[z.vysledek] ?? ''}">${t('komunikace.' + z.vysledek)}</span>${
+                    z.kod ? ` <span class="popis">${esc(z.kod)}</span>` : ''}${
+                    // Důvod patří rovnou do tabulky — „chyba 400" sama o sobě nic neřekne.
+                    z.podrobnosti ? `<br><span class="popis" title="${esc(z.podrobnosti)}">${esc(z.podrobnosti.slice(0, 120))}</span>` : ''}</td>
+            </tr>`;
+
+        // Hledá se i v přeložených popiskách, ať „chyba" nebo „přeskočeno" najde
+        // to, co je vidět v tabulce, ne jen syrové hodnoty z databáze.
+        const senoNaJehlu = (z) => [
+            new Date(z.cas + 'Z').toLocaleString(locale()), z.kanal, z.platforma,
+            z.jmeno, z.adresa, z.typ, t('komunikace.typ.' + z.typ),
+            z.vysledek, t('komunikace.' + z.vysledek), z.kod, z.poznamka, z.podrobnosti
+        ].filter(Boolean).join(' ').toLowerCase();
+
         kam.insertAdjacentHTML('beforeend', `
             <div class="karta">
-                <h2>${t('komunikace.nadpis')}</h2>
-                <p class="popis">${t('komunikace.popis')}</p>
-                <table>
-                    <thead><tr><th>${t('komunikace.cas')}</th><th>${t('komunikace.kanal')}</th>
-                        <th>${t('komunikace.platforma')}</th>
-                        <th>${t('komunikace.komu')}</th><th>${t('komunikace.typ')}</th>
-                        <th>${t('komunikace.vysledek')}</th></tr></thead>
-                    <tbody>${zaznamy.length ? zaznamy.map(z => `
-                        <tr>
-                            <td>${esc(new Date(z.cas + 'Z').toLocaleString(locale()))}</td>
-                            <td>${esc(z.kanal)}</td>
-                            <td>${esc(z.platforma || '—')}</td>
-                            <td>${esc(z.jmeno || z.adresa || '—')}</td>
-                            <td>${t('komunikace.typ.' + z.typ)}</td>
-                            <td><span class="${stav[z.vysledek] ?? ''}">${t('komunikace.' + z.vysledek)}</span>${
-                                z.kod ? ` <span class="popis">${esc(z.kod)}</span>` : ''}${
-                                // Důvod patří rovnou do tabulky — „chyba 400" sama o sobě nic neřekne.
-                                z.podrobnosti ? `<br><span class="popis" title="${esc(z.podrobnosti)}">${esc(z.podrobnosti.slice(0, 120))}</span>` : ''}</td>
-                        </tr>`).join('') : `<tr><td colspan="6">${t('komunikace.prazdno')}</td></tr>`}</tbody>
-                </table>
+                <details class="sbalene">
+                    <summary><b>${t('komunikace.nadpis')}</b>
+                        <span class="popis">${t('komunikace.pocet', zaznamy.length)}</span></summary>
+                    <p class="popis">${t('komunikace.popis')}</p>
+                    <div class="pole"><label for="k-hledat">${t('komunikace.hledat')}</label>
+                        <input type="search" id="k-hledat" autocomplete="off"
+                            placeholder="${t('komunikace.hledat.napoveda')}"></div>
+                    <p>
+                        <button class="vedlejsi" id="k-export" title="${t('komunikace.export.tip')}">${t('komunikace.export')}</button>
+                        <span class="popis" id="k-nalezeno"></span>
+                    </p>
+                    <div class="log-scroll">
+                        <table>
+                            <thead><tr><th>${t('komunikace.cas')}</th><th>${t('komunikace.kanal')}</th>
+                                <th>${t('komunikace.platforma')}</th>
+                                <th>${t('komunikace.komu')}</th><th>${t('komunikace.typ')}</th>
+                                <th>${t('komunikace.vysledek')}</th></tr></thead>
+                            <tbody id="k-telo"></tbody>
+                        </table>
+                    </div>
+                </details>
             </div>`);
+
+        const vykresli = () => {
+            const dotaz = ($('#k-hledat').value || '').trim().toLowerCase();
+            const vybrane = dotaz ? zaznamy.filter(z => senoNaJehlu(z).includes(dotaz)) : zaznamy;
+            $('#k-telo').innerHTML = vybrane.length
+                ? vybrane.map(radek).join('')
+                : `<tr><td colspan="6">${dotaz ? t('komunikace.nicNenalezeno') : t('komunikace.prazdno')}</td></tr>`;
+            $('#k-nalezeno').textContent = dotaz
+                ? t('komunikace.nalezeno', vybrane.length, zaznamy.length) : '';
+        };
+        vykresli();
+        $('#k-hledat').oninput = vykresli;
+
+        // Stažení přes odkaz, ne fetch — cookie se pošle sama a export jde
+        // z databáze celý, ne jen těch sto řádků, co je vidět v tabulce.
+        $('#k-export').onclick = () => { location.href = `/api/komunikace/export.csv?lang=${jazyk()}`; };
     }).catch(() => { /* informativní */ });
 
     // Nabídka modelů se plní podle poskytovatele — modely Workers AI a Claude
@@ -2222,6 +2294,63 @@ async function nastaveni(kam) {
         $('#n-ai').onchange = naplnit;
     }).catch(() => { /* informativní */ });
 
+    /* Živý náhled hlavičky. Worker ubírá diakritiku, ať se segment nezkrátí,
+       jenže to samo nestačí: znaky mimo GSM-7 (pomlčka „–", české uvozovky,
+       výpustka „…") odstranění diakritiky přežijí a přepnou celou zprávu na
+       UCS-2 — segment spadne ze 160 na 70 znaků a cena se zdvojnásobí.
+       Proto se počítá stejně, jako to spočítá brána, a viník se pojmenuje. */
+    const nahledHlavicky = () => {
+        const cil = $('#n-sms-nahled');
+        if (!cil) return;
+        const hlavicka = ($('#n-sms-hlavicka').value.trim() || stav.nastaveni.klub || '').trim();
+        const ukazka = (hlavicka ? `${hlavicka}: ` : '') + t('notif.smsHlavicka.ukazka');
+        const bez = ukazka.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+        const mimo = [...new Set([...bez].filter(z => !GSM7.includes(z) && !GSM7_ROZSIRENI.includes(z)))];
+        const ucs2 = mimo.length > 0;
+        // Znaky z rozšiřovací tabulky (např. €) zabírají v GSM-7 dvě místa.
+        const delka = ucs2 ? [...bez].length
+            : [...bez].reduce((n, z) => n + (GSM7_ROZSIRENI.includes(z) ? 2 : 1), 0);
+        // Víc segmentů = kus každého si vezme spojovací hlavička (153 / 67 místo 160 / 70).
+        const segmenty = delka <= (ucs2 ? 70 : 160) ? 1 : Math.ceil(delka / (ucs2 ? 67 : 153));
+        const drahe = ucs2 || segmenty > 1;
+
+        cil.innerHTML = `${t('notif.smsHlavicka.nahled', esc(bez))}<br>`
+            + `<b${drahe ? ' class="rozdil-plus"' : ''}>${t('notif.smsHlavicka.delka', delka, segmenty)}</b>`
+            + (ucs2 ? `<br><span class="rozdil-plus">${t('notif.smsHlavicka.ucs2', esc(mimo.join(' ')))}</span>` : '');
+    };
+    $('#n-sms-hlavicka').oninput = nahledHlavicky;
+    nahledHlavicky();
+
+    /* Zkouška SMS na libovolné číslo — provozní nástroj, ne práce s kartotékou.
+       Nanečisto jde na kontrolní endpoint brány: ověří klíče, kanál i tvar čísla,
+       ale nic neodešle a nic nestojí. Ostrá zpráva stojí kredit, proto se ptáme. */
+    const zkouskaSms = (nanecisto) => async () => {
+        const cil = $('#n-sms-vysledek');
+        const cislo = $('#n-sms-cislo').value.trim();
+        if (!cislo) { cil.innerHTML = `<div class="hlaska chyba">${t('notif.smsZkouska.bezCisla')}</div>`; return; }
+
+        if (!nanecisto) {
+            // Zaškrtnutý přepínač sám o sobě nestačí: dokud se Nastavení neuloží,
+            // platí pro Worker pořád stará hodnota a ostrá SMS by se zahodila.
+            if ($('#n-sms').checked && stav.nastaveni.smsAktivni !== '1') {
+                cil.innerHTML = `<div class="hlaska pozor">${t('notif.smsZkouska.neulozeno')}</div>`;
+                return;
+            }
+            if (!confirm(t('notif.smsZkouska.potvrdit', cislo))) return;
+        }
+
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const r = await api('/api/sms/test', { telo: { telefon: cislo, nanecisto } });
+            cil.innerHTML = `<div class="hlaska ${r.ok ? 'ok' : 'chyba'}">${esc(r.popis)}</div>`;
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
+    $('#n-sms-nanecisto').onclick = zkouskaSms(true);
+    $('#n-sms-ostra').onclick = zkouskaSms(false);
+
     $('#ai-zkouska').onclick = async () => {
         const cil = $('#ai-vysledek');
         const vybery = [...document.querySelectorAll('.ai-model')];
@@ -2250,6 +2379,7 @@ async function nastaveni(kam) {
             notifDnyZmeny: $('#n-dnyZmeny').value,
             notifDnyTicho: $('#n-dnyTicho').value,
             smsAktivni: $('#n-sms').checked ? '1' : '0',
+            smsHlavicka: $('#n-sms-hlavicka').value.trim(),
             aiPoskytovatel: $('#n-ai').value,
             aiAnalyzy: $('#n-aiAnalyzy').checked ? 'ano' : 'ne'
         };

@@ -265,6 +265,21 @@ logged as skipped, with the reason. The recipient sees the gateway's sender name
 club name belongs in the message text. *Dry run SMS* checks the gateway, the channel and the
 number format without sending anything.
 
+**SMS header.** Because the sender ID belongs to the gateway, the header is the only thing
+telling the recipient who is writing. It is set in Settings and prefixes every message
+alike; an empty field means the club name. The preview below the field shows the message
+as it will arrive and counts segments. **Beware of en dashes, typographic quotes and
+ellipses** — stripping diacritics does not catch them, yet they are not in the SMS
+alphabet, so they double the price of the message. The preview warns about it.
+
+**A test to any number** lives in Settings and does not have to be in the roster — it
+checks the gateway, not a player. The free dry run sits next to a real send, which asks
+first because it spends credit.
+
+The communication log is **collapsed** and opens on click, so the Settings page does not
+grow with everything the app has ever sent. **Search** filters as you type and **Export to
+CSV** downloads the whole log from the database, not just the hundred rows shown.
+
 ### Language model
 
 The command bar handles ordinary commands on its own and **costs nothing**. The model is

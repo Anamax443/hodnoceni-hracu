@@ -250,6 +250,26 @@ smyčce je denní strop.</p>
 <p>Tlačítko <b>SMS nanečisto</b> ověří přihlášení k bráně, kanál i tvar čísla,
 ale nic neodešle a nic nestojí. Funguje i při vypnutém kanálu.</p>
 
+<h3>Hlavička SMS</h3>
+<p>Protože odesílatele určuje brána, je <b>hlavička jediné místo, podle kterého
+příjemce pozná, kdo mu píše</b>. Nastavuje se v Nastavení a přilepí se stejně
+na všechny zprávy — souhrn, obnovu hesla i zkoušku. Prázdné pole znamená název
+klubu, takže přejmenování klubu nenechá v SMS starý text.</p>
+<p>Pod polem běží <b>živý náhled</b>: ukáže zprávu tak, jak dojde, spočítá znaky
+a segmenty. Diakritika se ubírá automaticky (<i>ŘÍČMANICE</i> dojde jako
+<i>RICMANICE</i>), protože háčky zkrátí segment ze 160 znaků na 70.</p>
+<p><b>Pozor na hezké znaky.</b> Dlouhá pomlčka, české uvozovky nebo výpustka
+odstranění diakritiky přežijí, ale v abecedě SMS nejsou — přepnou celou zprávu
+do režimu, kde se do segmentu vejde jen 70 znaků, takže <b>stojí dvojnásobek</b>.
+Náhled takový znak pojmenuje a poradí, čím ho nahradit.</p>
+
+<h3>Zkouška odeslání</h3>
+<p>V Nastavení je pole na <b>libovolné číslo</b> — nemusí být v kartotéce, takže
+se kvůli ověření brány nezakládá falešná osoba. Vedle sebe jsou dvě tlačítka:
+zkouška <b>nanečisto</b> (zdarma, nic neodejde) a <b>ostrá SMS</b>, která se
+před odesláním zeptá, protože strhne kredit. Pokud je vypínač zaškrtnutý, ale
+ještě neuložený, aplikace to řekne dřív, než se pokus zahodí jako vypnutý.</p>
+
 <h2>Jazykový model</h2>
 <p>V Nastavení se vybírá, kdo obsluhuje příkazový řádek, když si aplikace neporadí
 sama: <b>vypnuto</b> (výchozí — model se nevolá vůbec), <b>Cloudflare Workers AI</b>
@@ -266,6 +286,14 @@ fungovat. Chyba ve vlastním požadavku se ale zálohou nezakrývá, ta se uká�
 <p>V Nastavení je posledních sto pokusů o odeslání: kdy, kanál, platforma
 (GoSMS, Telegram, Cloudflare, model), komu, typ a výsledek i s důvodem, proč to
 poskytovatel odmítl. Slouží k tomu, aby „nic mi nepřišlo” šlo dohledat.</p>
+<p>Log je <b>sbalený</b> a rozbalí se kliknutím. Zavřený zabírá jeden řádek,
+takže délka stránky Nastavení nezávisí na tom, kolik toho aplikace rozeslala —
+na telefonu by se jinak pod něj nedalo dorolovat. Otevřený se posouvá sám
+v sobě.</p>
+<p><b>Hledání</b> filtruje průběžně a prohledává i to, co je vidět v tabulce:
+najde tedy „chyba“ i „přeskočeno“, ne jen jméno nebo číslo. <b>Export do CSV</b>
+stáhne <b>celý log z databáze</b>, ne jen těch sto řádků — starší odeslání se
+jinak dohledat nedá. Soubor otevře Excel rovnou správně, čas je v UTC.</p>
 <p>Ukládají se <b>metadata, ne obsah</b>. Výjimkou je text SMS, a to kvůli
 počtu segmentů a sporům o fakturaci — hodnocení v něm stejně nikdy není.
 <b>Odkazy s tokeny se nelogují nikdy</b>: záznam s platným odkazem na obnovu
@@ -312,6 +340,34 @@ od ruky.</p>
 je čas, přepínač vzhledu, jazyk a <b>commit běžící verze</b> — po najetí myší
 se ukáže celý hash a čas sestavení. Když se něco opraví, jde tím ověřit, že
 opravená verze opravdu běží.</p>
+
+<h2>Stav projektu — 9. 8. 2026</h2>
+<p>Snímek k datu. Přesná čísla jsou vždycky v aplikaci, tohle je orientace
+v tom, co je hotové a co ne.</p>
+
+<h3>Co běží</h3>
+<p>Hotová je celá <b>trenérská strana</b>: kartotéka a víc šablon u jednoho
+hráče, hodnocení včetně hromadného a oprav do nových verzí, porovnání trenér ×
+hráč i hráčů mezi sebou, shoda mezi trenéry, tiskové listy A4 i kumulovaný list,
+účty s PINem a zámkem, příkazový řádek a analýzy.</p>
+<p>Ze <b>tří kanálů</b> je Telegram ověřený doručením, e-mail jede přes
+Cloudflare a <b>SMS je od 9. 8. 2026 ověřená naostro</b> — zkouška nanečisto
+i skutečně doručená zpráva. Do té doby účet u brány neprošel a zprávy končily
+chybou.</p>
+
+<h3>Co chybí — a je to to hlavní</h3>
+<p><b>Hráčům zatím neodešel ani jeden odkaz na sebehodnocení</b>, takže žádné
+sebehodnocení není vyplněné. Druhý polygon na listu zůstává prázdný a rozhovor
+nad rozdílem dvou pohledů — kvůli kterému nástroj vznikl — se nemá o co opřít.
+Trenérská hodnocení přitom v databázi jsou.</p>
+<p>Dál zbývá dohodnotit část kádru, doplnit hráčům pozice, které se tisknou na
+list, a rozdat trenérům vlastní hesla místo společného.</p>
+
+<h3>Na co si dát pozor</h3>
+<p>Vypínač <b>Analýzy jazykovým modelem</b> je zapnutý, takže při dotazu na kádr
+odcházejí modelu známky i slovní posudky nezletilých. Je to vědomé rozhodnutí,
+ale <b>záznam o činnosti zpracování a informace pro rodiče zatím chybí</b> —
+viz Ochrana údajů.</p>
 `;
 
 const EN = `
@@ -554,6 +610,28 @@ A daily cap guards against loops. The <b>Dry run SMS</b> button verifies the
 gateway login, the channel and the number format without sending anything and
 without spending credit — it works even while the channel is off.</p>
 
+<h3>SMS header</h3>
+<p>Because the sender ID belongs to the gateway, the header is <b>the only thing
+telling the recipient who is writing</b>. It is set in Settings and prefixes every
+message alike — digest, password reset and test. An empty field means the club
+name, so renaming the club leaves no stale text behind.</p>
+<p>A <b>live preview</b> below the field shows the message as it will arrive and
+counts characters and segments. Diacritics are stripped automatically
+(<i>ŘÍČMANICE</i> arrives as <i>RICMANICE</i>), because accents cut a segment
+from 160 characters down to 70.</p>
+<p><b>Beware of pretty characters.</b> An en dash, typographic quotes or an
+ellipsis survive the stripping but are not in the SMS alphabet — they switch the
+whole message into a mode where a segment holds only 70 characters, so it
+<b>costs twice as much</b>. The preview names the offending character and says
+what to replace it with.</p>
+
+<h3>Send test</h3>
+<p>Settings has a field for <b>any number</b> — it does not have to be in the
+roster, so no fake person is needed just to check the gateway. Two buttons sit
+side by side: the free <b>dry run</b> and a <b>real SMS</b>, which asks first
+because it spends credit. If the switch is ticked but not saved yet, the app
+says so before the attempt is dropped as disabled.</p>
+
 <h2>Language model</h2>
 <p>Settings is where you choose who serves the command bar when the app cannot
 resolve a sentence itself: <b>off</b> (the default — the model is never called),
@@ -574,6 +652,14 @@ that one is shown.</p>
 (GoSMS, Telegram, Cloudflare, model), recipient, type and result including the
 provider's reason for a refusal. It exists so that “I got nothing” can be
 investigated.</p>
+<p>The log is <b>collapsed</b> and opens on click. Closed it takes a single line,
+so the length of the Settings page does not depend on how much the app has sent —
+on a phone there would otherwise be no way to scroll past it. Open, it scrolls
+within itself.</p>
+<p><b>Search</b> filters as you type and covers what the table shows, so it finds
+“error” and “skipped”, not just a name or a number. <b>Export to CSV</b> downloads
+the <b>whole log from the database</b>, not just those hundred rows — older sends
+cannot be traced otherwise. The file opens correctly in Excel; times are in UTC.</p>
 <p>It stores <b>metadata, not content</b>. The exception is the SMS text, kept
 because of segment counting and billing disputes — it never contains evaluation
 data anyway. <b>Links with tokens are never logged</b>: a stored password-reset
@@ -616,6 +702,37 @@ room above it for handwritten notes.</p>
 shows the time, the theme and language switches, and the <b>commit of the
 running version</b> — hover for the full hash and build time. After a fix, that
 is how you confirm the fixed version is really live.</p>
+
+<h2>Project status — 9 August 2026</h2>
+<p>A snapshot. The exact numbers always live in the app; this is orientation on
+what is finished and what is not.</p>
+
+<h3>What runs</h3>
+<p>The whole <b>coach side</b> is done: the register with several templates per
+player, evaluation including bulk entry and corrections as new versions, coach ×
+player and player × player comparisons, agreement between coaches, A4 print
+sheets and the cumulative sheet, accounts with a PIN and lockout, the command
+bar and analyses.</p>
+<p>Of the <b>three channels</b>, Telegram is confirmed by delivery, e-mail goes
+through Cloudflare, and <b>SMS was confirmed for real on 9 August 2026</b> — a
+dry run followed by a genuinely delivered message. Until then the gateway
+account had not cleared and messages failed.</p>
+
+<h3>What is missing — and it is the main thing</h3>
+<p><b>Not a single self-evaluation link has gone out to the players</b>, so no
+self-evaluation is filled in. The second polygon on the sheet stays empty and
+the conversation about the difference between the two views — the reason this
+tool exists — has nothing to stand on. The coach evaluations are in the
+database.</p>
+<p>Beyond that: part of the squad still needs evaluating, players need the
+positions that get printed on the sheet, and coaches need their own passwords
+instead of a shared one.</p>
+
+<h3>What to watch</h3>
+<p>The <b>analyses by language model</b> switch is on, so a question about the
+squad sends the model scores and written assessments of minors. That was a
+deliberate decision, but <b>the record of processing activities and the notice
+for parents are still missing</b> — see Data protection.</p>
 `;
 
 /** HTML dokumentace pro zvolený jazyk. */
