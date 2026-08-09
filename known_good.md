@@ -5,6 +5,31 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (20) — oslovení hráče v 5. pádě
+
+**Commit:** doplní se při nasazení. **Ověřeno** jednotkovým během `vokativ()` a `osloveni()`
+nad 40 jmény (kádr ze snímku, trenéři, běžná česká jména, dvě ženská) — **40/40**.
+
+| Skupina | Příklady | Výsledek |
+|---|---|---|
+| kádr | Ferda→Ferdo, Robin→Robine, Max→Maxi, Nikolas→Nikolasi, Lukáš→Lukáši | ✅ |
+| trenéři | Milan→Milane, Julek→Julku, Maso→Maso | ✅ |
+| vsuvné -e- | Marek→Marku, Radek→Radku | ✅ |
+| -r podle předchozího | Petr→Petře, Alexandr→Alexandře | ✅ |
+| -el dvojí chování | Karel→Karle, Pavel→Pavle × Daniel→Danieli, Michael→Michaeli | ✅ |
+| zadopatrové | Patrik→Patriku, Vojtěch→Vojtěchu, Dominik→Dominiku | ✅ |
+| končí samohláskou | Maso→Maso, Ota→Oto, Jiří→Jiří | ✅ |
+| ženská | Jana→Jano, Eva→Evo | ✅ |
+
+**Oslovení:** `("Trnka Ferdinand", "Ferda") → "Ferdo"`, bez přezdívky
+`("Trnka Ferdinand", "") → "Ferdinande"` (ne „Trnka Ferdinande"),
+`("Vagner Nikolas", "") → "Nikolasi"`. Anglicky beze změny: `"Ferda"`, `"Robin"`.
+
+**Druhá chyba, kterou to odhalilo:** oslovení bralo `prezdivka || jmeno`, ale `jmeno` je
+„Příjmení Jméno" — hráč bez přezdívky by dostal „Ahoj Trnka Ferdinand". Bere se poslední slovo.
+
+---
+
 ## 2026-08-09 (19) — volné porovnání (cokoliv s čímkoliv)
 
 **Commit:** `41cdc31` · **NASAZENO** 2026-08-09, Version ID `3faaa807-6527-400f-aa21-cec0ee2437a6`; živě ověřeno na obou adresách, oba nové endpointy bez přihlášení `401`. **Ověřeno** proti `wrangler dev` nad lokální D1.

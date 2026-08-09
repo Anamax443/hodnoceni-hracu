@@ -7,7 +7,7 @@
 
 import { MAX } from './src/sablony.js';
 import { esc } from './src/list.js';
-import { t, jazyk, nastavJazyk, druhyJazyk, kotvy, ja, locale } from './src/i18n.js';
+import { t, jazyk, nastavJazyk, druhyJazyk, kotvy, ja, locale, osloveni } from './src/i18n.js';
 
 /* Token je poslední část adresy /h/<token>. Adresa se nepřepisuje —
    Worker vrací h.html přímo na téhle cestě (viz assets.html_handling). */
@@ -93,7 +93,7 @@ function vykresli() {
 
     obsah.innerHTML = `
         <div class="karta">
-            <h2>${t('self.ahoj', esc(data.prezdivka || data.jmeno))}</h2>
+            <h2>${t('self.ahoj', esc(osloveni(data.jmeno, data.prezdivka)))}</h2>
             <p class="popis">${t('self.popis')}</p>
             <div class="kotvy">${kotvy().map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>
         </div>

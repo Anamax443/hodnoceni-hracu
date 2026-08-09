@@ -2,6 +2,41 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (26) — „Ahoj Ferdo", ne „Ahoj Ferda"
+
+**Nález z provozu** (snímek od uživatele): stránka sebehodnocení zdravila **„Ahoj Ferda"**.
+Čeština má 5. pád a čtrnáctiletý to slyší okamžitě — od aplikace, která ho vyzývá
+k upřímnosti, to zní jako od cizince.
+
+**Druhá chyba, kterou to odhalilo:** oslovení bralo `prezdivka || jmeno`, jenže
+`players.jmeno` je ve tvaru **„Příjmení Jméno"**. Hráč bez přezdívky by dostal
+„Ahoj Trnka Ferdinand". Nikdo si toho nevšiml, protože Ferda přezdívku má — ale většina
+kádru ji nemá.
+
+**`osloveni(jmeno, prezdivka)` v `i18n.js`:** přezdívka má přednost (tak mu říkají
+v kabině), jinak **poslední slovo** jména; a v češtině přes `vokativ()`. Anglicky se
+neskloňuje, tam se jméno vrací beze změny.
+
+Pravidla vokativu pokrývají místa, kde se čeština rozchází:
+
+| | |
+|---|---|
+| `Ferda → Ferdo`, `Honza → Honzo` | -a → -o (platí i pro ženská jména) |
+| `Marek → Marku`, `Radek → Radku` | vsuvné -e- vypadává |
+| `Petr → Petře` × `Otokar → Otokare` | podle toho, co předchází -r |
+| `Karel → Karle` × `Daniel → Danieli` | u -el rozhoduje souhláska/samohláska před ním |
+| `Tomáš → Tomáši`, `Max → Maxi`, `Nikolas → Nikolasi` | měkké a -s/-x → -i |
+| `Patrik → Patriku`, `Vojtěch → Vojtěchu` | zadopatrové → -u |
+| `Maso → Maso`, `Jiří → Jiří` | končí samohláskou, nechává se |
+
+**Ověřeno:** 40 jmen (kádr ze snímku, trenéři, běžná česká jména, dvě ženská), **40/40**.
+Plus oslovení: s přezdívkou i bez ní, a že anglicky zůstane jméno holé.
+
+**Pozn.:** kdyby pravidla u nějakého jména selhala, stačí trenérovi napsat přezdívku rovnou
+v 5. pádě — projde beze změny, protože se chová jako každé jiné jméno.
+
+---
+
 ## 2026-08-09 (25) — STATUS srovnaný: analýzy už NEJSOU vypnuté
 
 Zápisy 21–24 srovnaly README, TECHNICAL, RUNBOOK i dokumentaci v aplikaci, ale **STATUS

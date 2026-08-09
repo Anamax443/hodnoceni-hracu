@@ -195,6 +195,22 @@ vstupy mají 16 px (pod tím iOS zvětší celou stránku a už ji nevrátí) a 
 se posouvají uvnitř karty**, aby stránka nerolovala do stran. Čas a název aplikace
 z lišty mizí — telefon má hodiny vlastní a místo je drahé.
 
+### Oslovení hráče (5. pád)
+
+`osloveni(jmeno, prezdivka)` v `i18n.js` vrací tvar, kterým se hráč osloví na stránce
+sebehodnocení. Dvě věci, které to řeší:
+
+- **Vokativ.** „Ahoj Ferda" zní od aplikace, která hráče vyzývá k upřímnosti, jako od
+  cizince. `vokativ()` pokrývá běžná česká jména a přezdívky — včetně případů, kde se
+  pravidla rozcházejí: `Marek → Marku` (vsuvné -e- vypadává), `Petr → Petře` (po souhlásce),
+  `Karel → Karle` × `Daniel → Danieli` (u `-el` rozhoduje, jestli mu předchází souhláska
+  nebo samohláska), `Max → Maxi`, `Maso → Maso` (končí na samohlásku, nechává se být).
+- **Křestní jméno, ne celé.** `players.jmeno` je ve tvaru „Příjmení Jméno", takže bez toho
+  by hráč bez přezdívky dostal „Ahoj Trnka Ferdinande". Bere se poslední slovo; přezdívka
+  má přednost, protože tak mu říkají v kabině.
+
+**Anglicky se neskloňuje** — `osloveni()` vrací jméno beze změny, vokativ je věc češtiny.
+
 **Tištěný list zůstává vždy světlý.** `listy.html` načítá pouze `src/styl.css` a o tmavém
 vzhledu nic neví. Je to papír, ne obrazovka.
 

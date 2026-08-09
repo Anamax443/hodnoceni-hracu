@@ -1171,6 +1171,78 @@ const SLOVNIK = {
     }
 };
 
+/* ===================== oslovení (5. pád) =====================
+
+   „Ahoj Ferda" zní od aplikace, která hráče vyzývá k upřímnosti, jako od
+   cizince — a čtrnáctiletý to slyší okamžitě. Čeština má vokativ, tak ho
+   používáme. V angličtině se oslovení neskloňuje, tam se jméno vrací beze změny.
+
+   Pravidla pokryjí běžná česká křestní jména a přezdívky. Nepokryjí všechno
+   (čeština má výjimek dost), ale mýlit se v „Ahoj Ferdo" je horší než mýlit se
+   u vzácného jména — a když si trenér přezdívku napíše rovnou v 5. pádě
+   („Maňas"), projde beze změny, protože končí na tvrdou souhlásku jako každé
+   jiné a dopadne stejně.                                                      */
+
+/** Souhlásky, po kterých jde vokativ na -i: Tomáš → Tomáši, Ondřej → Ondřeji. */
+const MEKKE = 'cčďjňřšťžsxz';
+
+/** Souhlásky, po kterých jde vokativ na -u: Patrik → Patriku, Vojtěch → Vojtěchu. */
+const ZADNI = 'kghq';
+
+const SAMOHLASKY = 'aáeéěiíoóuúůyý';
+
+/**
+ * 5. pád křestního jména nebo přezdívky. Neznámý tvar vrací, jak přišel.
+ * @param {string} jmeno
+ */
+export function vokativ(jmeno) {
+    const s = String(jmeno ?? '').trim();
+    if (s.length < 2) return s;
+
+    const posledni = s.slice(-1).toLowerCase();
+    const predposledni = s.slice(-2, -1).toLowerCase();
+
+    // Ota, Ferda, Honza → Oto, Ferdo, Honzo (platí i pro ženská jména: Jana → Jano)
+    if (posledni === 'a') return s.slice(0, -1) + 'o';
+
+    // Už končí na -o (Maso, Hugo) nebo na jinou samohlásku (Jiří, Nikolae) — nechat být.
+    if (SAMOHLASKY.includes(posledni)) return s;
+
+    // Marek → Marku, Radek → Radku: -e- ve slabice vypadává.
+    if (s.length > 2 && posledni === 'k' && predposledni === 'e') return s.slice(0, -2) + 'ku';
+
+    /* Konec na -el má dvojí chování podle toho, co mu předchází:
+       po souhlásce je to vsuvné -e- a vypadává (Karel → Karle, Pavel → Pavle),
+       po samohlásce je součástí jména a zůstává (Daniel → Danieli). */
+    if (s.length > 2 && posledni === 'l' && predposledni === 'e') {
+        return SAMOHLASKY.includes(s.slice(-3, -2).toLowerCase())
+            ? s + 'i'
+            : s.slice(0, -2) + 'le';
+    }
+
+    // Petr → Petře (po souhlásce), Otokar → Otokare (po samohlásce).
+    if (posledni === 'r') {
+        return SAMOHLASKY.includes(predposledni) ? s + 'e' : s.slice(0, -1) + 'ře';
+    }
+
+    if (MEKKE.includes(posledni)) return s + 'i';   // Tomáš → Tomáši, Max → Maxi
+    if (ZADNI.includes(posledni)) return s + 'u';   // Patrik → Patriku
+    return s + 'e';                                  // Robin → Robine, Adam → Adame
+}
+
+/**
+ * Jak hráče oslovit. Přezdívka má přednost — tak mu říkají v kabině. Bez ní se
+ * vezme **křestní jméno**, ne celé `jmeno`: to je v kartotéce ve tvaru
+ * „Příjmení Jméno", takže bez tohohle by pozdrav zněl „Ahoj Trnka Ferdinande".
+ * Skloňuje se jen v češtině.
+ */
+export function osloveni(jmeno, prezdivka) {
+    const zaklad = String(prezdivka ?? '').trim()
+        || String(jmeno ?? '').trim().split(/\s+/).pop()
+        || '';
+    return aktualni === 'cs' ? vokativ(zaklad) : zaklad;
+}
+
 /* ===================== API ===================== */
 
 let aktualni = nactiJazyk();
