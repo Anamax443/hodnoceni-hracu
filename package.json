@@ -6,8 +6,9 @@
     "type": "module",
     "scripts": {
         "version:gen": "node scripts/gen-version.mjs",
-        "dev": "npm run version:gen && wrangler dev",
-        "predeploy": "npm run version:gen",
+        "dokumenty:gen": "node scripts/gen-dokumenty.mjs",
+        "dev": "npm run version:gen && npm run dokumenty:gen && wrangler dev",
+        "predeploy": "npm run version:gen && npm run dokumenty:gen",
         "deploy": "wrangler deploy",
         "db:init": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/001_init.sql",
         "db:seed": "wrangler d1 execute hodnoceni-hracu --remote --file=migrations/002_seed.sql",

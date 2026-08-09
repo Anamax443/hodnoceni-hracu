@@ -173,7 +173,12 @@ function vykresliKonektivitu() {
     });
 }
 
-/** Načte stav kanálů. Volá se po přihlášení, ne při každém překreslení. */
+/**
+ * Načte stav kanálů. Volá se po přihlášení a po každém skutečném volání modelu —
+ * stav modelu se totiž nezjišťuje zkušebním dotazem (ten by ujídal denní limit),
+ * ale z toho, jak dopadlo poslední použití. Kdyby model přestal odpovídat,
+ * musí se to v liště objevit hned, ne až po dalším přihlášení.
+ */
 async function nactiKonektivitu() {
     try {
         stav.konektivita = await api('/api/stav');
@@ -840,6 +845,7 @@ async function odpovezNaOtazku(otazka, cil) {
         const r = await api('/api/ai/analyza', {
             telo: { otazka, obdobi: stav.nastaveni.obdobi, popisky: popiskyProModel() }
         });
+        nactiKonektivitu();   // výsledek volání je zároveň stav modelu pro lištu
         if (!r.ok) {
             cil.innerHTML = `<div class="hlaska pozor">${esc(r.popis || t('analyzy.nepovedlo'))}</div>`;
             return true;
@@ -895,6 +901,7 @@ async function spustPovel() {
     cil.innerHTML = `<div class="hlaska info">${t('prikaz.ptamSe')}</div>`;
     try {
         const r = await api('/api/ai/prikaz', { telo: { text } });
+        nactiKonektivitu();   // výsledek volání je zároveň stav modelu pro lištu
         if (!r.ok) {
             // `nevim` od rozřazovače neznamená konec — nejspíš to není povel,
             // ale otázka. Ostatní důvody (vypnutý model, chybějící binding)

@@ -14,6 +14,7 @@
 import { SABLONY, POZICE, MAX, klice, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
+import { DOKUMENTY } from './dokumenty';
 import { xlsxSoubor, type Sloupec } from './xlsx';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -1162,6 +1163,21 @@ export default {
                 return json({ prihlasen: !!s, jmeno: s?.jmeno ?? null, id: s?.id ?? null });
             }
 
+            /* ---------- dokumentace jako samostatné stránky ----------
+               Za přihlášením schválně: osobní údaje v ní nejsou, ale provozní
+               podrobnosti (ID kanálu, verze, otevřené díry v GDPR) na veřejný
+               web nepatří. Proto neleží ve `web/`, odkud by je ASSETS
+               servírovalo komukoliv. */
+            if (cesta === '/dok' || cesta.startsWith('/dok/')) {
+                const s = await overSession(env, request.headers.get('cookie'));
+                if (!s) {
+                    // Přihlašovací stránka je v kořeni; návrat sem řeší člověk
+                    // sám, odkaz na dokument si otevře znovu.
+                    return new Response(null, { status: 302, headers: { location: '/' } });
+                }
+                return dokumentStranka(cesta.slice('/dok'.length).replace(/^\//, ''));
+            }
+
             /* ---------- admin API ---------- */
             if (cesta.startsWith('/api/')) {
                 const s = await overSession(env, request.headers.get('cookie'));
@@ -1192,6 +1208,107 @@ export default {
 /** Vrátí statický soubor z ./web, aniž by se měnila adresa v prohlížeči. */
 function soubor(env: Env, url: URL, cesta: string): Promise<Response> {
     return env.ASSETS.fetch(new Request(new URL(cesta, url), { method: 'GET' }));
+}
+
+/* ===================== dokumentace jako stránky ===================== */
+
+/** Escapuje text do HTML. Samotné tělo dokumentu escapuje už generátor. */
+function escHtml(hodnota: unknown): string {
+    return String(hodnota ?? '').replace(/[&<>"']/g, z => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[z] as string));
+}
+
+/** Kotva z nadpisu — musí dávat stejný výsledek jako `scripts/gen-dokumenty.mjs`. */
+function kotvaNadpisu(text: string): string {
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+}
+
+const DOK_STYL = `
+:root { --txt:#1b2431; --tlum:#5b6b7f; --linka:#dde3ea; --pozadi:#fff; --panel:#f6f8fa; --odkaz:#0b5cab; }
+@media (prefers-color-scheme: dark) {
+  :root { --txt:#e6edf5; --tlum:#9fb0c4; --linka:#2a3746; --pozadi:#131a22; --panel:#1a232e; --odkaz:#7ab8f5; }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--pozadi); color:var(--txt);
+       font:16px/1.65 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+.obal { max-width: 980px; margin: 0 auto; padding: 24px 20px 80px; }
+a { color: var(--odkaz); }
+.rozcestnik { background: var(--panel); border:1px solid var(--linka); border-radius:10px;
+              padding:14px 16px; margin-bottom:22px; }
+.rozcestnik h2 { margin:0 0 8px; font-size:14px; text-transform:uppercase;
+                 letter-spacing:.6px; color:var(--tlum); }
+.rozcestnik ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
+.rozcestnik a { display:inline-block; padding:5px 11px; border:1px solid var(--linka);
+                border-radius:999px; text-decoration:none; font-size:14px; background:var(--pozadi); }
+.rozcestnik a.tady { background:var(--odkaz); color:#fff; border-color:var(--odkaz); font-weight:600; }
+.obsah { background:var(--panel); border:1px solid var(--linka); border-radius:10px;
+         padding:14px 16px; margin:0 0 26px; }
+.obsah h2 { margin:0 0 8px; font-size:14px; text-transform:uppercase;
+            letter-spacing:.6px; color:var(--tlum); }
+.obsah ol { margin:0; padding-left:20px; columns:2; column-gap:26px; }
+.obsah li { margin:2px 0; break-inside:avoid; }
+h1 { font-size:26px; margin:0 0 4px; }
+.zdroj { color:var(--tlum); font-size:13px; margin:0 0 20px; font-family:Consolas,monospace; }
+h2 { font-size:20px; margin:30px 0 8px; padding-top:6px; border-top:1px solid var(--linka); }
+h3 { font-size:16px; margin:20px 0 6px; }
+h4 { font-size:15px; margin:16px 0 4px; color:var(--tlum); }
+p, li { max-width: 78ch; }
+code { background:var(--panel); border:1px solid var(--linka); padding:1px 5px;
+       border-radius:4px; font-size:13.5px; font-family:Consolas,monospace; }
+pre { background:var(--panel); border:1px solid var(--linka); border-radius:8px;
+      padding:12px 14px; overflow-x:auto; }
+pre code { background:none; border:0; padding:0; font-size:13px; }
+blockquote { margin:12px 0; padding:8px 14px; border-left:3px solid var(--odkaz);
+             background:var(--panel); border-radius:0 8px 8px 0; }
+blockquote p { margin:4px 0; }
+.tabulka { overflow-x:auto; margin:12px 0; }
+table { border-collapse:collapse; font-size:14.5px; }
+th, td { border:1px solid var(--linka); padding:6px 10px; text-align:left; vertical-align:top; }
+th { background:var(--panel); }
+hr { border:0; border-top:1px solid var(--linka); margin:26px 0; }
+.zpet { display:inline-block; margin-bottom:16px; text-decoration:none; font-size:14px; }
+@media (max-width: 700px) { .obsah ol { columns:1; } body { font-size:15px; } }
+@media print { .rozcestnik, .zpet { display:none; } body { background:#fff; color:#000; } }
+`;
+
+/**
+ * Vykreslí jeden dokument, nebo rozcestník, když se žádný nevybral.
+ * Rozcestník stojí nahoře na každé stránce — mezi dokumenty se přeskakuje
+ * pořád dokola a vracet se kvůli tomu do aplikace by bylo otravné.
+ */
+function dokumentStranka(klic: string): Response {
+    const dok = DOKUMENTY.find(d => d.klic === klic);
+
+    const rozcestnik = `<nav class="rozcestnik"><h2>Dokumentace</h2><ul>`
+        + DOKUMENTY.map(d => `<li><a href="/dok/${d.klic}"${d.klic === klic ? ' class="tady"' : ''}>`
+            + `${escHtml(d.titulek)}</a></li>`).join('')
+        + `</ul></nav>`;
+
+    const telo = dok
+        ? `<h1>${escHtml(dok.titulek)}</h1>
+           <p class="zdroj">${escHtml(dok.zdroj)}</p>
+           ${dok.kapitoly.length > 1 ? `<div class="obsah"><h2>Kapitoly</h2><ol>`
+                + dok.kapitoly.map(k => `<li><a href="#${kotvaNadpisu(k)}">${escHtml(k)}</a></li>`).join('')
+                + `</ol></div>` : ''}
+           ${dok.html}`
+        : `<h1>Dokumentace</h1>
+           <p>Vyber si dokument nahoře. Každý odpovídá na jinou otázku — od toho,
+              jak se aplikace ovládá, přes to, co dělat, když něco nefunguje,
+              až po deník, proč je něco udělané zrovna takhle.</p>`;
+
+    return new Response(
+        `<!doctype html><html lang="cs"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escHtml(dok ? dok.titulek : 'Dokumentace')} — Hodnocení hráčů</title>
+<style>${DOK_STYL}</style></head><body><div class="obal">
+<a class="zpet" href="/">&larr; Zpět do aplikace</a>
+${rozcestnik}
+${telo}
+</div></body></html>`,
+        { status: dok || !klic ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }
+    );
 }
 
 /* ===================== veřejná část (hráč) ===================== */
@@ -2030,6 +2147,11 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             sms = { stav: 'vypnuto', popis: `Provider je ${smsProvider} — SMS se neodesílají.` };
         }
 
+        /* Model se neptáme naprázdno — hlásí se podle toho, jak dopadlo POSLEDNÍ
+           skutečné použití. Zkušební dotaz při každém přihlášení by ujídal denní
+           limit (u Claude rovnou peníze), kdežto log stejně nese odpověď na tutéž
+           otázku: kdyby model neodpovídal, poslední volání skončilo chybou.
+           `preskoceno` je jiný případ — model odpověděl, jen nerozuměl větě. */
         const poskytovatel = nas.aiPoskytovatel || 'vypnuto';
         let ai: { stav: string; popis: string };
         if (poskytovatel === 'vypnuto') {
@@ -2037,11 +2159,23 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         } else if (poskytovatel === 'claude' && !env.ANTHROPIC_API_KEY) {
             ai = { stav: 'chyba', popis: 'Vybraný je Claude, ale chybí secret ANTHROPIC_API_KEY.' };
         } else {
-            ai = {
-                stav: 'nastaveno',
-                popis: `${poskytovatel === 'claude' ? 'Claude' : 'Workers AI'}, model ${nas.aiModel}. `
-                    + 'Spojení se tady nezkouší — každý dotaz ujídá denní limit. Otestuj v Nastavení.'
-            };
+            const posledni = await env.DB.prepare(
+                `SELECT cas, platforma, vysledek, podrobnosti FROM komunikace
+                  WHERE kanal = 'ai' ORDER BY id DESC LIMIT 1`
+            ).first<{ cas: string; platforma: string; vysledek: string; podrobnosti: string | null }>();
+
+            const kdo = `${poskytovatel === 'claude' ? 'Claude' : 'Workers AI'}, model ${nas.aiModel}`;
+            if (!posledni) {
+                ai = { stav: 'nastaveno', popis: `${kdo}. Zatím se ho na nic neptalo.` };
+            } else if (posledni.vysledek === 'chyba') {
+                ai = {
+                    stav: 'chyba',
+                    popis: `${kdo}. Poslední dotaz (${posledni.cas} UTC) selhal: `
+                        + (posledni.podrobnosti ?? 'bez podrobností') + '. Zkus Vyzkoušet spojení v Nastavení.'
+                };
+            } else {
+                ai = { stav: 'ok', popis: `${kdo}. Poslední dotaz (${posledni.cas} UTC) prošel.` };
+            }
         }
 
         return json({ ai, sms, telegram, email }, 200, { 'cache-control': 'no-store' });

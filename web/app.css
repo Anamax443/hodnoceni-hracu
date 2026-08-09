@@ -236,6 +236,25 @@ details.sbalene > summary:hover { color: var(--modra-tmava); }
 .dokumentace li { margin: 3px 0; }
 .dokumentace code { background: var(--pozadi); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
+/* Menu na začátku dokumentu. Kapitol je přes dvacet, takže bez něj se
+   k Provozu nebo Ochraně údajů dá dostat jen rolováním přes celý text. */
+.dokumentace .dok-menu {
+    background: var(--pozadi); border: 1px solid var(--linka);
+    border-radius: 8px; padding: 12px 16px; margin: 0 0 18px; max-width: 68ch;
+}
+.dokumentace .dok-menu h2 {
+    margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--seda);
+}
+.dokumentace .dok-menu ul {
+    margin: 0; padding: 0; list-style: none;
+    columns: 2; column-gap: 24px;
+}
+.dokumentace .dok-menu li { margin: 2px 0; break-inside: avoid; }
+.dokumentace .dok-menu a { text-decoration: none; }
+.dokumentace .dok-menu a:hover { text-decoration: underline; }
+@media (max-width: 720px) { .dokumentace .dok-menu ul { columns: 1; } }
+
 /* Rozcestník po ostatní dokumentaci. Název souboru vlevo, k čemu je vpravo —
    ať jde přeletět očima a nemusí se číst věta po větě. */
 .dokumentace .dok-odkazy { max-width: 68ch; border-collapse: collapse; margin: 8px 0 10px; }

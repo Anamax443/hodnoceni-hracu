@@ -42,3 +42,7 @@ zaloha*.sql
 web/version.json
 worker/src/version.ts
 
+# generuje se pred kazdym deployem (scripts/gen-dokumenty.mjs) — je to jen
+# prevod .md souboru z repozitare do HTML, zdrojem pravdy zustava Markdown
+worker/src/dokumenty.ts
+

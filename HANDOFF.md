@@ -2,6 +2,60 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (30) — dokumentace na vlastních stránkách, menu, stav modelu z provozu
+
+**Model se hlásí podle skutečného použití, ne podle zkušebního dotazu.** Uživatel to
+upřesnil dobře: „pokud by LLM model neodpovídal, tak aby tady vyskočil červený bod,
+nemusí se bez aktivity kontrolovat." Odpověď na tu otázku už v aplikaci ležela — každé
+volání modelu se zapisuje do logu komunikace. `/api/stav` teď čte **poslední záznam
+s `kanal='ai'`**: chyba → červená, jinak zelená, žádný záznam → neutrální „zatím se
+neptalo". Nulová cena a přitom skutečný stav.
+
+Rozlišení, které se vyplatilo: `preskoceno` znamená, že model **odpověděl**, jen nerozuměl
+větě. Kdyby se to počítalo jako porucha, svítila by červená pokaždé, když trenér napíše
+něco mimo mísu. Červená patří jen `chyba`.
+
+Lišta se obnovuje hned po volání modelu (příkazový řádek i analýzy), takže výpadek je
+vidět v tu chvíli, ne až po dalším přihlášení.
+
+**Dokumentace je na vlastních stránkách místo odkazů na GitHub.** Uživatel to zamítl
+správně: repozitář je soukromý, takže by trenér místo dokumentu uviděl přihlašovací
+stránku GitHubu. `scripts/gen-dokumenty.mjs` převede `.md` na HTML do
+`worker/src/dokumenty.ts` (běží v `predeploy`, soubor je v `.gitignore`, zdrojem pravdy
+zůstává Markdown) a Worker je servíruje na `/dok/<klíč>`.
+
+**Kam to nešlo dát:** do `web/`. Cokoliv tam leží, servíruje ASSETS **veřejně, bez
+přihlášení** — a i když v dokumentech osobní údaje nejsou, provozní podrobnosti (ID
+kanálu, verze, otevřené díry v GDPR) na veřejný web nepatří. Trasa `/dok/` proto ověřuje
+session.
+
+**Vlastní převodník Markdownu**, ne knihovna: umí přesně to, co je v těch souborech.
+Jedna past stála za ošetření — obsah `` `kódu` `` se musí odložit stranou dřív, než se
+řeší tučné písmo, protože dokumentace popisuje i samotný Markdown a `**` uvnitř ukázky
+by se jinak proměnilo ve formátování. Ověřeno: v deseti souborech nezůstala jediná
+nedodělaná tabulka ani `**` mimo `<code>`.
+
+**Menu na začátku dokumentace** (v aplikaci i na stránkách) se skládá **z nadpisů, které
+v textu opravdu jsou**. Ručně psaný seznam by se dřív nebo později rozešel s obsahem.
+Hned to něco našlo: v české dokumentaci stál osiřelý nadpis *Porovnat hráče mezi sebou*
+bez jediné věty pod sebou, hned nad *Porovnat cokoliv s čímkoliv*. Do menu by se propsal
+jako prázdná kapitola; odstraněn, téma pokrývá *Srovnání hráčů mezi sebou* níž.
+
+**Cena:** bundle vyrostl ze 116 na 242 KiB gzip. Limit je řádově výš, ale dokumentace se
+teď veze s každým nasazením.
+
+**Ověřeno:** převod všech deseti souborů (žádná nedodělaná tabulka, žádné `**` mimo kód),
+vyrenderovaná stránka STATUS v headless Edge — rozcestník, obsah kapitol i tabulky sedí.
+Cestou opraven dvojitý nadpis: stránka má titulek z tabulky a k tomu se vypisoval `#`
+z Markdownu, takže se úvodní `<h1>` z těla zahazuje.
+
+**NASAZENO** 2026-08-09, Version ID `876a1720-22c0-4473-a240-b9c4ce6d6e98`.
+
+**Neověřeno:** proklik v prohlížeči za přihlášením — jestli `/dok/` opravdu pustí
+přihlášeného a odmítne nepřihlášeného, a jestli menu v aplikaci skáče na kapitoly.
+
+---
+
 ## 2026-08-09 (29) — křivky rozlišené tvarem, ne barvou; cena SMS opravena
 
 **Podnět od uživatele:** „když se to tiskne na čb tiskárně, tak to nějak tolik nevyzní."

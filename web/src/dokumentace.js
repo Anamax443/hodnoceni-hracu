@@ -11,10 +11,10 @@
    nápověda, kterou trenér uvidí.
    ===================================================================== */
 
-/* Základ odkazů do repozitáře. Ten je soukromý (jde o nezletilé), takže
-   odkazy otevře jen ten, kdo na GitHubu přístup má — pro ostatní je to
-   aspoň seznam toho, co je kde napsané. */
-const REPO = 'https://github.com/Anamax443/hodnoceni-hracu/blob/main/';
+/* Ostatní dokumenty servíruje Worker na `/dok/<klíč>` za týmž přihlášením
+   jako aplikaci. Odkazovat na GitHub nemá smysl: repozitář je soukromý,
+   takže by trenér místo dokumentu uviděl přihlašovací stránku GitHubu. */
+const DOK = '/dok/';
 
 const CS = `
 <h2>Co tahle aplikace dělá</h2>
@@ -149,7 +149,6 @@ má výklad:</p>
 <p>Když se rozchází víc než tři osy, aplikace doporučí vybrat dvě až tři témata.
 Na víc není při jednom rozhovoru nikdo zvědavý.</p>
 
-<h2>Porovnat hráče mezi sebou</h2>
 <h2>Porovnat cokoliv s čímkoliv</h2>
 <p>Třetí karta v Porovnání. Vybereš <b>dva až osm záznamů</b> a postaví se vedle
 sebe, osa po ose. Záznam je <b>hráč + období + kdo hodnotil</b>, takže tady jde
@@ -397,32 +396,31 @@ viz Ochrana údajů.</p>
 <p>Tahle stránka je příručka pro trenéra. Zbytek dokumentace žije v repozitáři
 a každý soubor odpovídá na jinou otázku:</p>
 <table class="dok-odkazy">
-  <tr><td><a href="${REPO}docs/README.md" target="_blank" rel="noopener">docs/README.md</a></td>
-      <td>Podrobná uživatelská příručka. Totéž anglicky je
-          <a href="${REPO}docs/README.en.md" target="_blank" rel="noopener">README.en.md</a>.</td></tr>
-  <tr><td><a href="${REPO}docs/STATUS.md" target="_blank" rel="noopener">docs/STATUS.md</a></td>
+  <tr><td><a href="${DOK}status" target="_blank" rel="noopener">STATUS</a></td>
       <td><b>Co běží, co je ověřené a co chybí.</b> Zdroj pravdy o stavu; anglicky
-          <a href="${REPO}docs/STATUS.en.md" target="_blank" rel="noopener">STATUS.en.md</a>.</td></tr>
-  <tr><td><a href="${REPO}STATUS.html" target="_blank" rel="noopener">STATUS.html</a></td>
-      <td>Totéž na jednu obrazovku, s barvami a čísly — na ukázání.</td></tr>
-  <tr><td><a href="${REPO}HANDOFF.md" target="_blank" rel="noopener">HANDOFF.md</a></td>
+          <a href="${DOK}status-en" target="_blank" rel="noopener">STATUS (English)</a>.</td></tr>
+  <tr><td><a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a></td>
+      <td>Podrobný návod k obsluze. Anglicky
+          <a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a>.</td></tr>
+  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
+      <td><b>Když něco nefunguje.</b> Tabulka příznak → příčina → co s tím.</td></tr>
+  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
       <td><b>Deník.</b> Nejnovější nahoře, u každé změny <b>proč</b> se udělala a co
           se přitom ukázalo. Sem se chodí, když někoho zajímá „kdo tohle vymyslel".</td></tr>
-  <tr><td><a href="${REPO}known_good.md" target="_blank" rel="noopener">known_good.md</a></td>
+  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
       <td>Doklady o tom, co bylo ověřené a čím — čísla, ne dojmy. Bod návratu,
           když se něco rozbije.</td></tr>
-  <tr><td><a href="${REPO}docs/RUNBOOK.md" target="_blank" rel="noopener">docs/RUNBOOK.md</a></td>
-      <td><b>Když něco nefunguje.</b> Tabulka příznak → příčina → co s tím.</td></tr>
-  <tr><td><a href="${REPO}docs/TECHNICAL.md" target="_blank" rel="noopener">docs/TECHNICAL.md</a></td>
+  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
       <td>Jak je to postavené uvnitř. Pro toho, kdo bude sahat do kódu.</td></tr>
-  <tr><td><a href="${REPO}docs/BUILD.md" target="_blank" rel="noopener">docs/BUILD.md</a></td>
+  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
       <td>Jak to rozjet a nasadit, včetně secretů.</td></tr>
-  <tr><td><a href="${REPO}docs/ZADANI.md" target="_blank" rel="noopener">docs/ZADANI.md</a></td>
+  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">ZADÁNÍ</a></td>
       <td>Původní zadání — proti čemu se měří, jestli aplikace dělá, co má.</td></tr>
 </table>
-<p class="dok-pozn"><b>Repozitář je soukromý a musí takový zůstat</b> — jde o nezletilé.
-Odkazy proto fungují jen tomu, kdo má na GitHubu přístup; osobní data v repozitáři
-nejsou, kádr se zadává až tady v aplikaci.</p>
+<p class="dok-pozn">Dokumenty se otevřou v nové kartě, <b>za týmž přihlášením jako
+aplikace</b> — na veřejný web nepatří, i když osobní údaje neobsahují. Každý má nahoře
+rozcestník na ostatní a dlouhé soubory i seznam kapitol. Zdrojem pravdy zůstávají
+soubory <code>.md</code> v repozitáři; tohle je jejich převod do čitelné podoby.</p>
 `;
 
 const EN = `
@@ -813,35 +811,59 @@ for parents are still missing</b> — see Data protection.</p>
 <p>This page is the coach's handbook. The rest of the documentation lives in the
 repository, and each file answers a different question:</p>
 <table class="dok-odkazy">
-  <tr><td><a href="${REPO}docs/README.en.md" target="_blank" rel="noopener">docs/README.en.md</a></td>
-      <td>The detailed user guide. The Czech original is
-          <a href="${REPO}docs/README.md" target="_blank" rel="noopener">README.md</a>.</td></tr>
-  <tr><td><a href="${REPO}docs/STATUS.en.md" target="_blank" rel="noopener">docs/STATUS.en.md</a></td>
+  <tr><td><a href="${DOK}status-en" target="_blank" rel="noopener">STATUS</a></td>
       <td><b>What runs, what is verified and what is missing.</b> The source of truth
-          on status; in Czech <a href="${REPO}docs/STATUS.md" target="_blank" rel="noopener">STATUS.md</a>.</td></tr>
-  <tr><td><a href="${REPO}STATUS.html" target="_blank" rel="noopener">STATUS.html</a></td>
-      <td>The same on one screen, with colours and numbers — for showing people.</td></tr>
-  <tr><td><a href="${REPO}HANDOFF.md" target="_blank" rel="noopener">HANDOFF.md</a></td>
-      <td><b>The diary</b> (in Czech). Newest on top, and for each change <b>why</b> it
+          on status; in Czech <a href="${DOK}status" target="_blank" rel="noopener">STATUS (Czech)</a>.</td></tr>
+  <tr><td><a href="${DOK}guide-en" target="_blank" rel="noopener">User guide</a></td>
+      <td>The detailed manual. In Czech
+          <a href="${DOK}prirucka" target="_blank" rel="noopener">Příručka</a>.</td></tr>
+  <tr><td><a href="${DOK}runbook" target="_blank" rel="noopener">RUNBOOK</a></td>
+      <td><b>When something does not work.</b> A symptom → cause → fix table (Czech).</td></tr>
+  <tr><td><a href="${DOK}handoff" target="_blank" rel="noopener">HANDOFF</a></td>
+      <td><b>The diary</b> (Czech). Newest on top, and for each change <b>why</b> it
           was made and what turned up along the way.</td></tr>
-  <tr><td><a href="${REPO}known_good.md" target="_blank" rel="noopener">known_good.md</a></td>
+  <tr><td><a href="${DOK}doklady" target="_blank" rel="noopener">known_good</a></td>
       <td>Evidence of what was verified and how — numbers, not impressions. The point
           to return to when something breaks.</td></tr>
-  <tr><td><a href="${REPO}docs/RUNBOOK.md" target="_blank" rel="noopener">docs/RUNBOOK.md</a></td>
-      <td><b>When something does not work.</b> A symptom → cause → fix table.</td></tr>
-  <tr><td><a href="${REPO}docs/TECHNICAL.md" target="_blank" rel="noopener">docs/TECHNICAL.md</a></td>
+  <tr><td><a href="${DOK}technicky" target="_blank" rel="noopener">TECHNICAL</a></td>
       <td>How it is built inside. For whoever touches the code.</td></tr>
-  <tr><td><a href="${REPO}docs/BUILD.md" target="_blank" rel="noopener">docs/BUILD.md</a></td>
+  <tr><td><a href="${DOK}build" target="_blank" rel="noopener">BUILD</a></td>
       <td>How to run and deploy it, secrets included.</td></tr>
-  <tr><td><a href="${REPO}docs/ZADANI.md" target="_blank" rel="noopener">docs/ZADANI.md</a></td>
+  <tr><td><a href="${DOK}zadani" target="_blank" rel="noopener">The brief</a></td>
       <td>The original brief — what the app is measured against.</td></tr>
 </table>
-<p class="dok-pozn"><b>The repository is private and has to stay that way</b> — this is
-about minors. The links therefore only open for someone with GitHub access; no personal
-data is in the repository, the squad is entered here in the app.</p>
+<p class="dok-pozn">The documents open in a new tab, <b>behind the same sign-in as the
+app</b> — they do not belong on the public web even though they hold no personal data.
+Each one carries a signpost to the others at the top, and long ones a list of chapters.
+The <code>.md</code> files in the repository stay the source of truth; this is their
+rendering.</p>
 `;
+
+/**
+ * Menu na začátku dokumentu. Skládá se z nadpisů druhé úrovně, které v textu
+ * opravdu jsou — ručně psaný seznam by se dřív nebo později rozešel s obsahem
+ * a odkazoval na kapitolu, která už se jmenuje jinak. Kotvy se doplní rovnou
+ * do nadpisů, ať na ně jde ukázat.
+ */
+function sMenu(html, nadpis) {
+    const kapitoly = [];
+    const sKotvami = html.replace(/<h2>(.*?)<\/h2>/g, (_, text) => {
+        const holy = text.replace(/<[^>]+>/g, '').trim();
+        const id = 'dok-' + holy.normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        kapitoly.push({ id, popis: holy });
+        return `<h2 id="${id}">${text}</h2>`;
+    });
+
+    return `<nav class="dok-menu"><h2>${nadpis}</h2><ul>`
+        + kapitoly.map(k => `<li><a href="#${k.id}">${k.popis}</a></li>`).join('')
+        + `</ul></nav>` + sKotvami;
+}
+
+const CS_MENU = sMenu(CS, 'Obsah');
+const EN_MENU = sMenu(EN, 'Contents');
 
 /** HTML dokumentace pro zvolený jazyk. */
 export function dokumentaceHtml(jazyk) {
-    return jazyk === 'en' ? EN : CS;
+    return jazyk === 'en' ? EN_MENU : CS_MENU;
 }

@@ -1121,6 +1121,31 @@ neprojde. Ověření a první dobití kreditu je otevřený krok; zkouška nane�
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
 
+### Dokumentace jako stránky (postaveno)
+
+`scripts/gen-dokumenty.mjs` převede soubory `.md` na HTML a uloží je jako
+`worker/src/dokumenty.ts`, který se zabuduje do bundlu. Běží v `predeploy` vedle
+`gen-version.mjs`; vygenerovaný soubor je v `.gitignore`, **zdrojem pravdy zůstává
+Markdown**. Worker je servíruje na `/dok/<klíč>`, každá stránka má nahoře rozcestník
+na ostatní a dlouhé i seznam kapitol z nadpisů druhé úrovně.
+
+**Proč ne odkazy na GitHub:** repozitář je soukromý, takže by trenér místo dokumentu
+uviděl přihlašovací stránku GitHubu.
+
+**Proč ne statické soubory ve `web/`:** cokoliv tam leží, servíruje ASSETS **veřejně, bez
+přihlášení**. Osobní údaje v dokumentech nejsou, ale provozní podrobnosti (ID kanálu,
+verze, otevřené díry v GDPR) na veřejný web nepatří. Trasa `/dok/` proto ověřuje session
+a bez ní přesměruje na přihlášení.
+
+Převodník umí jen to, co se v těch souborech opravdu vyskytuje: nadpisy, odstavce,
+seznamy s pokračovacími řádky, tabulky, bloky kódu, citace, oddělovač, odkazy a inline
+zdobení. **Není to obecný Markdown.** Obsah `` `kódu` `` se odkládá stranou dřív, než se
+řeší tučné písmo, aby `**` uvnitř ukázky nezměnilo formátování — v dokumentaci se přesně
+takové ukázky vyskytují. Úvodní `# Nadpis` se zahazuje, stránka svůj titulek už má.
+
+Cena: bundle vyrostl ze 116 na ~242 KiB gzip. Limit Workeru je řádově vyšší, ale je dobré
+vědět, že se dokumentace veze s každým nasazením.
+
 ### Stav kanálů v liště (postaveno)
 
 `GET /api/stav` vrací čtyři položky (`ai`, `sms`, `telegram`, `email`), každou jako
