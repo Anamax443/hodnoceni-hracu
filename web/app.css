@@ -80,6 +80,21 @@ a.topbar-brand:hover, .topbar a.brand:hover { text-decoration: underline; }
 :root[data-theme="dark"] .topbar button { background: #1d2f3a; }
 :root[data-theme="dark"] .topbar button:hover { background: #294252; }
 
+/* ===== stav kanálů v liště =====
+   Barva je druhý signál, ne jediný: stav nese i sama značka (● ○ ✕), aby
+   lišta dávala smysl barvoslepému čtenáři i na černobílém snímku. */
+.topbar .konektivita { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.topbar .konektivita .kanal {
+    padding: 4px 8px; font-size: 12px; line-height: 1.2;
+    background: rgba(255,255,255,.10); letter-spacing: .2px;
+}
+.topbar .konektivita .kanal:hover { background: rgba(255,255,255,.24); }
+.topbar .konektivita .st-ok,
+.topbar .konektivita .st-nastaveno { color: #A5D6A7; }
+.topbar .konektivita .st-vypnuto   { color: #cfd8dc; opacity: .75; }
+.topbar .konektivita .st-chyba,
+.topbar .konektivita .st-chybi     { color: #EF9A9A; font-weight: bold; }
+
 /* ===== záložky ===== */
 nav {
     display: flex; gap: 2px; background: var(--karta);
@@ -221,6 +236,13 @@ details.sbalene > summary:hover { color: var(--modra-tmava); }
 .dokumentace li { margin: 3px 0; }
 .dokumentace code { background: var(--pozadi); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
+/* Rozcestník po ostatní dokumentaci. Název souboru vlevo, k čemu je vpravo —
+   ať jde přeletět očima a nemusí se číst věta po větě. */
+.dokumentace .dok-odkazy { max-width: 68ch; border-collapse: collapse; margin: 8px 0 10px; }
+.dokumentace .dok-odkazy td { padding: 5px 12px 5px 0; vertical-align: top; line-height: 1.5; }
+.dokumentace .dok-odkazy td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; }
+.dokumentace .dok-pozn { font-size: 13px; color: var(--seda); }
+
 /* ===== mobil =====
    Trenér to má v ruce na hřišti, ne u stolu. Na úzké obrazovce se záložky
    schovají pod hamburger (osm položek vedle sebe se stejně nevejde),
@@ -250,6 +272,10 @@ details.sbalene > summary:hover { color: var(--modra-tmava); }
     .topbar { padding: 8px 12px; gap: 8px; }
     .topbar .app, .topbar .hodiny { display: none; }   /* čas i název má telefon vlastní */
     .topbar .tools { gap: 6px; }
+    /* Stav kanálů zůstává i na telefonu — je to důvod, proč se sem chodí.
+       Jen se zúží; značka nese stav, takže i zkrácené to má smysl. */
+    .topbar .konektivita { gap: 2px; }
+    .topbar .konektivita .kanal { padding: 3px 5px; font-size: 11px; }
 
     main { margin: 12px auto; padding: 0 10px 48px; }
     .karta { padding: 14px 12px; }

@@ -11,6 +11,11 @@
    nápověda, kterou trenér uvidí.
    ===================================================================== */
 
+/* Základ odkazů do repozitáře. Ten je soukromý (jde o nezletilé), takže
+   odkazy otevře jen ten, kdo na GitHubu přístup má — pro ostatní je to
+   aspoň seznam toho, co je kde napsané. */
+const REPO = 'https://github.com/Anamax443/hodnoceni-hracu/blob/main/';
+
 const CS = `
 <h2>Co tahle aplikace dělá</h2>
 <p>Vede hodnocení mládežnických fotbalistů: trenér každému hráči dá známky
@@ -346,6 +351,20 @@ je čas, přepínač vzhledu, jazyk a <b>commit běžící verze</b> — po naje
 se ukáže celý hash a čas sestavení. Když se něco opraví, jde tím ověřit, že
 opravená verze opravdu běží.</p>
 
+<h3>Stav kanálů v liště</h3>
+<p>V horní liště jsou čtyři štítky — <b>Model, SMS, Telegram, E-mail</b> — a u
+každého značka: <b>●</b> funguje, <b>○</b> vypnuto (záměr, ne porucha),
+<b>✕</b> nefunguje. Po najetí myší se ukáže věta proč; kliknutím se otevře
+Nastavení, kde se s tím dá něco udělat. Stav se načte při přihlášení.</p>
+<p>Značka nese stav i tvarem, ne jen barvou, aby lišta dávala smysl
+barvoslepému čtenáři i na černobílém snímku.</p>
+<p><b>U Telegramu, SMS a e-mailu jde o skutečné ověření spojení</b> — bot se
+opravdu ozve a brána opravdu vydá token, obojí zadarmo. <b>U modelu ne:</b>
+tam se hlásí jen to, co je nastavené. Každý dotaz na jazykový model totiž
+ujídá denní limit (a u placeného rovnou peníze), takže ptát se ho při každém
+načtení stránky by bylo drahé. Skutečnou zkoušku modelu spustíš vědomě
+tlačítkem <i>Vyzkoušet spojení</i> v Nastavení.</p>
+
 <h2>Stav projektu — 9. 8. 2026</h2>
 <p>Snímek k datu. Přesná čísla jsou vždycky v aplikaci, tohle je orientace
 v tom, co je hotové a co ne.</p>
@@ -373,6 +392,37 @@ list, a rozdat trenérům vlastní hesla místo společného.</p>
 odcházejí modelu známky i slovní posudky nezletilých. Je to vědomé rozhodnutí,
 ale <b>záznam o činnosti zpracování a informace pro rodiče zatím chybí</b> —
 viz Ochrana údajů.</p>
+
+<h2>Kde je co napsané</h2>
+<p>Tahle stránka je příručka pro trenéra. Zbytek dokumentace žije v repozitáři
+a každý soubor odpovídá na jinou otázku:</p>
+<table class="dok-odkazy">
+  <tr><td><a href="${REPO}docs/README.md" target="_blank" rel="noopener">docs/README.md</a></td>
+      <td>Podrobná uživatelská příručka. Totéž anglicky je
+          <a href="${REPO}docs/README.en.md" target="_blank" rel="noopener">README.en.md</a>.</td></tr>
+  <tr><td><a href="${REPO}docs/STATUS.md" target="_blank" rel="noopener">docs/STATUS.md</a></td>
+      <td><b>Co běží, co je ověřené a co chybí.</b> Zdroj pravdy o stavu; anglicky
+          <a href="${REPO}docs/STATUS.en.md" target="_blank" rel="noopener">STATUS.en.md</a>.</td></tr>
+  <tr><td><a href="${REPO}STATUS.html" target="_blank" rel="noopener">STATUS.html</a></td>
+      <td>Totéž na jednu obrazovku, s barvami a čísly — na ukázání.</td></tr>
+  <tr><td><a href="${REPO}HANDOFF.md" target="_blank" rel="noopener">HANDOFF.md</a></td>
+      <td><b>Deník.</b> Nejnovější nahoře, u každé změny <b>proč</b> se udělala a co
+          se přitom ukázalo. Sem se chodí, když někoho zajímá „kdo tohle vymyslel".</td></tr>
+  <tr><td><a href="${REPO}known_good.md" target="_blank" rel="noopener">known_good.md</a></td>
+      <td>Doklady o tom, co bylo ověřené a čím — čísla, ne dojmy. Bod návratu,
+          když se něco rozbije.</td></tr>
+  <tr><td><a href="${REPO}docs/RUNBOOK.md" target="_blank" rel="noopener">docs/RUNBOOK.md</a></td>
+      <td><b>Když něco nefunguje.</b> Tabulka příznak → příčina → co s tím.</td></tr>
+  <tr><td><a href="${REPO}docs/TECHNICAL.md" target="_blank" rel="noopener">docs/TECHNICAL.md</a></td>
+      <td>Jak je to postavené uvnitř. Pro toho, kdo bude sahat do kódu.</td></tr>
+  <tr><td><a href="${REPO}docs/BUILD.md" target="_blank" rel="noopener">docs/BUILD.md</a></td>
+      <td>Jak to rozjet a nasadit, včetně secretů.</td></tr>
+  <tr><td><a href="${REPO}docs/ZADANI.md" target="_blank" rel="noopener">docs/ZADANI.md</a></td>
+      <td>Původní zadání — proti čemu se měří, jestli aplikace dělá, co má.</td></tr>
+</table>
+<p class="dok-pozn"><b>Repozitář je soukromý a musí takový zůstat</b> — jde o nezletilé.
+Odkazy proto fungují jen tomu, kdo má na GitHubu přístup; osobní data v repozitáři
+nejsou, kádr se zadává až tady v aplikaci.</p>
 `;
 
 const EN = `
@@ -714,6 +764,20 @@ shows the time, the theme and language switches, and the <b>commit of the
 running version</b> — hover for the full hash and build time. After a fix, that
 is how you confirm the fixed version is really live.</p>
 
+<h3>Channel status in the bar</h3>
+<p>The top bar carries four chips — <b>Model, SMS, Telegram, E-mail</b> — each
+with a marker: <b>●</b> works, <b>○</b> off (a decision, not a fault),
+<b>✕</b> broken. Hovering shows the reason; clicking opens Settings, where you
+can do something about it. The status is fetched at sign-in.</p>
+<p>The marker carries the state by shape as well as colour, so the bar still
+makes sense to a colour-blind reader and in a black-and-white screenshot.</p>
+<p><b>For Telegram, SMS and e-mail this is a real connection check</b> — the bot
+actually answers and the gateway actually issues a token, both free. <b>For the
+model it is not:</b> there it only reports what is configured. Every question to
+the language model eats into the daily limit (and real money on the paid one),
+so asking it on every page load would be expensive. Run the real test
+deliberately with <i>Test the connection</i> in Settings.</p>
+
 <h2>Project status — 9 August 2026</h2>
 <p>A snapshot. The exact numbers always live in the app; this is orientation on
 what is finished and what is not.</p>
@@ -744,6 +808,37 @@ instead of a shared one.</p>
 squad sends the model scores and written assessments of minors. That was a
 deliberate decision, but <b>the record of processing activities and the notice
 for parents are still missing</b> — see Data protection.</p>
+
+<h2>Where everything is written down</h2>
+<p>This page is the coach's handbook. The rest of the documentation lives in the
+repository, and each file answers a different question:</p>
+<table class="dok-odkazy">
+  <tr><td><a href="${REPO}docs/README.en.md" target="_blank" rel="noopener">docs/README.en.md</a></td>
+      <td>The detailed user guide. The Czech original is
+          <a href="${REPO}docs/README.md" target="_blank" rel="noopener">README.md</a>.</td></tr>
+  <tr><td><a href="${REPO}docs/STATUS.en.md" target="_blank" rel="noopener">docs/STATUS.en.md</a></td>
+      <td><b>What runs, what is verified and what is missing.</b> The source of truth
+          on status; in Czech <a href="${REPO}docs/STATUS.md" target="_blank" rel="noopener">STATUS.md</a>.</td></tr>
+  <tr><td><a href="${REPO}STATUS.html" target="_blank" rel="noopener">STATUS.html</a></td>
+      <td>The same on one screen, with colours and numbers — for showing people.</td></tr>
+  <tr><td><a href="${REPO}HANDOFF.md" target="_blank" rel="noopener">HANDOFF.md</a></td>
+      <td><b>The diary</b> (in Czech). Newest on top, and for each change <b>why</b> it
+          was made and what turned up along the way.</td></tr>
+  <tr><td><a href="${REPO}known_good.md" target="_blank" rel="noopener">known_good.md</a></td>
+      <td>Evidence of what was verified and how — numbers, not impressions. The point
+          to return to when something breaks.</td></tr>
+  <tr><td><a href="${REPO}docs/RUNBOOK.md" target="_blank" rel="noopener">docs/RUNBOOK.md</a></td>
+      <td><b>When something does not work.</b> A symptom → cause → fix table.</td></tr>
+  <tr><td><a href="${REPO}docs/TECHNICAL.md" target="_blank" rel="noopener">docs/TECHNICAL.md</a></td>
+      <td>How it is built inside. For whoever touches the code.</td></tr>
+  <tr><td><a href="${REPO}docs/BUILD.md" target="_blank" rel="noopener">docs/BUILD.md</a></td>
+      <td>How to run and deploy it, secrets included.</td></tr>
+  <tr><td><a href="${REPO}docs/ZADANI.md" target="_blank" rel="noopener">docs/ZADANI.md</a></td>
+      <td>The original brief — what the app is measured against.</td></tr>
+</table>
+<p class="dok-pozn"><b>The repository is private and has to stay that way</b> — this is
+about minors. The links therefore only open for someone with GitHub access; no personal
+data is in the repository, the squad is entered here in the app.</p>
 `;
 
 /** HTML dokumentace pro zvolený jazyk. */

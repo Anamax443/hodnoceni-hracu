@@ -16,7 +16,8 @@ import { dokumentaceHtml } from './src/dokumentace.js';
 const $ = s => document.querySelector(s);
 /* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
    kterou chce trenér opravit, a Hodnotit ji hned po překreslení vybere. */
-const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null };
+const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null,
+    konektivita: null };
 
 /* Abeceda GSM 03.38. Zpráva složená jen z těchhle znaků se vejde do 160 znaků
    na segment; jediný znak mimo ni (pomlčka „–", české uvozovky, výpustka „…")
@@ -136,7 +137,50 @@ function prekresliShell() {
         $('#hl-klub').textContent = '⚽ ' + (stav.nastaveni.klub || '');
         $('#hl-obdobi').textContent = `${t('shell.obdobi')}: ${stav.nastaveni.obdobi || ''}`
             + ' · ' + t('shell.prihlasen', stav.kdo || t('shell.spolecne'));
+        vykresliKonektivitu();
     }
+}
+
+/* ===================== konektivita v liště =====================
+
+   Ukazuje, jestli kanály odpovídají, aby se na to nemuselo chodit do
+   Nastavení. `/api/stav` je schválně levné: Telegram getMe a token GoSMS
+   nic nestojí, kdežto dotaz na jazykový model ujídá denní limit — proto
+   se u modelu hlásí jen nastavení a skutečnou zkoušku drží tlačítko
+   v Nastavení. Výsledek se drží v `stav.konektivita`, ať se při každém
+   překreslení lišty (jazyk, vzhled, přepnutí záložky) nevolá znovu.      */
+
+const ZNACKY_STAVU = { ok: '●', nastaveno: '●', vypnuto: '○', chyba: '✕', chybi: '✕' };
+
+function vykresliKonektivitu() {
+    const kam = $('#konektivita');
+    if (!kam) return;
+    const data = stav.konektivita;
+    if (!data) { kam.hidden = true; return; }
+
+    kam.hidden = false;
+    kam.innerHTML = ['ai', 'sms', 'telegram', 'email'].map(klic => {
+        const k = data[klic] ?? { stav: 'chybi', popis: '' };
+        return `<button class="kanal st-${esc(k.stav)}" data-kanal="${klic}"`
+            + ` title="${esc(t('konektivita.' + klic) + ' — ' + k.popis)}">`
+            + `${ZNACKY_STAVU[k.stav] ?? '?'} ${esc(t('konektivita.' + klic))}</button>`;
+    }).join('');
+
+    // Klik vede tam, kde se s tím dá něco udělat — do Nastavení.
+    kam.querySelectorAll('[data-kanal]').forEach(b => b.onclick = () => {
+        stav.zalozka = 'nastaveni';
+        prekresli();
+    });
+}
+
+/** Načte stav kanálů. Volá se po přihlášení, ne při každém překreslení. */
+async function nactiKonektivitu() {
+    try {
+        stav.konektivita = await api('/api/stav');
+    } catch {
+        stav.konektivita = null;   // informativní prvek nesmí shodit aplikaci
+    }
+    vykresliKonektivitu();
 }
 
 /* ===================== přihlášení ===================== */
@@ -201,6 +245,9 @@ async function spust() {
 
     prekresliShell();
     await prekresli();
+
+    // Až po vykreslení: stav kanálů je informace navíc, nemá zdržovat start.
+    nactiKonektivitu();
 }
 
 async function prekresli() {

@@ -48,7 +48,41 @@ už nevypadá jako test. Zároveň zaškrtl *Povolit přístup k detailu zprávy
 možné, že se tím doplní i ID zprávy, které se dnes do logu ukládá jako `ok`. Neověřeno,
 ověření stojí jednu ostrou SMS.
 
-**NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.
+**Doladěno po skutečném tisku.** Uživatel poslal vytištěný list a byly na něm vidět dvě
+věci, které render nenapověděl:
+
+1. **Výplň trenéra ležela přes čárkovanou čáru hráče.** Porovnání se kreslilo první
+   a polygon trenéra i s výplní až na něj, takže všude, kde je hráč uvnitř, ztrácela jeho
+   čára kontrast. Pořadí je nově **nejdřív všechny výplně, pak všechny čáry a značky** —
+   čára nesmí být pod výplní.
+2. **Výplň 28 % je na papíře moc.** Zalévá mřížku a graf ztěžkne. Vyrenderovány čtyři
+   varianty (28 / 18 / 10 / 0 %) v šedé škále vedle sebe; **zvoleno 18 %** — pořád je
+   poznat, která řada je vyplněná, ale mřížka i čárkovaná čára dýchají.
+
+**Rozcestník po dokumentaci** (na přání uživatele): záložka 📖 má novou kapitolu *Kde je
+co napsané* (CS i EN) s odkazy do repozitáře na README, STATUS, STATUS.html, HANDOFF,
+known_good, RUNBOOK, TECHNICAL, BUILD a ZADANI — u každého jednou větou, na co odpovídá.
+U seznamu stojí, že **repozitář je soukromý** a odkaz otevře jen ten, kdo má přístup.
+
+**Stav kanálů v horní liště** (na přání uživatele: „chci vidět, že nám funguje veškerá
+konektivita"). Čtyři štítky Model / SMS / Telegram / E-mail se značkou `●` `○` `✕`, popis
+v tooltipu, klik otevře Nastavení. Stav nese **tvar i barva**, ať lišta platí i barvoslepému
+čtenáři a na černobílém snímku — stejná úvaha jako u křivek výš.
+
+**Kde to mohlo být drahé.** Nabízelo se sáhnout po `/api/ai/stav`, jenže ten posílá modelu
+skutečnou větu. Při každém přihlášení by se denní limit Workers AI utrácel za kontrolování
+místo za práci (u Claude rovnou peníze). Nový `/api/stav` je proto **levný**: Telegram
+`getMe` a `gosmsToken()` ověří spojení doopravdy a zadarmo, e-mail se pozná z bindingu,
+a **model hlásí jen to, co je nastavené** — v popisu to říká narovinu a odkazuje na
+tlačítko v Nastavení. Vypnutý SMS kanál se hlásí jako `vypnuto`, ne jako porucha: je to
+záměr a nesmí svítit stejně jako rozbité spojení.
+
+**NASAZENO** 2026-08-09, Version ID `332b204e-e024-4552-a1dc-e3512fb2d2a5`
+(předchozí kroky `0e574db2` a `c0123e9c`).
+
+**Neověřeno:** všechno z tohohle záznamu čeká na proklik v prohlížeči — lišta se stavy,
+rozcestník po dokumentaci i vytištěný list s 18% výplní. Ověřen je jen render radaru
+a to, že se `app.js` s novým kódem opravdu servíruje.
 
 ---
 

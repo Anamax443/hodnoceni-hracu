@@ -1992,6 +1992,61 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         });
     }
 
+    /* ---------- stav konektivity do horní lišty ----------
+       Musí být LEVNÉ: volá se při každém načtení stránky. Telegram getMe
+       a token GoSMS nic nestojí a ověřují spojení doopravdy; u modelu se
+       hlásí jen nastavení, protože každý dotaz na něj ujídá denní limit
+       (u Claude rovnou peníze). Skutečnou zkoušku modelu drží tlačítko
+       v Nastavení, kde ji člověk spustí vědomě. */
+    if (cesta === '/api/stav' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+
+        const tg = await telegramApi(env, 'getMe');
+        const telegram = tg.ok
+            ? { stav: 'ok', popis: `Bot @${tg.vysledek?.username} odpovídá.` }
+            : { stav: env.TELEGRAM_BOT_TOKEN ? 'chyba' : 'chybi', popis: tg.popis };
+
+        const email = env.EMAIL
+            ? { stav: 'ok', popis: `Odesílá se z ${env.EMAIL_FROM || 'hodnoceni@maxferit.cz'}.` }
+            : { stav: 'chybi', popis: 'Chybí binding EMAIL (Cloudflare Email Sending).' };
+
+        // U SMS se rozlišuje "brána odpovídá" od "kanál je zapnutý" — vypnutý
+        // kanál je záměr, ne porucha, a nesmí svítit stejně jako rozbité spojení.
+        const smsProvider = (env.SMS_PROVIDER || 'console').toLowerCase();
+        let sms: { stav: string; popis: string };
+        if (smsProvider === 'gosms') {
+            const t = await gosmsToken(env);
+            if (!t.ok) {
+                sms = { stav: 'chyba', popis: `Brána neodpovídá: ${t.popis}` };
+            } else if (nas.smsAktivni !== '1') {
+                sms = { stav: 'vypnuto', popis: 'Brána odpovídá, ale odesílání je v Nastavení vypnuté.' };
+            } else {
+                sms = {
+                    stav: 'ok',
+                    popis: `Brána odpovídá, odesílání zapnuté (${await smsZaDen(env)}/${Number(nas.smsDenniStrop) || 50} za 24 h).`
+                };
+            }
+        } else {
+            sms = { stav: 'vypnuto', popis: `Provider je ${smsProvider} — SMS se neodesílají.` };
+        }
+
+        const poskytovatel = nas.aiPoskytovatel || 'vypnuto';
+        let ai: { stav: string; popis: string };
+        if (poskytovatel === 'vypnuto') {
+            ai = { stav: 'vypnuto', popis: 'Jazykový model je v Nastavení vypnutý.' };
+        } else if (poskytovatel === 'claude' && !env.ANTHROPIC_API_KEY) {
+            ai = { stav: 'chyba', popis: 'Vybraný je Claude, ale chybí secret ANTHROPIC_API_KEY.' };
+        } else {
+            ai = {
+                stav: 'nastaveno',
+                popis: `${poskytovatel === 'claude' ? 'Claude' : 'Workers AI'}, model ${nas.aiModel}. `
+                    + 'Spojení se tady nezkouší — každý dotaz ujídá denní limit. Otestuj v Nastavení.'
+            };
+        }
+
+        return json({ ai, sms, telegram, email }, 200, { 'cache-control': 'no-store' });
+    }
+
     /* ---------- kdo botovi napsal (kvůli chat id) ---------- */
     if (cesta === '/api/telegram/chaty' && metoda === 'GET') {
         const r = await telegramApi(env, 'getUpdates');

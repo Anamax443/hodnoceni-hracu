@@ -35,7 +35,7 @@ const SEDA = '#757575';
    řádek; graf, značky i vzorek v legendě se z něj poskládají samy.
    ===================================================================== */
 export const STYLY_RAD = [
-    { cara: null,      bod: 'kruh',        sirka: 2.5, vypln: 0.28 },  // trenér — plná
+    { cara: null,      bod: 'kruh',        sirka: 2.5, vypln: 0.18 },  // trenér — plná
     { cara: '7,4',     bod: 'ctverec',     sirka: 2,   vypln: 0 },     // hráč / minule — čárkovaná
     { cara: '1.5,3',   bod: 'kosoctverec', sirka: 2,   vypln: 0 },     // tečkovaná
     { cara: '9,3,2,3', bod: 'trojuhelnik', sirka: 2,   vypln: 0 }      // čerchovaná
@@ -157,10 +157,21 @@ export function radar(osy, hodnoceni, porovnani) {
         }
     }
 
-    /* --- porovnávací hodnocení: čárkovaný obrys se čtvercovými značkami ---
-       Bez výplně schválně. Dvě poloprůhledné výplně přes sebe daly na papíře
-       tři odstíny šedi, ve kterých nešlo poznat, čí je která. Tvar čáry
-       a značek unese rozlišení sám. */
+    /* Pořadí kreslení: NEJDŘÍV všechny výplně, teprve pak všechny čáry a značky.
+       Když se polygon trenéra kreslil i s výplní až na porovnání, ležela
+       čárkovaná čára hráče všude, kde je uvnitř, pod šedou plochou a ztrácela
+       kontrast — na černobílém tisku nejvíc. Čára nesmí být pod výplní. */
+
+    // --- výplň hlavní řady (bez obrysu, ten přijde až nakonec) ---
+    if (hodnoceni) {
+        const h = osy.map(o => hodnoceni[o.klic] ?? 0);
+        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" `
+            + `fill-opacity="${STYLY_RAD[0].vypln}" stroke="none" style="fill:${VYPLN}"/>`;
+    }
+
+    /* --- porovnávací řada: čárkovaná čára se čtverečky, bez výplně ---
+       Dvě poloprůhledné výplně přes sebe daly na papíře tři odstíny šedi,
+       ve kterých nešlo poznat, čí je která. Tvar čáry a značek to unese sám. */
     if (porovnani) {
         const s = STYLY_RAD[1];
         const h = osy.map(o => porovnani[o.klic] ?? 0);
@@ -172,12 +183,12 @@ export function radar(osy, hodnoceni, porovnani) {
         });
     }
 
-    // --- aktuální hodnocení: plná čára, plné kolečko, lehká výplň ---
+    // --- obrys a značky hlavní řady, úplně navrchu ---
     if (hodnoceni) {
         const s = STYLY_RAD[0];
         const h = osy.map(o => hodnoceni[o.klic] ?? 0);
-        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" fill-opacity="${s.vypln}" `
-            + `stroke-width="${s.sirka}" stroke-linejoin="round" style="fill:${VYPLN};stroke:${OBRYS}"/>`;
+        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" fill="none" `
+            + `stroke-width="${s.sirka}" stroke-linejoin="round" style="stroke:${OBRYS}"/>`;
         h.forEach((v, i) => {
             const p = bod(cx, cy, R * v / MAX, i, n);
             svg += bodRady(s.bod, p.x, p.y, OBRYS);

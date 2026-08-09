@@ -463,7 +463,7 @@ Inline SVG, bez knihovny. Geometrie převzatá beze změny z `docs/vzor-list.htm
 - osa 0 je nahoře, pokračuje po směru hodinových ručiček: `úhel = 2π·i/n − π/2`
 - 5 soustředných úrovní mřížky (`KRUHY`), střídavě bílá a `#fafafa`
 - popisky os vně grafu (poloměr + 22), zalomené na dva řádky nad 17 znaků, s hodnotou `x/10`
-- aktuální hodnocení: plná čára, plné kolečko, výplň @ 28 %, **barva podle šablony** (viz 4c)
+- aktuální hodnocení: plná čára, plné kolečko, výplň @ 18 %, **barva podle šablony** (viz 4c)
 - porovnávací hodnocení: šedá **čárkovaná** čára s **prázdnými čtverečky**, bez výplně —
   šedá zůstává vždy, aby se nepletla s barvou šablony
 
@@ -475,8 +475,14 @@ přežijí obojí. Tabulka má čtyři řady — plná/kruh, čárkovaná/čtver
 Značky porovnávacích řad se kreslí **bílou výplní s obrysem**: plná značka by pod sebou
 schovala tu druhou právě v místě, kde se řady kříží a kde na tom nejvíc záleží.
 
-Výplň má **jen hlavní řada**. Dvě poloprůhledné výplně přes sebe daly na papíře tři
-odstíny šedi, ve kterých nešlo poznat, čí je která.
+Výplň má **jen hlavní řada**, a to 18 %. Dvě poloprůhledné výplně přes sebe daly na papíře
+tři odstíny šedi, ve kterých nešlo poznat, čí je která; silnější výplň (zkoušeno 28 %)
+navíc na tisku zalila mřížku a graf ztěžkl.
+
+**Pořadí kreslení: nejdřív všechny výplně, teprve pak všechny čáry a značky.** Když se
+polygon trenéra kreslil i s výplní až na porovnání, ležela čárkovaná čára hráče všude, kde
+je uvnitř, pod šedou plochou — na černobílém tisku ztrácela kontrast nejvíc. Čára nesmí
+být pod výplní.
 
 **Legenda kreslí skutečný kousek čáry se značkou** (`vzorekRady()`), ne barevný čtvereček.
 Čtverečky po převodu do šedi splynuly, takže legenda přestávala platit zrovna na papíře.
@@ -1114,6 +1120,32 @@ neprojde. Ověření a první dobití kreditu je otevřený krok; zkouška nane�
 `SMS_ODESILATEL` zůstává v konfiguraci, ale používá ho **jen Twilio**.
 
 Platí i tady: **do zprávy nikdy nejde obsah hodnocení**, jen „kdo a co".
+
+### Stav kanálů v liště (postaveno)
+
+`GET /api/stav` vrací čtyři položky (`ai`, `sms`, `telegram`, `email`), každou jako
+`{stav, popis}`. Stavy: `ok`, `nastaveno`, `vypnuto`, `chyba`, `chybi`. Lišta je vykresluje
+jako štítky se značkou `●` / `○` / `✕` — **stav nese tvar, ne jen barva**, aby dávala smysl
+barvoslepému čtenáři i na černobílém snímku. Klik otevře Nastavení.
+
+**Endpoint musí zůstat levný, volá se při každém přihlášení:**
+
+| Kanál | Co se ověřuje | Cena |
+|---|---|---|
+| Telegram | `getMe` — bot se opravdu ozve | zdarma |
+| SMS | `gosmsToken()` — brána opravdu vydá token; vypnutý kanál se hlásí jako `vypnuto`, ne jako porucha | zdarma, nic se neodesílá |
+| E-mail | přítomnost bindingu `EMAIL` | zdarma |
+| Model | **jen nastavení**, žádný dotaz | zdarma |
+
+**U modelu se spojení schválně nezkouší.** `GET /api/ai/stav` posílá modelu skutečnou větu,
+takže ujídá denní limit Workers AI (a u Claude rovnou peníze). Ptát se při každém načtení
+stránky by bylo drahé a limit by padl na kontrolování, ne na práci. Skutečnou zkoušku drží
+tlačítko v Nastavení, kde ji člověk spustí vědomě — `/api/stav` proto u modelu hlásí
+`nastaveno`, ne `ok`, a říká to i v popisu.
+
+Výsledek se drží v `stav.konektivita` na frontendu, takže překreslení lišty (přepnutí
+jazyka, vzhledu, záložky) nevolá endpoint znovu. Selhání se polyká: informativní prvek
+nesmí shodit aplikaci.
 
 ### Log komunikace (postaveno)
 

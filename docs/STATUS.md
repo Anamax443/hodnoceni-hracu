@@ -28,6 +28,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Kumulovaný list | ✅ | volitelně všechny šablony hráče na jedné A4, ověřeno tiskem do PDF |
 | Barva podle šablony | ✅ | hráč v poli modrá, brankář petrolejová, leader vínová; název šablony v hlavičce listu, štítky i v aplikaci |
 | Rozlišení křivek na ČB tisk | ✅ | trenér plná čára + plné kolečko, druhý pohled čárkovaná + prázdný čtvereček; legenda kreslí skutečnou čáru, ne barevný čtvereček |
+| Stav kanálů v horní liště | ✅ | Model / SMS / Telegram / E-mail se značkou ● ○ ✕; TG, SMS a e-mail ověřené doopravdy a zdarma, model jen hlásí nastavení (dotaz by ujídal limit) |
+| Rozcestník po dokumentaci | ✅ | záložka 📖 → *Kde je co napsané*, odkazy do repozitáře na STATUS, HANDOFF, known_good, RUNBOOK, TECHNICAL, BUILD, ZADANI |
 | Výběr tisku po listech | ✅ | zaškrtávátko na každý řádek hráč × šablona, `ids=id:sablona` |
 | Účty a hesla | ✅ | login i e-mail, PIN od 4 znaků, zámek po 5 pokusech |
 | Obnova hesla | ✅ | jednorázový odkaz, 15 minut, Telegram i e-mail |
