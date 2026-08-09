@@ -33,7 +33,10 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Password recovery | ✅ | single-use link, 15 minutes, Telegram or e-mail |
 | Notifications — Telegram | ✅ | delivery confirmed |
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
-| Notifications — SMS | ⚠️ | built and wired, but the **GoSMS account is unverified and has no credit** |
+| Notifications — SMS | ✅ | **confirmed for real on 9 Aug 2026** — dry run plus a delivered message; channel on (`smsAktivni = 1`), cap 50/day |
+| SMS header | ✅ | editable in Settings, preview with segment count and a warning for characters outside GSM-7; empty = club name |
+| SMS test to any number | ✅ | in Settings, no link to the roster; dry run free, real send behind a confirmation |
+| Communication log | ✅ | collapsed (the page no longer grows), search and CSV export of the **whole** log |
 | Command bar | ✅ | **one field for commands and questions**, above every tab; resolved locally, the model only for awkward sentences |
 | Analyses — summaries | ✅ | weakest squad axes, biggest gaps, who is missing; computed in the app, nothing leaves |
 | Analyses — asking the model | ✅ | **enabled in production** (`aiAnalyzy = ano`) — full player data is sent to the model, see Personal data below |
@@ -76,6 +79,12 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
   printed to PDF fits **one A4**, three pages without the switch
 - written notes and goals do not travel between templates: 5 checks (an empty form switches
   without asking; with text typed it asks, and the text stays with its own template)
+- **SMS for real (9 Aug 2026)**: dry run `ok`, seven seconds later a real message `ok` and
+  delivered to the handset. The text stored in the log matches what went out, character for
+  character
+- SMS composition and segment counting verified by running the functions over five headers:
+  an en dash and a typographic quote correctly report UCS-2, a plain hyphen does not, and
+  `€` counts as two characters
 
 ## What is missing
 
@@ -83,16 +92,14 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
    players have filled in nothing. Without it the sheet has no second polygon and the
    conversation over the gap — the reason the tool exists — has nothing to stand on.
    **This is the main thing right now.**
-2. **Verify the GoSMS account and top up credit.** Until then the sender is `GoSMS-test`
-   and a real SMS will not go out (the last attempt ended in `400`). The dry run works.
-3. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
+2. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
    or a verified e-mail, send them an invitation from People, then drop the shared password
    (`DELETE FROM auth`).
-4. **Add positions for the remaining players** — 4 of 18 have them. Templates are already
+3. **Add positions for the remaining players** — 4 of 18 have them. Templates are already
    assigned (goalkeeper and leader evaluations exist in the database), so most of this point
    is done; what remains are the positions, which get printed on the sheet.
-5. **Evaluate the remaining 7 players** — 11 of 18 active players have an evaluation.
-6. **An `ANTHROPIC_API_KEY`**, if the paid model is to be used. Without it — and with an
+4. **Evaluate the remaining 7 players** — 11 of 18 active players have an evaluation.
+5. **An `ANTHROPIC_API_KEY`**, if the paid model is to be used. Without it — and with an
    exhausted credit — the command bar keeps working on the free model.
 
 ## Open questions

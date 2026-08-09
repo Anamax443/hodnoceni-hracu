@@ -2,6 +2,76 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (28) — SMS naostro, hlavička zpráv, log komunikace se sbalil
+
+**Zlom: dobitý kredit odblokoval bránu.** Účet GoSMS byl do dneška neověřený a bez
+kreditu, každý ostrý pokus končil `400`. Po dobití (21 Kč) prošla nejdřív zkouška
+nanečisto a o sedm vteřin později **skutečně doručená SMS**. Kanál `smsAktivni` je
+zapnutý, strop 50/den.
+
+**Chyba, kterou dobitý kredit teprve zpřítomnil.** Tlačítko *SMS nanečisto* posílalo
+**ostré SMS**. V `posliSmsHlidane` se příznak `nanecisto` nepředával dál do `posliSms`,
+takže požadavek šel na `…/messages/` místo `…/messages/test`. K tomu `posliSmsHlidane`
+u nanečisto **záměrně přeskakuje obě pojistky** — vypínač i denní strop — protože
+„zkouška nic nestojí". Dohromady: klik na nanečisto by odeslal skutečnou zprávu, obešel
+vypnutý kanál, obešel strop a do logu se zapsal jako „(nanečisto)". Dosud to bylo
+neškodné jen proto, že neověřený účet vracel `400` na obou cestách stejně. **Opraveno
+dřív, než se na tlačítko sáhlo.** Do stropu se navíc přestaly počítat zkoušky nanečisto —
+stejná logika, jakou už měl režim `console`.
+
+**Hlavička SMS je teď nastavitelná — a hlavně jednotná.** Úvod zprávy se skládal na
+**třech místech zvlášť a pokaždé jinak**: zkouška posílala `SK ŘÍČMANICE:`, obnova hesla
+`Hodnoceni hracu:` a souhrn **neposílal nic**, takže u něj příjemce nepoznal, kdo mu
+píše. Odesílatele přitom drží brána (vidí se GoSMS, ne klub), takže hlavička je jediné
+místo, podle kterého to jde poznat. Skládá to jedna funkce `sHlavickou()`, prázdné
+nastavení = název klubu (přejmenování klubu tedy nenechá starý text).
+
+**Past, na kterou přišla až simulace.** Do zkoušky jsem si napsal hlavičku
+„SK Říčmanice – mládež" a všiml si, že dlouhá pomlčka **přežije odstranění diakritiky** —
+není to písmeno s háčkem. Jenže v GSM-7 abecedě není, takže by přepnula celou zprávu na
+UCS-2 a segment by spadl ze 160 znaků na 70: **dvojnásobná cena za totéž**. Totéž udělají
+české uvozovky nebo výpustka. Náhled proto počítá tak, jak počítá brána, viníka pojmenuje
+a poradí náhradu. Ověřeno na pěti hlavičkách: `–` a `„` hlásí UCS-2, spojovník `-` ne,
+`€` se počítá za dva znaky (rozšiřovací tabulka).
+
+**Zkouška SMS se přestěhovala do Nastavení**, na libovolné číslo bez vazby na kartotéku —
+ověřuje se brána, ne hráč, takže kvůli tomu není potřeba zakládat falešnou osobu. Ostré
+tlačítko se ptá a hlídá **neuložený přepínač**: zaškrtnutí platí jen v prohlížeči, dokud
+se neuloží, a Worker by zprávu zahodil jako „vypnuto" — vypadalo by to jako chyba brány.
+
+**Log komunikace se sbalil.** Uživatel upozornil, že sto řádků nafukuje stránku Nastavení
+a na mobilu se pod ně nedá dorolovat. Je z toho `<details>`, zavřený jeden řádek, otevřený
+se posouvá sám v sobě (`max-height: 46vh`). K tomu **hledání** (filtruje i podle přeložených
+popisků, takže „chyba" a „přeskočeno" najdou to, co je vidět) a **export do CSV**, který
+bere **celý log z databáze**, ne jen těch sto zobrazených — jinak se ke staršímu odeslání
+nedá dostat.
+
+**Stav se publikoval i do aplikace.** Záložka 📖 má novou kapitolu *Stav projektu* (CS i EN):
+co běží, co chybí — s tím, že hlavní dluh je nerozeslání odkazů na sebehodnocení — a
+upozornění na zapnuté analýzy jazykovým modelem.
+
+**Cestou:** lokální proměnná `stav` uvnitř bloku komunikace stínila globální stav
+aplikace. Přejmenováno na `tridaStavu`, byla to nášlapná mina pro každou další úpravu.
+
+**„Z plikace" byl planý poplach.** Uživatel hlásil chybějící písmeno v doručené zprávě.
+Log ukládá text tak, jak odešel, a je v něm „z aplikace"; spuštění `bezDiakritiky` nad
+tím textem vrátilo totéž. Šlo o překlep při přepisování do chatu.
+
+**Ověřeno:** doručená SMS (log má `ok` u nanečisto i ostré), skládání zpráv a počítání
+segmentů spuštěním funkcí, `node --check` nad všemi upravenými `.js`, nasazení.
+**Neověřeno:** proklikání v prohlížeči ani na mobilu — k tomu je potřeba přihlášení,
+které nemám. Sbalený log, hledání, export a náhled hlavičky **čekají na potvrzení od
+uživatele**.
+
+**NASAZENO** 2026-08-09 v commitu `5452411`, Version ID `1e5d8abc-be15-496b-8528-7c5813521006`.
+
+**Zbývá:** rozeslat hráčům odkazy na sebehodnocení (pořád to hlavní), dohodnotit zbylých
+7 hráčů, doplnit pozice, pozvánky pro Julka a Masa a pak `DELETE FROM auth`. Drobnost:
+GoSMS nevrací ID zprávy v očekávaném tvaru, do logu se ukládá `ok` — nedoručenku tedy
+nejde spárovat s konkrétním záznamem v portálu.
+
+---
+
 ## 2026-08-09 (27) — model podle úkolu (místo „dirigenta")
 
 **Otázka uživatele:** nemá silný model dirigovat slabší, zadávat jim jednoduché úkoly

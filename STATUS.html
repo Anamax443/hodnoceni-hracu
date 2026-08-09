@@ -181,10 +181,11 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
         <li class="yes">Účty po lidech, obnova hesla, zámek po 5 pokusech</li>
         <li class="yes"><strong>Analýzy</strong> — souhrny za kádr počítané v aplikaci (nejslabší osy, největší rozpory)</li>
         <li class="yes">Notifikace na Telegram a e-mail, CS/EN, tmavý vzhled, mobil, dokumentace v aplikaci</li>
+        <li class="yes"><strong>SMS ověřená naostro</strong> — zkouška nanečisto i doručená zpráva; editovatelná hlavička, zkouška na libovolné číslo v Nastavení</li>
+        <li class="yes"><strong>Log komunikace</strong> — sbalený, s hledáním a exportem celého logu do CSV</li>
       </ul></div>
     <div class="card"><h3>⚠️ Postavené, ale nedotažené</h3>
       <ul>
-        <li class="wait"><strong>SMS</strong> — zapojené, ale účet GoSMS je neověřený a bez kreditu; ostrá zpráva končí na <code>400</code></li>
         <li class="wait"><strong>Jazykový model</strong> — Workers AI ověřený a zdarma; Claude čeká na <code>ANTHROPIC_API_KEY</code></li>
         <li class="wait"><strong>Julek a Maso</strong> nemají vlastní heslo ani kanál — jede společné heslo</li>
         <li class="wait"><strong>GDPR k analýzám</strong> — otázky modelu jsou <strong>zapnuté</strong> a posílají ven známky i posudky nezletilých; záznam o činnosti zpracování a informace pro rodiče zatím nejsou</li>
@@ -198,7 +199,6 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
       <li><strong>Rozeslat hráčům odkazy na sebehodnocení.</strong> Bez toho nemá list druhý polygon.</li>
       <li>Dohodnotit zbylých 7 hráčů z 18.</li>
       <li>Doplnit pozice — vyplněné mají 4 z 18, tisknou se na list.</li>
-      <li>Ověřit účet GoSMS a dobít kredit, pokud se má posílat SMS.</li>
       <li>Pozvat Julka a Masa na vlastní účet, pak zrušit společné heslo.</li>
       <li><strong>Dopsat GDPR záznam</strong> o činnosti zpracování a informaci pro rodiče —
           otázky modelu jsou už zapnuté, takže tohle je dluh, ne příprava.</li>
@@ -220,8 +220,9 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
             <td><strong>zapnuto</strong> — model <code>gpt-oss-120b</code> na Cloudflare; povelům jde jen jedna věta a jména kádru</td></tr>
         <tr><td><code>aiAnalyzy</code></td><td class="num zero">ano</td>
             <td><strong>ZAPNUTO</strong> — při otázce na kádr jdou modelu jména, známky, slovní posudky i cíle</td></tr>
-        <tr><td><code>smsAktivni</code></td><td class="num">0</td>
-            <td>vypnuto — odesílání SMS (mimořádný placený kanál)</td></tr>
+        <tr><td><code>smsAktivni</code></td><td class="num zero">1</td>
+            <td><strong>ZAPNUTO</strong> — odesílání SMS (mimořádný placený kanál). Nikdo zatím nemá
+                SMS notifikaci zapnutou u sebe, takže hodinový cron nic nerozesílá; strop je 50 za den</td></tr>
       </tbody>
     </table>
     </div>

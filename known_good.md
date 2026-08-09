@@ -5,6 +5,47 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-09 (22) — SMS ověřená naostro, hlavička zpráv, sbalený log
+
+**Commit:** `5452411` · **NASAZENO** 2026-08-09, Version ID `1e5d8abc-be15-496b-8528-7c5813521006`.
+
+**Ostrá SMS prošla.** Doklad z tabulky `komunikace` v ostré databázi (časy UTC):
+
+| Čas | Platforma | Číslo | Typ | Výsledek | Kód |
+|---|---|---|---|---|---|
+| 2026-08-09 09:37:55 | `gosms (nanečisto)` | +420 604577765 | test | **ok** | `nanecisto` |
+| 2026-08-09 09:38:02 | `gosms` | +420 604577765 | test | **ok** | `ok` |
+| 2026-08-06 17:32:12 | — | +420604577765 | test | chyba | `400` |
+
+Poslední řádek je stav před dobitím kreditu. Uživatel potvrdil doručení na telefon.
+Text v logu u obou úspěšných záznamů: `SK RICMANICE: zkusebni zprava z aplikace
+Hodnoceni hracu.` — souhlasí doslova s tím, co skládá kód.
+
+**Skládání zpráv a segmenty** (spuštěno nad funkcemi `sHlavickou` + `bezDiakritiky`,
+šablona zprávy `…: zkusebni zprava z aplikace Hodnoceni hracu.`):
+
+| Hlavička | Kódování | Znaků | Segmentů | Mimo abecedu |
+|---|---|---|---|---|
+| `SK ŘÍČMANICE` | GSM-7 | 57 | 1 | — |
+| `SK Říčmanice – mládež` | **UCS-2** | 66 | 1 | `–` |
+| `SK Ricmanice - mladez` | GSM-7 | 66 | 1 | — |
+| `Klub „naše" mládež` | **UCS-2** | 63 | 1 | `„` |
+| `Cena 5€` | GSM-7 | 53 | 1 | — (€ = 2 místa) |
+
+Potvrzuje, že dlouhá pomlčka i české uvozovky **přežijí odstranění diakritiky** a samy
+o sobě zdvojnásobí cenu zprávy; obyčejný spojovník ne.
+
+**Ostatní kontroly:** `node --check` prošel nad `web/app.js`, `web/src/i18n.js`
+i `web/src/dokumentace.js`; v `dokumentace.js` jsou právě 4 zpětné apostrofy (dva
+literály CS + EN), tedy žádný uvnitř textu — přesně ta chyba, která shodila Nastavení
+v záznamu (21). Ostrá databáze: `smsAktivni = 1`, `smsDenniStrop = 50`, **0 osob** má
+`notif_sms = 1` s vyplněným telefonem, takže hodinový cron nic nerozesílá.
+
+**Neověřeno:** proklikání v prohlížeči a na mobilu (sbalený log, hledání, export CSV,
+náhled hlavičky). Vyžaduje přihlášení do aplikace.
+
+---
+
 ## 2026-08-09 (21) — model podle úkolu
 
 **Commit:** `aa908bc` · **NASAZENO** 2026-08-09, Version ID `bd58a68e-20ff-4e16-b6ac-7096693728ba`; živě ověřeno na obou adresách. **Ověřeno** proti `wrangler dev` nad lokální D1.

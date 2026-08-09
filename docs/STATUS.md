@@ -32,7 +32,10 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Obnova hesla | ✅ | jednorázový odkaz, 15 minut, Telegram i e-mail |
 | Notifikace — Telegram | ✅ | ověřeno doručením |
 | Notifikace — e-mail | ✅ | Cloudflare Email Sending |
-| Notifikace — SMS | ⚠️ | postaveno a zapojeno, ale **účet GoSMS neověřený a bez kreditu** |
+| Notifikace — SMS | ✅ | **ověřeno naostro 9. 8. 2026** — zkouška nanečisto i doručená zpráva; kanál zapnutý (`smsAktivni = 1`), strop 50/den |
+| Hlavička SMS | ✅ | editovatelná v Nastavení, náhled se segmenty a varováním na znaky mimo GSM-7; prázdné = název klubu |
+| Zkouška SMS na libovolné číslo | ✅ | v Nastavení, bez vazby na kartotéku; nanečisto zdarma, ostrá s potvrzením |
+| Log komunikace | ✅ | sbalený (neroste stránka), hledání a export **celého** logu do CSV |
 | Příkazový řádek | ✅ | **jedno pole na povely i otázky**, nad každou záložkou; rozřazení lokálně, model až na zapeklité věty |
 | Analýzy — souhrny | ✅ | nejslabší osy kádru, největší rozpory, kdo chybí; počítá aplikace, nic neodchází |
 | Analýzy — otázka modelu | ✅ | **zapnuto v ostré databázi** (`aiAnalyzy = ano`) — modelu odcházejí plná data hráčů, viz Osobní údaje níž |
@@ -85,21 +88,23 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
   i `17,16` dá stejný výsledek), míchané šablony `400`, dvě období vždy starší první
 - jazykový model `gpt-oss-120b`: odpovídá po zvýšení stropu tokenů (uvažování se do něj
   počítá) — analýza trefila `+5 (3 vs 8)` za 4,1 s, rozřazení povelu za 2,7 s
+- **SMS naostro (9. 8. 2026)**: zkouška nanečisto `ok`, o sedm vteřin později ostrá zpráva
+  `ok` a doručená na telefon. Text v logu doslova souhlasí s tím, co odešlo
+- skládání SMS a počítání segmentů ověřeno spuštěním funkcí nad pěti hlavičkami: „–" i „„"
+  správně hlásí UCS-2, spojovník `-` ne, `€` se počítá za dva znaky
 
 ## Co chybí
 
 1. **Rozeslat hráčům odkazy na sebehodnocení.** Zatím nevznikl ani jeden a hráči tedy
    nevyplnili nic. Bez toho nemá list druhý polygon a rozhovor nad rozdílem pohledů
    — kvůli kterému nástroj vznikl — se nemá o co opřít. **Tohle je teď to hlavní.**
-2. **Ověřit účet GoSMS a dobít kredit.** Do té doby je odesílatel `GoSMS-test`
-   a ostrá SMS neprojde (poslední pokus skončil `400`). Zkouška nanečisto funguje.
-3. **Julek a Maso nemají vlastní heslo ani kanál.** Až budou mít Telegram nebo ověřený
+2. **Julek a Maso nemají vlastní heslo ani kanál.** Až budou mít Telegram nebo ověřený
    e-mail, poslat pozvánku z Lidí; pak zrušit společné heslo (`DELETE FROM auth`).
-4. **Doplnit pozice zbylým hráčům** — vyplněné je mají 4 z 18. Šablony už přiřazené jsou
+3. **Doplnit pozice zbylým hráčům** — vyplněné je mají 4 z 18. Šablony už přiřazené jsou
    (brankářská i leader hodnocení v databázi existují), tenhle bod se tím z větší části
    vyřídil; zbývají pozice, které se tisknou na list.
-5. **Dohodnotit zbylých 7 hráčů** — hodnocení má 11 z 18 aktivních.
-6. **Klíč `ANTHROPIC_API_KEY`**, pokud se má zkoušet placený model. Bez něj i s vyčerpaným
+4. **Dohodnotit zbylých 7 hráčů** — hodnocení má 11 z 18 aktivních.
+5. **Klíč `ANTHROPIC_API_KEY`**, pokud se má zkoušet placený model. Bez něj i s vyčerpaným
    kreditem jede příkazový řádek dál na modelu zdarma.
 
 ## Otevřené otázky
