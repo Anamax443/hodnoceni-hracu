@@ -322,7 +322,7 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
        8B našel dva hráče místo jednoho a trval 1784 ms, 70B odpověděl správně
        za 477 ms a 120B taky správně, ale za 2135 ms. Nejmenší modely tu
        nešetří, jen se pletou — a 70B je zároveň nejrychlejší ze správných. */
-    aiModelPovely: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'       // rozřazení povelů
+    aiModelPovely: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',      // rozřazení povelů
     /* Analýzy nad plnými daty. Příkazovému řádku stačí jména kádru, ale
        analýza bez známek a posudků není analýza — musí je dostat celé.
        Je to jediné místo, kde z aplikace odcházejí ven údaje o konkrétním
