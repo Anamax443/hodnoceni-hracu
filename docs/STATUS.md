@@ -49,22 +49,27 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 
 ## Kolik je v aplikaci dat
 
-Souhrnná čísla z ostré databáze k 9. 8. 2026 (jen počty, žádná jména ani známky):
+> **Čísla tady zestárnou, a když zestárnou, lžou.** Tenhle oddíl tvrdil „0 odkazů,
+> 0 sebehodnocení" ve chvíli, kdy hráči odkazy dávno měli (rozeslané WhatsAppem) a jeden
+> už vyplnil. **Živá čísla jsou v aplikaci** — záložka 📖, kapitola *Stav projektu*, kde
+> se čtou přímo z databáze přes `/api/stav-dat`. Tady je jen otisk k datu.
+
+Otisk z ostré databáze k **9. 8. 2026, 12:50** (jen počty, žádná jména ani známky):
 
 | | |
 |---|---|
 | osob v kartotéce | 22 (18 aktivních hráčů, 3 trenéři, 1 neaktivní) |
 | hráčů s vyplněnými pozicemi | 4 z 18 |
-| hodnocení od trenéra | **16** u 11 hráčů, jedno období |
-| z toho podle šablon | hráč v poli 11 (10 hráčů) · brankář 3 (2 hráči) · leader 2 (2 hráči) |
-| sebehodnocení od hráčů | **0** |
-| vygenerovaných odkazů na sebehodnocení | **0** |
+| hodnocení od trenéra | **16** u 11 z 18 hráčů, jedno období |
+| vygenerovaných odkazů na sebehodnocení | **4**, z toho 1 použitý |
+| sebehodnocení od hráčů | **1** (1 hráč) |
 | uzavřených shod mezi trenéry | 0 |
 | účtů v `auth` | 1 (pořád společné heslo) |
 
-**Rozhovor nad rozdílem dvou pohledů — hlavní hodnota nástroje — se zatím nekonal.**
-Trenérská strana běží, hráčská ne: dokud se hráčům nerozešlou odkazy, není co porovnávat
-a druhý polygon na listu zůstává prázdný.
+**První rozhovor nad rozdílem dvou pohledů má o co se opřít.** Jeden hráč vyplnil, takže
+na jeho listu se kreslí oba polygony. Odkazy se rozesílají **ručně, WhatsAppem** — což je
+plnohodnotná cesta: odkaz je jednorázový a je jedno, kudy se k hráči dostal. Kanály
+v aplikaci (Telegram, e-mail, SMS) jsou pohodlí, ne podmínka.
 
 ## Co je ověřené naostro
 
@@ -96,12 +101,15 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
   `ok` a doručená na telefon. Text v logu doslova souhlasí s tím, co odešlo
 - skládání SMS a počítání segmentů ověřeno spuštěním funkcí nad pěti hlavičkami: „–" i „„"
   správně hlásí UCS-2, spojovník `-` ne, `€` se počítá za dva znaky
+- **sebehodnocení naostro (9. 8. 2026)**: hráč otevřel ručně poslaný odkaz a vyplnil;
+  v databázi 4 vygenerované odkazy, 1 použitý, 1 sebehodnocení. Celý řetěz od vytvoření
+  odkazu po uložení hráčových známek tedy prošel skutečným provozem, ne jen testem
 
 ## Co chybí
 
-1. **Rozeslat hráčům odkazy na sebehodnocení.** Zatím nevznikl ani jeden a hráči tedy
-   nevyplnili nic. Bez toho nemá list druhý polygon a rozhovor nad rozdílem pohledů
-   — kvůli kterému nástroj vznikl — se nemá o co opřít. **Tohle je teď to hlavní.**
+1. **Dorozeslat odkazy na sebehodnocení zbytku kádru.** Rozjeté to je — odkazy chodí
+   ručně WhatsAppem a první sebehodnocení je vyplněné. Čím víc hráčů odevzdá, tím víc
+   listů má druhý polygon a je o čem mluvit. **Tohle je teď to hlavní.**
 2. **Julek a Maso nemají vlastní heslo ani kanál.** Až budou mít Telegram nebo ověřený
    e-mail, poslat pozvánku z Lidí; pak zrušit společné heslo (`DELETE FROM auth`).
 3. **Doplnit pozice zbylým hráčům** — vyplněné je mají 4 z 18. Šablony už přiřazené jsou

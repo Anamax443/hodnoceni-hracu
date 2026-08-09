@@ -364,9 +364,12 @@ ujídá denní limit (a u placeného rovnou peníze), takže ptát se ho při ka
 načtení stránky by bylo drahé. Skutečnou zkoušku modelu spustíš vědomě
 tlačítkem <i>Vyzkoušet spojení</i> v Nastavení.</p>
 
-<h2>Stav projektu — 9. 8. 2026</h2>
-<p>Snímek k datu. Přesná čísla jsou vždycky v aplikaci, tohle je orientace
-v tom, co je hotové a co ne.</p>
+<h2>Stav projektu</h2>
+<p>Čísla se čtou <b>z databáze při otevření téhle stránky</b>, ne z textu.
+Dřív tu stála opsaná a zestárla: tvrdila „ani jeden odkaz, žádné
+sebehodnocení" ve chvíli, kdy hráči odkazy dávno měli a jeden už vyplnil.
+Text drží význam, čísla si musí říct aplikace sama.</p>
+<div id="dok-cisla" class="dok-cisla"></div>
 
 <h3>Co běží</h3>
 <p>Hotová je celá <b>trenérská strana</b>: kartotéka a víc šablon u jednoho
@@ -377,14 +380,14 @@ hráč i hráčů mezi sebou, shoda mezi trenéry, tiskové listy A4 i kumulovan
 Cloudflare a <b>SMS je od 9. 8. 2026 ověřená naostro</b> — zkouška nanečisto
 i skutečně doručená zpráva. Do té doby účet u brány neprošel a zprávy končily
 chybou.</p>
+<p>Odkaz na sebehodnocení se dá <b>zkopírovat a poslat čímkoliv</b> — WhatsAppem,
+Messengerem, na papírku. Kanály v aplikaci jsou pohodlí, ne podmínka; odkaz je
+jednorázový a platí bez ohledu na to, kudy se k hráči dostal.</p>
 
-<h3>Co chybí — a je to to hlavní</h3>
-<p><b>Hráčům zatím neodešel ani jeden odkaz na sebehodnocení</b>, takže žádné
-sebehodnocení není vyplněné. Druhý polygon na listu zůstává prázdný a rozhovor
-nad rozdílem dvou pohledů — kvůli kterému nástroj vznikl — se nemá o co opřít.
-Trenérská hodnocení přitom v databázi jsou.</p>
-<p>Dál zbývá dohodnotit část kádru, doplnit hráčům pozice, které se tisknou na
-list, a rozdat trenérům vlastní hesla místo společného.</p>
+<h3>Co zbývá</h3>
+<p>Dohodnotit zbytek kádru, doplnit hráčům pozice, které se tisknou na list,
+a rozdat trenérům vlastní hesla místo společného. Kolik přesně toho zbývá,
+je v tabulce výš.</p>
 
 <h3>Na co si dát pozor</h3>
 <p>Vypínač <b>Analýzy jazykovým modelem</b> je zapnutý, takže při dotazu na kádr
@@ -776,9 +779,13 @@ the language model eats into the daily limit (and real money on the paid one),
 so asking it on every page load would be expensive. Run the real test
 deliberately with <i>Test the connection</i> in Settings.</p>
 
-<h2>Project status — 9 August 2026</h2>
-<p>A snapshot. The exact numbers always live in the app; this is orientation on
-what is finished and what is not.</p>
+<h2>Project status</h2>
+<p>The numbers are read <b>from the database when this page opens</b>, not from
+the text. They used to be copied in here and went stale: the page claimed "not
+a single link, no self-evaluation" at a point when the players had long had
+their links and one had already filled his in. Prose holds the meaning; the
+app has to state the numbers itself.</p>
+<div id="dok-cisla" class="dok-cisla"></div>
 
 <h3>What runs</h3>
 <p>The whole <b>coach side</b> is done: the register with several templates per
@@ -791,15 +798,15 @@ through Cloudflare, and <b>SMS was confirmed for real on 9 August 2026</b> — a
 dry run followed by a genuinely delivered message. Until then the gateway
 account had not cleared and messages failed.</p>
 
-<h3>What is missing — and it is the main thing</h3>
-<p><b>Not a single self-evaluation link has gone out to the players</b>, so no
-self-evaluation is filled in. The second polygon on the sheet stays empty and
-the conversation about the difference between the two views — the reason this
-tool exists — has nothing to stand on. The coach evaluations are in the
-database.</p>
-<p>Beyond that: part of the squad still needs evaluating, players need the
-positions that get printed on the sheet, and coaches need their own passwords
-instead of a shared one.</p>
+<p>A self-evaluation link can be <b>copied and sent by any means</b> — WhatsApp,
+Messenger, a scrap of paper. The channels in the app are convenience, not a
+precondition; the link is single-use and works no matter how it reached the
+player.</p>
+
+<h3>What is left</h3>
+<p>Evaluate the rest of the squad, fill in the positions that get printed on the
+sheet, and give the coaches their own passwords instead of a shared one. How
+much exactly is left is in the table above.</p>
 
 <h3>What to watch</h3>
 <p>The <b>analyses by language model</b> switch is on, so a question about the

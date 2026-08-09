@@ -1251,6 +1251,9 @@ a { color: var(--odkaz); }
 .obsah li { margin:2px 0; break-inside:avoid; }
 h1 { font-size:26px; margin:0 0 4px; }
 .zdroj { color:var(--tlum); font-size:13px; margin:0 0 20px; font-family:Consolas,monospace; }
+/* Odkaz na soubor, který se na web nepřevádí (migrace, vzorový list).
+   Modrý podtržený odkaz vedoucí na 404 je horší než obyčejný text. */
+.bezodkazu { font-family:Consolas,monospace; font-size:13.5px; color:var(--tlum); }
 h2 { font-size:20px; margin:30px 0 8px; padding-top:6px; border-top:1px solid var(--linka); }
 h3 { font-size:16px; margin:20px 0 6px; }
 h4 { font-size:15px; margin:16px 0 4px; color:var(--tlum); }
@@ -2084,6 +2087,26 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 kanaly: [p.notif_telegram ? 'Telegram' : null, p.notif_email ? 'e-mail' : null].filter(Boolean)
             }))
         });
+    }
+
+    /* ---------- kolik je v aplikaci dat ----------
+       Čísla o stavu projektu se **nesmí** psát do textu dokumentace. Jednou
+       opsaná zestárnou a začnou lhát: v STATUS.md stálo „0 odkazů, 0
+       sebehodnocení" ještě ve chvíli, kdy hráči odkazy dostali a jeden už
+       vyplnil. Text drží význam, čísla se berou odsud. */
+    if (cesta === '/api/stav-dat' && metoda === 'GET') {
+        const r = await env.DB.prepare(
+            `SELECT
+               (SELECT COUNT(*) FROM players WHERE role = 'hrac' AND aktivni = 1)        AS hracu,
+               (SELECT COUNT(*) FROM players)                                            AS osob,
+               (SELECT COUNT(*) FROM evaluations WHERE autor = 'trener')                 AS trenerskych,
+               (SELECT COUNT(DISTINCT player_id) FROM evaluations WHERE autor = 'trener') AS hodnocenych,
+               (SELECT COUNT(*) FROM evaluations WHERE autor = 'hrac')                   AS sebehodnoceni,
+               (SELECT COUNT(DISTINCT player_id) FROM evaluations WHERE autor = 'hrac')  AS hracuVyplnilo,
+               (SELECT COUNT(*) FROM tokens)                                             AS odkazu,
+               (SELECT COUNT(*) FROM tokens WHERE pouzit = 1)                            AS odkazuPouzitych`
+        ).first<Record<string, number>>();
+        return json(r ?? {}, 200, { 'cache-control': 'no-store' });
     }
 
     /* ---------- stav notifikačních kanálů ---------- */

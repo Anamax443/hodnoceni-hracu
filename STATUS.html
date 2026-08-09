@@ -138,8 +138,8 @@
           <td><span class="sab pole">pole</span> 10 hráčů ·
               <span class="sab brankar">brankář</span> 2 ·
               <span class="sab leader">leader</span> 2</td></tr>
-      <tr><td>Sebehodnocení od hráčů</td><td class="num big zero">0</td><td>hráčská strana zatím neběží</td></tr>
-      <tr><td>Vygenerovaných odkazů</td><td class="num big zero">0</td><td>bez nich nemá hráč jak vyplnit</td></tr>
+      <tr><td>Vygenerovaných odkazů</td><td class="num big">4</td><td>z toho 1 použitý; rozesílají se ručně WhatsAppem</td></tr>
+      <tr><td>Sebehodnocení od hráčů</td><td class="num big">1</td><td>první je vyplněné — řetěz prošel skutečným provozem</td></tr>
       <tr><td>Uzavřených shod mezi trenéry</td><td class="num">0</td><td>zatím hodnotí jeden</td></tr>
       <tr><td>Hráčů s vyplněnými pozicemi</td><td class="num">4 / 18</td><td>pozice se tisknou na list</td></tr>
       <tr><td>Účtů v <code>auth</code></td><td class="num">1</td><td>pořád společné heslo</td></tr>
@@ -148,12 +148,18 @@
   </div>
 
   <div class="gate" style="margin-top:16px">
-    <h2>📉 Rozhovor nad rozdílem dvou pohledů se zatím nekonal</h2>
-    <p>Trenérská strana běží, <strong>hráčská ne</strong>. Dokud se hráčům nerozešlou odkazy, není co
-       porovnávat a druhý polygon na listu zůstává prázdný.</p>
-    <p class="crit">Je to jediná věc, která dnes brání tomu, aby nástroj dělal to, kvůli čemu vznikl.
-       Všechno ostatní je postavené a ověřené.</p>
+    <h2>🎯 První rozhovor nad rozdílem dvou pohledů má o co se opřít</h2>
+    <p>Jeden hráč sebehodnocení vyplnil, takže se na jeho listu kreslí <strong>oba polygony</strong>.
+       Celý řetěz — vytvořit odkaz, poslat ho, hráč vyplní, uloží se — prošel skutečným provozem,
+       ne jen testem.</p>
+    <p>Odkazy se rozesílají <strong>ručně WhatsAppem</strong>, což je plnohodnotná cesta: odkaz je
+       jednorázový a je jedno, kudy se k hráči dostal. Kanály v aplikaci jsou pohodlí, ne podmínka.</p>
+    <p class="crit">Zbývá dorozeslat zbytku kádru — čím víc hráčů odevzdá, tím víc listů má
+       druhý polygon.</p>
   </div>
+
+  <p style="color:var(--muted);font-size:13px;margin:10px 0 0">Čísla výš jsou <strong>otisk k datu</strong>.
+     Živá se čtou v aplikaci: záložka 📖 → <em>Stav projektu</em>, kde jdou přímo z databáze.</p>
 
   <h2 class="section">Jak to teče</h2>
   <div class="flow">prohlížeč  <span class="m">-&gt;</span>  <span class="c">Cloudflare Worker</span> (API + statické soubory)  <span class="m">-&gt;</span>  <span class="c">Cloudflare D1</span> (SQLite)

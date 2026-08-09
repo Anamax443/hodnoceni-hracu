@@ -2,6 +2,46 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-09 (31) — dokumentace lhala o číslech; čísla se berou z databáze
+
+**Uživatel přistihl dokumentaci při lži.** V kapitole *Stav projektu* stálo „hráčům
+neodešel ani jeden odkaz, žádné sebehodnocení není vyplněné" — zatímco on odkazy dávno
+rozesílal **WhatsAppem** (kopíroval je z aplikace) a **první sebehodnocení už měl**.
+
+**Jak to vzniklo:** čísla jsem do aplikační dokumentace opsal z `docs/STATUS.md`, což byl
+snímek z rána, místo abych se podíval do databáze. Snímek nezestárl sám — zestárl tím, že
+jsem ho vydával za současnost.
+
+**Skutečnost z ostré databáze:** 4 vygenerované odkazy (1 použitý), **1 sebehodnocení**
+od 1 hráče, 16 trenérských hodnocení u 11 z 18 hráčů.
+
+**Oprava není přepsat číslo, ale odstranit ho z textu.** Nový `GET /api/stav-dat` vrací
+počty a kapitola *Stav projektu* si je natáhne při otevření. Text drží význam, čísla říká
+databáze. Ve `STATUS.md`, `STATUS.en.md` i `STATUS.html` zůstávají jako **otisk k datu**,
+ale nově s poznámkou, kde jsou živá — a s příběhem té lži, ať je jasné, proč tam ta
+poznámka je.
+
+**Chyba v mém předpokladu, kterou to odhalilo:** bral jsem „rozeslat odkazy" jako funkci
+aplikace. Není. **Odkaz je jednorázový a je jedno, kudy se k hráči dostane** — WhatsApp,
+Messenger, papírek. Kanály v aplikaci (Telegram, e-mail, SMS) jsou pohodlí, ne podmínka,
+a dokumentace to tak dřív neříkala. Teď to říká výslovně.
+
+**Rozbité odkazy uvnitř dokumentů** (uživatel poslal snímek s kroužkem kolem `HANDOFF.md`).
+Odkazy v Markdownu míří na cesty k souborům (`../HANDOFF.md`, `docs/STATUS.md`), které na
+webu neexistují — klik končil na 404. Generátor je teď překládá na `/dok/<klíč>` podle
+názvu souboru; cíle, které se na web nepřevádějí, se mění na obyčejný text, protože modrý
+podtržený odkaz, který nikam nevede, je horší než žádný.
+
+**Audit celé dokumentace** (na vyžádání): žádný rozbitý odkaz, žádná mrtvá kotva, žádný
+odkaz na GitHub. Zmínky o GitHubu zůstaly jen v próze, kde patří — `BUILD.md` popisuje
+`git clone`, `TECHNICAL.md` vysvětluje, proč se na GitHub neodkazuje. `ARCHITECTURE.md`
+ve výpisu je věta o šabloně project-standard, ne odkaz. Zkontrolováno strojově: 9 odkazů
+na `/dok/`, 0 rozbitých, 0 mrtvých kotev.
+
+**NASAZENO** 2026-08-09, Version ID `e2050585-d37e-4bd6-bb1e-4814a0c8eff4`.
+
+---
+
 ## 2026-08-09 (30) — dokumentace na vlastních stránkách, menu, stav modelu z provozu
 
 **Model se hlásí podle skutečného použití, ne podle zkušebního dotazu.** Uživatel to

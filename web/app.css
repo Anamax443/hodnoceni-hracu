@@ -236,6 +236,13 @@ details.sbalene > summary:hover { color: var(--modra-tmava); }
 .dokumentace li { margin: 3px 0; }
 .dokumentace code { background: var(--pozadi); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
+/* Čísla o stavu projektu — tažená z databáze, ne psaná do textu. */
+.dokumentace .dok-cisla { max-width: 68ch; margin: 10px 0 14px; }
+.dokumentace .dok-cisla table { width: 100%; border-collapse: collapse; }
+.dokumentace .dok-cisla td { padding: 5px 10px; border-bottom: 1px solid var(--linka); }
+.dokumentace .dok-cisla .cislo { text-align: right; white-space: nowrap; font-weight: 600; }
+.dokumentace .dok-cisla p { margin: 8px 0 0; }
+
 /* Menu na začátku dokumentu. Kapitol je přes dvacet, takže bez něj se
    k Provozu nebo Ochraně údajů dá dostat jen rolováním přes celý text. */
 .dokumentace .dok-menu {

@@ -929,8 +929,10 @@ async function spustPovel() {
 
 /* ===================== záložka: Dokumentace ===================== */
 
-/* Text žije v src/dokumentace.js. Tahle záložka nechodí na server —
-   po přepnutí jazyka se jen překreslí. */
+/* Text žije v src/dokumentace.js. Čísla o stavu projektu se do textu psát
+   nesmějí — jednou opsaná zestárnou a začnou lhát (stálo tu „ani jeden odkaz,
+   žádné sebehodnocení" ve chvíli, kdy hráči odkazy měli a jeden vyplnil).
+   Text drží význam, čísla dotáhne `/api/stav-dat` z databáze. */
 function dokumentace(kam) {
     kam.innerHTML = `
         <div class="karta dokumentace">
@@ -938,6 +940,26 @@ function dokumentace(kam) {
             <p class="popis">${t('dokumentace.popis')}</p>
             ${dokumentaceHtml(jazyk())}
         </div>`;
+
+    api('/api/stav-dat').then(c => {
+        const cil = $('#dok-cisla');
+        if (!cil) return;
+        const radek = (klic, hodnota, zvyraznit = false) =>
+            `<tr${zvyraznit ? ' class="resit"' : ''}><td>${t('dokCisla.' + klic)}</td>`
+            + `<td class="cislo">${esc(hodnota)}</td></tr>`;
+
+        cil.innerHTML = `<table>
+            ${radek('osob', `${c.osob} (${c.hracu} ${t('dokCisla.aktivnichHracu')})`)}
+            ${radek('trenerskych', `${c.trenerskych} — ${t('dokCisla.uHracu', c.hodnocenych, c.hracu)}`,
+                c.hodnocenych < c.hracu)}
+            ${radek('odkazu', `${c.odkazu} — ${t('dokCisla.zToho', c.odkazuPouzitych)}`)}
+            ${radek('sebehodnoceni', `${c.sebehodnoceni} — ${t('dokCisla.uHracu', c.hracuVyplnilo, c.hracu)}`,
+                c.hracuVyplnilo < c.hracu)}
+        </table>
+        <p class="popis">${c.sebehodnoceni
+            ? t('dokCisla.mameRozhovor')
+            : t('dokCisla.chybiRozhovor')}</p>`;
+    }).catch(() => { /* informativní — bez čísel se dokumentace čte dál */ });
 }
 
 /* ===================== záložka: Hodnotit ===================== */

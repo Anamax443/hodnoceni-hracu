@@ -50,22 +50,29 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 
 ## How much data is in the app
 
-Aggregate numbers from the production database as of 9 Aug 2026 (counts only — no names, no scores):
+> **Numbers here go stale, and stale numbers lie.** This section claimed "0 links, 0
+> self-evaluations" at a point when the players had long had their links (sent over
+> WhatsApp) and one had already filled his in. **Live numbers are in the app** — tab 📖,
+> chapter *Project status*, where they are read straight from the database via
+> `/api/stav-dat`. What follows is a snapshot.
+
+Snapshot of the production database as of **9 Aug 2026, 12:50** (counts only — no names, no scores):
 
 | | |
 |---|---|
 | people in the register | 22 (18 active players, 3 coaches, 1 inactive) |
 | players with positions filled in | 4 of 18 |
-| coach evaluations | **16** across 11 players, one period |
-| by template | outfield 11 (10 players) · goalkeeper 3 (2 players) · leader 2 (2 players) |
-| player self-evaluations | **0** |
-| self-evaluation links generated | **0** |
+| coach evaluations | **16** across 11 of 18 players, one period |
+| self-evaluation links generated | **4**, 1 of them used |
+| player self-evaluations | **1** (1 player) |
 | closed agreements between coaches | 0 |
 | rows in `auth` | 1 (still the shared password) |
 
-**The conversation over the gap between the two views — the whole point of the tool — has not
-happened yet.** The coach side runs, the player side does not: until the links go out there is
-nothing to compare and the second polygon on the sheet stays empty.
+**The first conversation over the gap between the two views has something to stand on.**
+One player filled his in, so both polygons are drawn on his sheet. Links go out **by hand
+over WhatsApp**, which is a perfectly good route: the link is single-use and it does not
+matter how it reached the player. The channels in the app are convenience, not a
+precondition.
 
 ## What has been verified live
 
@@ -89,12 +96,15 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
 - SMS composition and segment counting verified by running the functions over five headers:
   an en dash and a typographic quote correctly report UCS-2, a plain hyphen does not, and
   `€` counts as two characters
+- **self-evaluation for real (9 Aug 2026)**: a player opened a hand-delivered link and filled
+  it in; the database holds 4 generated links, 1 used, 1 self-evaluation. The whole chain
+  from creating a link to storing the player's scores has been through real use, not a test
 
 ## What is missing
 
-1. **Send the players their self-evaluation links.** Not one has been generated yet, so the
-   players have filled in nothing. Without it the sheet has no second polygon and the
-   conversation over the gap — the reason the tool exists — has nothing to stand on.
+1. **Get the links out to the rest of the squad.** This is under way — links go out by hand
+   over WhatsApp and the first self-evaluation is in. The more players hand theirs in, the
+   more sheets carry a second polygon and the more there is to talk about.
    **This is the main thing right now.**
 2. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
    or a verified e-mail, send them an invitation from People, then drop the shared password
