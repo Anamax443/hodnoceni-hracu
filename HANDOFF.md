@@ -2,6 +2,28 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (37) — formulář osoby až na vyžádání, videa k oběma školám
+
+**Commit:** `ddf2707` · **NASAZENO** 2026-08-10, Version ID `9316cb60-423a-41cc-8255-3535189a0466`.
+
+**Formulář „Nová osoba" stál pod tabulkou pořád otevřený** a působilo to, jako by se
+zrovna něco zakládalo — uživatel to popsal přesně: *„má se objevit až v případě, že chci
+novou osobu, jinak to působí zmatečně."* Teď je zavřený (`hidden` na kartě) a otevře ho
+buď tlačítko **+ Přidat osobu** nad tabulkou, nebo klik na jméno (úprava). Ve formuláři
+přibylo **Zavřít**; po uložení se překreslí tabulka, takže se zavře sám.
+
+**Videa k oběma školám.** Odkazy na články tam byly od commitu `3d46bcd`, ale uživatel je
+nenašel — byly na jednom řádku v drobném písmu pod třetím polem. Teď jsou **na třech
+řádcích s vlaječkou** (nadpis / 🇬🇧 / 🇪🇸) a u každé školy je i video:
+[FA Boot Room](https://www.thefa.com/bootroom/resources/coaching/the-fas-4-corner-model)
+a [Paco Seirulo — El padre del Microciclo Estructurado](https://www.youtube.com/watch?v=YQLnAQF_H2U).
+U videí je napsáno, že jsou na cizích stránkách a můžou zmizet — články jsou to trvalejší.
+
+**Poučení:** odkaz, který nikdo nenajde, je totéž jako odkaz, který tam není. Vejít se na
+jeden řádek není hodnota; poznat na první pohled, co ke komu patří, ano.
+
+---
+
 ## 2026-08-10 (36) — zkratka přes štítek i v Listech a Odkazech
 
 **Commit:** `65fbed6` · **NASAZENO** 2026-08-10, Version ID `097d3ca7-bbb9-4392-a129-94e93da896aa`.
