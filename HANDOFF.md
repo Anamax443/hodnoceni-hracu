@@ -4,6 +4,8 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-10 (39) — úvodní stránka, preferované sestavy, mazání osoby
 
+**Commit:** `4660a43` · **NASAZENO** 2026-08-10, Version ID `62616f76-4b78-430f-9ec6-1f489d38cbe1`.
+
 Tři přání z jednoho sezení.
 
 **Úvodní stránka (záložka *Úvod*, nově výchozí).** Aplikace dosud spadla rovnou do tabulky
