@@ -4,6 +4,8 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-10 (38) — hodnocení se neuloží bez podpisu
 
+**Commit:** `d2f178e` · **NASAZENO** 2026-08-10, Version ID `d8df854c-9f36-469e-b88b-726c7cf09765`.
+
 Uživatel: *„při hodnocení musí být vždy vyplněna hodnotící osoba, nemůže být prázdná."*
 Dosud šlo uložit hodnocení s volbou *— neuvedeno —* a v historii pak stál záznam,
 u kterého se za půl roku nedalo zjistit, kdo ho psal. Shoda mezi trenéry navíc nemá
