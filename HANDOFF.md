@@ -2,6 +2,28 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (36) — zkratka přes štítek i v Listech a Odkazech
+
+**Commit:** `65fbed6` · **NASAZENO** 2026-08-10, Version ID `097d3ca7-bbb9-4392-a129-94e93da896aa`.
+
+Uživatel ukázal tutéž tabulku ještě dvakrát — *Listy → Kdo se vytiskne* a *Odkazy →
+Komu vygenerovat*. Tentýž štítek na třech místech nemůže jednou být zkratka a dvakrát
+jen ozdoba: **klik vede na hodnocení odevšad, kde je vidět dvojice hráč × šablona.**
+
+Nejužitečnější je to v Listech u řádku, který má ve sloupci *trenér* pomlčku — právě ten
+list ještě hodnocení nemá a odsud je do něj jeden klik místo cesty přes dvě rozbalovátka.
+
+Navigace je vytažená do `zapojZkratkyNaHodnoceni(kam)`, ať netře psát totéž třikrát;
+štítek staví `stitekSablonyKlik(hracId, sablona)`. U tabulky **vygenerovaných odkazů**
+je štítek klikací jen tehdy, když je hráč pořád aktivní — token může být i po někom,
+kdo z týmu odešel, a ten ve výběru hodnocení není.
+
+Ověřeno na nasazené verzi: `app.js` z custom domény i ze záložní adresy mají stejný ETag
+a obsahují všechna čtyři místa. Samotné kliknutí neproklikáno — na stroji není prohlížeč
+k automatizaci.
+
+---
+
 ## 2026-08-10 (35) — štítek šablony v Lidech je zkratka na hodnocení
 
 **Commit:** `f5768a3` · **NASAZENO** 2026-08-10, Version ID `b8aa638b-5ce0-4bc8-90ec-c0352abe0ace`.
