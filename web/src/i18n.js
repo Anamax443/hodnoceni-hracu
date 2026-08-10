@@ -105,7 +105,8 @@ const SLOVNIK = {
 
         /* --- Lidé --- */
         'lide.nadpis': 'Lidé v týmu',
-        'lide.popis': 'Hráči se hodnotí a tisknou se jim listy. Trenéři se nehodnotí — jsou tu proto, aby šlo zaznamenat, kdo hodnocení pořídil.',
+        'lide.popis': 'Hráči se hodnotí a tisknou se jim listy. Trenéři se nehodnotí — jsou tu proto, aby šlo zaznamenat, kdo hodnocení pořídil. Klik na štítek šablony otevře rovnou hodnocení tou šesticí os.',
+        'lide.sablona.klik.tip': 'Otevřít hodnocení touhle šesticí os: {0}',
         'lide.jmeno': 'Jméno',
         'lide.post': 'Post',
         'lide.role': 'Role',
@@ -742,7 +743,8 @@ const SLOVNIK = {
         'dokumentace.popis': 'It describes how the app behaves, not how it is written. If something here disagrees with what you see, the app is right and this text needs fixing.',
 
         'lide.nadpis': 'People in the team',
-        'lide.popis': 'Players get evaluated and printed sheets. Coaches are not evaluated — they are listed so it is recorded who made the evaluation.',
+        'lide.popis': 'Players get evaluated and printed sheets. Coaches are not evaluated — they are listed so it is recorded who made the evaluation. Clicking a template chip opens the evaluation with that set of axes.',
+        'lide.sablona.klik.tip': 'Open the evaluation with this set of axes: {0}',
         'lide.jmeno': 'Name',
         'lide.post': 'Position',
         'lide.role': 'Role',

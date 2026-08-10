@@ -18,7 +18,7 @@ const $ = s => document.querySelector(s);
 /* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
    kterou chce trenér opravit, a Hodnotit ji hned po překreslení vybere. */
 const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null,
-    konektivita: null };
+    naHodnoceni: null, konektivita: null };
 
 /* Abeceda GSM 03.38. Zpráva složená jen z těchhle znaků se vejde do 160 znaků
    na segment; jediný znak mimo ni (pomlčka „–", české uvozovky, výpustka „…")
@@ -303,6 +303,17 @@ const zdrojeBloku = () => `<p class="popis">${t('bloky.zdroje')}
 const stitekSablony = s => `<span class="znacka sab-${esc(s)}">${t('sablona.' + s)}</span>`;
 const stitkySablon = o => sablonyOsoby(o).map(stitekSablony).join(' ');
 
+/* Tentýž štítek, ale v Lidech je zároveň zkratka: klik otevře hodnocení toho
+   hráče rovnou touhle šesticí os. Ferda má tři štítky = tři různé řady, a než
+   se k jeho brankářskému listu proklikat přes výběr hráče a výběr šablony,
+   je rychlejší trefit se do štítku, který už na obrazovce je.
+   Je to <button>, ne <span>, ať se tam dá dostat i tabulátorem. Vyřazený hráč
+   ho nedostane: ve výběru hráčů k hodnocení není, tak by zkratka vedla do formuláře
+   s prázdným rozbalovátkem. */
+const stitkySablonKlik = o => sablonyOsoby(o).map(s => `
+    <button class="znacka sab-${esc(s)} znacka-klik" data-hodnotit="${o.id}" data-sablona="${esc(s)}"
+            title="${t('lide.sablona.klik.tip', t('sablona.' + s))}">${t('sablona.' + s)}</button>`).join(' ');
+
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
@@ -313,7 +324,8 @@ async function lide(kam) {
             <td class="klik-jmeno" data-upravit="${o.id}" title="${t('lide.upravit.tip')}">${jmenoHtml(o)}</td>
             <td>${esc(nazvyPozic(o) || t('lide.bezPozic'))}${o.post ? ` <span class="popis">${esc(o.post)}</span>` : ''}</td>
             <td><span class="znacka ${o.role}">${o.role === 'trener' ? t('lide.trener') : t('lide.hrac')}</span></td>
-            <td>${o.role === 'hrac' ? stitkySablon(o) : '—'}</td>
+            <td>${o.role !== 'hrac' ? '—'
+                    : o.aktivni ? stitkySablonKlik(o) : stitkySablon(o)}</td>
             <td>${o.aktivni ? '' : `<span class="znacka neaktivni">${t('lide.neaktivni')}</span>`}</td>
             <td><button class="vedlejsi" data-upravit="${o.id}" title="${t('lide.upravit.tip')}">${t('lide.upravit')}</button></td>
         </tr>`;
@@ -663,6 +675,15 @@ async function lide(kam) {
             : '';
         $('#formular-osoby').dataset.id = o.id;
         $('#formular-osoby').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Štítek šablony = zkratka na hodnocení právě touhle šesticí os. Formulář
+    // se otevře na Hodnotit s vybraným hráčem i šablonou, takže odpadá klikání
+    // dvěma rozbalovátky nad tím, co už je vidět v tabulce.
+    kam.querySelectorAll('[data-hodnotit]').forEach(b => b.onclick = () => {
+        stav.naHodnoceni = { id: Number(b.dataset.hodnotit), sablona: b.dataset.sablona };
+        stav.zalozka = 'hodnotit';
+        prekresli();
     });
 
     $('#nova-osoba').onclick = vyprazdni;
@@ -1026,9 +1047,19 @@ async function hodnotit(kam) {
     // Příchod z Historie tlačítkem „Upravit" — rovnou načíst tu verzi.
     const zHistorie = stav.uprava;
     stav.uprava = null;
+    // Příchod z Lidí kliknutím na štítek šablony — ten hráč a právě ta šablona.
+    const zLidi = stav.naHodnoceni;
+    stav.naHodnoceni = null;
+
     if (zHistorie) {
         $('#h-hrac').value = String(zHistorie.player_id);
         upravVerzi(zHistorie);
+        return;
+    }
+    if (zLidi) {
+        $('#h-hrac').value = String(zLidi.id);
+        formularHodnoceni($('#formular'), zLidi.id, zLidi.sablona);
+        nabidniUpravu();
     }
 }
 

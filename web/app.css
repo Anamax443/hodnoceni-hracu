@@ -201,6 +201,18 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 :root[data-theme="dark"] .znacka.sab-brankar { color: #80DEEA; border-color: #26C6DA; background: #0b2b30; }
 :root[data-theme="dark"] .znacka.sab-leader  { color: #F8BBD0; border-color: #EC407A; background: #301022; }
 
+/* Štítek šablony v Lidech je zároveň zkratka na hodnocení touhle šesticí os,
+   takže je to <button>. Vypadat musí pořád jako štítek — prohlížeč by mu jinak
+   nasadil systémové písmo i šedé pozadí. Že je klikací, říká kurzor a podtržení
+   při najetí; barvu si drží podle šablony. */
+button.znacka {
+    font: inherit; font-size: 12px; line-height: 1.5;
+    -webkit-appearance: none; appearance: none;
+}
+.znacka-klik { cursor: pointer; }
+.znacka-klik:hover { filter: brightness(1.08); text-decoration: underline; }
+.znacka-klik:focus-visible { outline: 2px solid var(--modra); outline-offset: 1px; }
+
 /* Volné porovnání má až osm sloupců s dlouhými popisky („Robin · 2025/2026 zima
    · trenér Milan"). Ať se posouvá tabulka sama v sobě, ne celá stránka —
    na mobilu totéž dělá pravidlo pro každou tabulku v karta média query. */
