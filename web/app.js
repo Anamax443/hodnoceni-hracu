@@ -310,9 +310,20 @@ const stitkySablon = o => sablonyOsoby(o).map(stitekSablony).join(' ');
    Je to <button>, ne <span>, ať se tam dá dostat i tabulátorem. Vyřazený hráč
    ho nedostane: ve výběru hráčů k hodnocení není, tak by zkratka vedla do formuláře
    s prázdným rozbalovátkem. */
-const stitkySablonKlik = o => sablonyOsoby(o).map(s => `
-    <button class="znacka sab-${esc(s)} znacka-klik" data-hodnotit="${o.id}" data-sablona="${esc(s)}"
-            title="${t('lide.sablona.klik.tip', t('sablona.' + s))}">${t('sablona.' + s)}</button>`).join(' ');
+const stitekSablonyKlik = (hracId, s) => `
+    <button class="znacka sab-${esc(s)} znacka-klik" data-hodnotit="${hracId}" data-sablona="${esc(s)}"
+            title="${t('lide.sablona.klik.tip', t('sablona.' + s))}">${t('sablona.' + s)}</button>`;
+const stitkySablonKlik = o => sablonyOsoby(o).map(s => stitekSablonyKlik(o.id, s)).join(' ');
+
+/* Zkratky se zapojují stejně v Lidech i v Listech — obojí je tabulka, kde už
+   ten štítek stejně je, takže je zbytečné psát navigaci dvakrát. */
+function zapojZkratkyNaHodnoceni(kam) {
+    kam.querySelectorAll('[data-hodnotit]').forEach(b => b.onclick = () => {
+        stav.naHodnoceni = { id: Number(b.dataset.hodnotit), sablona: b.dataset.sablona };
+        stav.zalozka = 'hodnotit';
+        prekresli();
+    });
+}
 
 /* ===================== záložka: Lidé ===================== */
 
@@ -680,11 +691,7 @@ async function lide(kam) {
     // Štítek šablony = zkratka na hodnocení právě touhle šesticí os. Formulář
     // se otevře na Hodnotit s vybraným hráčem i šablonou, takže odpadá klikání
     // dvěma rozbalovátky nad tím, co už je vidět v tabulce.
-    kam.querySelectorAll('[data-hodnotit]').forEach(b => b.onclick = () => {
-        stav.naHodnoceni = { id: Number(b.dataset.hodnotit), sablona: b.dataset.sablona };
-        stav.zalozka = 'hodnotit';
-        prekresli();
-    });
+    zapojZkratkyNaHodnoceni(kam);
 
     $('#nova-osoba').onclick = vyprazdni;
 
@@ -1588,7 +1595,7 @@ async function listy(kam) {
                             <input type="checkbox" class="vyber" value="${h.id}:${s.sablona}"
                                    title="${t('listy.vyber.tip')}" checked></td>
                         ${i === 0 ? `<td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
-                        <td>${stitekSablony(s.sablona)}</td>
+                        <td>${stitekSablonyKlik(h.id, s.sablona)}</td>
                         <td class="cisla">${znacka(s.maTrener)}</td>
                         <td class="cisla">${znacka(s.maHrac)}</td>
                     </tr>`).join('');
@@ -1601,6 +1608,10 @@ async function listy(kam) {
 
     $('#vsichni').onchange = e =>
         kam.querySelectorAll('.vyber').forEach(c => { c.checked = e.target.checked; });
+
+    // Řádek s pomlčkou u trenéra říká, který list ještě nemá hodnocení —
+    // z téhle tabulky je proto nejblíž rovnou do formuláře té šablony.
+    zapojZkratkyNaHodnoceni(kam);
 
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);
@@ -2144,7 +2155,7 @@ async function odkazy(kam) {
                             <input type="checkbox" class="komu" value="${o.id}:${s}"
                                    title="${t('odkazy.komu.tip')}" checked></td>
                         ${i === 0 ? `<td rowspan="${sablony.length}">${jmenoHtml(o)}</td>` : ''}
-                        <td>${stitekSablony(s)}</td>
+                        <td>${stitekSablonyKlik(o.id, s)}</td>
                         <td>${cekaNaVyplneni.has(`${o.id}:${s}`)
                             ? `<span class="ne">${t('odkazy.uzCeka')}</span>` : ''}</td>
                     </tr>`).join('');
@@ -2163,7 +2174,9 @@ async function odkazy(kam) {
                 <tbody>${seznam.length ? seznam.map(x => `
                     <tr>
                         <td>${jmenoHtml(x)}</td>
-                        <td>${stitekSablony(x.sablona || 'pole')}</td>
+                        <td>${stav.lide.some(o => o.id === x.player_id && o.role === 'hrac' && o.aktivni)
+                            ? stitekSablonyKlik(x.player_id, x.sablona || 'pole')
+                            : stitekSablony(x.sablona || 'pole')}</td>
                         <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
                         <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
                         <td class="odkaz-pole">${esc(zaklad)}/h/${esc(x.token.slice(0, 8))}…</td>
@@ -2177,6 +2190,10 @@ async function odkazy(kam) {
 
     $('#vsichni-komu').onchange = e =>
         kam.querySelectorAll('.komu').forEach(c => { c.checked = e.target.checked; });
+
+    // Štítek šablony vede na hodnocení i odsud — v obou tabulkách. Odkaz nese
+    // tutéž šesticí os, takže „vyplnil hráč, ještě to nemám" se řeší jedním klikem.
+    zapojZkratkyNaHodnoceni(kam);
 
     $('#generovat').onclick = async () => {
         const ids = [...kam.querySelectorAll('.komu:checked')].map(c => c.value);
