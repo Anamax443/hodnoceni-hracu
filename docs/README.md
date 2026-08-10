@@ -185,6 +185,11 @@ je i v aplikaci pod bloky:
   hráč jako osm propojených struktur — kondiční, koordinační, kognitivní, socio-afektivní,
   emotivně-volní, kreativně-expresivní, mentální a bioenergetická.
 
+Kdo radši poslouchá: anglický model má video na stránce
+[The Boot Room](https://www.thefa.com/bootroom/resources/coaching/the-fas-4-corner-model) (FA),
+španělský ve videu [Paco Seirulo — El padre del Microciclo Estructurado](https://www.youtube.com/watch?v=YQLnAQF_H2U).
+Videa jsou na cizích stránkách a můžou zmizet; články výš jsou to trvalejší.
+
 Pro naše tři bloky to vychází zhruba takhle: *Fyzicky* = kondiční a bioenergetická,
 *Hlavou* = kognitivní a emotivně-volní, *V partě* = socio-afektivní a kreativně-expresivní.
 Obě školy říkají totéž: hráč není jen to, co jde změřit, a co změřit nejde, se popisuje

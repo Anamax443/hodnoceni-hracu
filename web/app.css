@@ -113,6 +113,9 @@ main { max-width: 980px; margin: 18px auto; padding: 0 14px 60px; }
     background: var(--karta); border: 1px solid var(--linka); border-radius: 6px;
     padding: 16px 18px; margin-bottom: 16px;
 }
+/* Karta se schovává atributem `hidden` (formulář osoby je zavřený, dokud si ho
+   někdo nevyžádá). Explicitně, aby to nezáviselo na výchozím stylu prohlížeče. */
+.karta[hidden] { display: none; }
 .karta h2 { margin: 0 0 4px; font-size: 17px; }
 .karta .popis { color: var(--seda); margin: 0 0 14px; }
 
@@ -200,6 +203,11 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 :root[data-theme="dark"] .znacka.sab-pole    { color: #90CAF9; border-color: #42A5F5; background: #102636; }
 :root[data-theme="dark"] .znacka.sab-brankar { color: #80DEEA; border-color: #26C6DA; background: #0b2b30; }
 :root[data-theme="dark"] .znacka.sab-leader  { color: #F8BBD0; border-color: #EC407A; background: #301022; }
+
+/* Prameny pod slovními bloky: každá škola na svém řádku, ať se nesloučí
+   do jedné dlouhé věty odkazů, ve které se nedá poznat, co ke komu patří. */
+.zdroje { margin-top: 10px; line-height: 1.7; }
+.zdroje a { color: var(--modra); }
 
 /* Štítek šablony v Lidech je zároveň zkratka na hodnocení touhle šesticí os,
    takže je to <button>. Vypadat musí pořád jako štítek — prohlížeč by mu jinak

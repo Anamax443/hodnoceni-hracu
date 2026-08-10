@@ -12,7 +12,7 @@ import { SABLONY, MAX, POZICE } from './src/sablony.js';
 import { esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
 import { dokumentaceHtml } from './src/dokumentace.js';
-import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN } from './src/zdroje.js';
+import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN, ZDROJ_FA_VIDEO, ZDROJ_ES_VIDEO } from './src/zdroje.js';
 
 const $ = s => document.querySelector(s);
 /* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
@@ -291,10 +291,14 @@ const nazvySablon = o => sablonyOsoby(o).map(s => t('sablona.' + s)).join(' · '
 /* Prameny pod slovními bloky. Komu nestačí věta pod polem, má kam dojít —
    a je vidět, že rozdělení na tři bloky není domácí výmysl: anglická škola
    dělí hráče na čtyři rohy, španělská na osm struktur. */
-const zdrojeBloku = () => `<p class="popis">${t('bloky.zdroje')}
-    <a href="${ZDROJ_FA}" target="_blank" rel="noopener">${t('bloky.zdroje.fa')}</a> ·
-    <a href="${ZDROJ_ES}" target="_blank" rel="noopener">${t('bloky.zdroje.es')}</a>
-    (<a href="${ZDROJ_ES_EN}" target="_blank" rel="noopener">${t('bloky.zdroje.esEn')}</a>)</p>`;
+const zdrojeBloku = () => `<div class="popis zdroje">
+    <div><b>${t('bloky.zdroje')}</b></div>
+    <div>🇬🇧 <a href="${ZDROJ_FA}" target="_blank" rel="noopener">${t('bloky.zdroje.fa')}</a>
+        · <a href="${ZDROJ_FA_VIDEO}" target="_blank" rel="noopener">${t('bloky.zdroje.video')}</a></div>
+    <div>🇪🇸 <a href="${ZDROJ_ES}" target="_blank" rel="noopener">${t('bloky.zdroje.es')}</a>
+        · <a href="${ZDROJ_ES_EN}" target="_blank" rel="noopener">${t('bloky.zdroje.esEn')}</a>
+        · <a href="${ZDROJ_ES_VIDEO}" target="_blank" rel="noopener">${t('bloky.zdroje.video')}</a></div>
+</div>`;
 
 /* Barevný štítek šablony. Stejné odstíny jako na tiskovém listu (src/styl.css),
    ať trenér nemusí u každé tabulky luštit, jestli kouká na brankářskou nebo
@@ -351,6 +355,7 @@ async function lide(kam) {
                 <tbody>${stav.lide.map(radek).join('') || `<tr><td colspan="6">${t('lide.prazdno')}</td></tr>`}</tbody>
             </table>
             <p>
+                <button class="hl" id="pridat-osobu" title="${t('lide.pridat.tip')}">${t('lide.pridat')}</button>
                 <button class="vedlejsi" id="export-lide" title="${t('lide.export.tip')}">${t('lide.export')}</button>
                 <button class="vedlejsi" id="export-lide-csv" title="${t('lide.exportCsv.tip')}">${t('lide.exportCsv')}</button>
                 <button class="vedlejsi" id="import-lide" title="${t('lide.import.tip')}">${t('lide.import')}</button>
@@ -359,7 +364,7 @@ async function lide(kam) {
             <div id="import-vysledek"></div>
         </div>
 
-        <div class="karta" id="formular-osoby">
+        <div class="karta" id="formular-osoby" hidden>
             <h2 id="nadpis-osoby">${t('lide.nova')}</h2>
             <input type="hidden" id="osoba-id" value="">
             <div class="radek">
@@ -431,6 +436,7 @@ async function lide(kam) {
 
             <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
             <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
+            <button class="vedlejsi" id="zavrit-osobu" title="${t('lide.zavrit.tip')}">${t('lide.zavrit')}</button>
         </div>`;
 
     /* ===== čtení nahraného souboru =====
@@ -581,6 +587,16 @@ async function lide(kam) {
         e.target.value = '';   // ať jde nahrát tentýž soubor znovu
     };
 
+    /* Formulář osoby je zavřený, dokud si ho někdo nevyžádá. Otevřený pod
+       tabulkou vypadal jako rozepsaný záznam a nebylo poznat, jestli se něco
+       zakládá, nebo upravuje. Otevře ho „Přidat osobu" a klik na jméno. */
+    const ukazFormular = () => {
+        const f = $('#formular-osoby');
+        f.hidden = false;
+        f.scrollIntoView({ behavior: 'smooth' });
+    };
+    const zavriFormular = () => { $('#formular-osoby').hidden = true; };
+
     const vyprazdni = () => {
         $('#osoba-id').value = '';
         $('#nadpis-osoby').textContent = t('lide.nova');
@@ -685,7 +701,7 @@ async function lide(kam) {
             ? `<div class="hlaska ${o.ma_heslo ? 'ok' : 'pozor'}">${o.ma_heslo ? t('lide.maHeslo') : t('lide.bezHesla')}</div>`
             : '';
         $('#formular-osoby').dataset.id = o.id;
-        $('#formular-osoby').scrollIntoView({ behavior: 'smooth' });
+        ukazFormular();
     });
 
     // Štítek šablony = zkratka na hodnocení právě touhle šesticí os. Formulář
@@ -693,7 +709,9 @@ async function lide(kam) {
     // dvěma rozbalovátky nad tím, co už je vidět v tabulce.
     zapojZkratkyNaHodnoceni(kam);
 
-    $('#nova-osoba').onclick = vyprazdni;
+    $('#pridat-osobu').onclick = () => { vyprazdni(); ukazFormular(); };
+    $('#nova-osoba').onclick = vyprazdni;          // v otevřeném formuláři = „a teď dalšího"
+    $('#zavrit-osobu').onclick = () => { vyprazdni(); zavriFormular(); };
 
     $('#ulozit-osobu').onclick = async () => {
         const id = $('#osoba-id').value;

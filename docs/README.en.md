@@ -134,6 +134,11 @@ schools, and both are linked under the blocks in the app itself:
   the player as eight interrelated structures — conditional, coordinative, cognitive,
   socio-affective, emotive-volitional, creative-expressive, mental and bioenergetic.
 
+If you would rather watch than read: the English model has a video on
+[The Boot Room](https://www.thefa.com/bootroom/resources/coaching/the-fas-4-corner-model) (the FA),
+the Spanish one in [Paco Seirulo — El padre del Microciclo Estructurado](https://www.youtube.com/watch?v=YQLnAQF_H2U).
+The videos live on other people's sites and may disappear; the articles above are the durable part.
+
 For the three blocks here that maps roughly as: *Physical* = conditional and bioenergetic,
 *Mental* = cognitive and emotive-volitional, *Social* = socio-affective and
 creative-expressive. Both schools say the same thing: a player is more than what can be

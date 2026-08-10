@@ -20,3 +20,12 @@ export const ZDROJ_ES =
 /** Tentýž článek anglicky — pro toho, kdo španělsky nečte. */
 export const ZDROJ_ES_EN =
     'https://barcainnovationhub.fcbarcelona.com/blog/paco-seirul%C2%B7los-proposal-for-team-sports-training-structured-training-game-spaces-and-preferential-simulation-situations/';
+
+/** Stránka FA (The Boot Room), kde je model vyložený i ve videu. */
+export const ZDROJ_FA_VIDEO =
+    'https://www.thefa.com/bootroom/resources/coaching/the-fas-4-corner-model';
+
+/* Video k španělské škole je cizí kanál na YouTube, ne stránka federace —
+   může zmizet, aniž o tom budeme vědět. Články výš jsou to trvalejší;
+   tohle je navíc pro toho, kdo radši poslouchá, než čte. */
+export const ZDROJ_ES_VIDEO = 'https://www.youtube.com/watch?v=YQLnAQF_H2U';

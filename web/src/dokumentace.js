@@ -12,7 +12,7 @@
    ===================================================================== */
 
 /* Metodické prameny drží `zdroje.js` — odkazuje na ně i formulář hodnocení. */
-import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN } from './zdroje.js';
+import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN, ZDROJ_FA_VIDEO, ZDROJ_ES_VIDEO } from './zdroje.js';
 
 /* Ostatní dokumenty servíruje Worker na `/dok/<klíč>` za týmž přihlášením
    jako aplikaci. Odkazovat na GitHub nemá smysl: repozitář je soukromý,
@@ -143,6 +143,12 @@ a bioenergetická struktura, <b>Hlavou</b> = kognitivní a emotivně-volní,
 <b>V partě</b> = socio-afektivní a kreativně-expresivní. Obě školy říkají totéž
 jinými slovy: <b>hráč není jen to, co jde změřit</b>, a co změřit nejde, se
 popisuje větou, ne známkou.</p>
+<p><b>Kdo radši poslouchá, než čte:</b> anglický model je vyložený i ve videu na
+stránce <a href="${ZDROJ_FA_VIDEO}" target="_blank" rel="noopener">The Boot Room</a>
+(FA), španělský ve videu
+<a href="${ZDROJ_ES_VIDEO}" target="_blank" rel="noopener">Paco Seirulo — El padre
+del Microciclo Estructurado</a>. Videa jsou na cizích stránkách a můžou zmizet;
+články výš jsou to trvalejší.</p>
 
 <p><b>Slovní bloky a cíle patří k šabloně</b>, ne k člověku. Brankářský list má „výkopy
 od brány", leader list něco úplně jiného — proto se při přepnutí šablony ve formuláři
@@ -583,6 +589,12 @@ bioenergetic, <b>Mental</b> = cognitive and emotive-volitional, <b>Social</b> =
 socio-affective and creative-expressive. Both schools say the same thing in different
 words: <b>a player is more than what can be measured</b>, and what cannot be measured
 is written as a sentence, not a score.</p>
+<p><b>If you would rather watch than read:</b> the English model is also explained in
+a video on <a href="${ZDROJ_FA_VIDEO}" target="_blank" rel="noopener">The Boot Room</a>
+(the FA), and the Spanish one in
+<a href="${ZDROJ_ES_VIDEO}" target="_blank" rel="noopener">Paco Seirulo — El padre del
+Microciclo Estructurado</a>. The videos live on other people's sites and may disappear;
+the articles above are the durable part.</p>
 
 <p><b>The written notes and the goals belong to the template</b>, not to the person. A
 goalkeeper sheet says “goal kicks”, a leader sheet says something entirely different — so
