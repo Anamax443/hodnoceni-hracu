@@ -2,6 +2,25 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (33) — u slovních bloků je napsané, co do nich patří
+
+**Commit:** `2a5931a` · **NASAZENO** 2026-08-10, Version ID `4e466f8d-90d7-4452-90d3-6fdaff7cdb3c`.
+
+**Uživatel zakroužkoval popisky** *Fyzicky*, *Hlavou*, *V partě* v kartě „Co půjde na list":
+holé slovo nad prázdným polem. Nad formulářem sice byla společná věta o tom, že se tyhle
+tři rohy neznámkují číslem, ale **co do kterého patří, neříkalo nic**. U aplikace, kde píšou
+tři trenéři a texty se pak slévají do jednoho listu, to znamená tři různé výklady.
+
+Pod každým polem je teď jedna věta: který roh modelu to je, co do něj patří a **příklad
+věty**, aby bylo vidět, jak konkrétní se to má psát. Je to na obou místech, kde se bloky
+vyplňují — v hodnocení i v Shodě — a v obou jazycích. Karta *Co půjde na list* navíc říká,
+že tenhle text se hráči opravdu vytiskne a že je předvyplněný od prvního trenéra.
+
+Vysvětlení vychází z **FA Four Corner Model** (`docs/ZADANI.md` §13), na kterém stojí celé
+zadání: fyzický, psychologický a sociální roh; technicko-taktický je radar s čísly.
+
+---
+
 ## 2026-08-10 (32) — známkovat jde jen tím, co má hráč zaškrtnuté
 
 **Commit:** `fe9c640` · **NASAZENO** 2026-08-10, Version ID `803c719d-de81-4836-9fdd-ff001f172fc3`.
