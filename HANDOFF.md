@@ -2,6 +2,30 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (35) — štítek šablony v Lidech je zkratka na hodnocení
+
+**Commit:** `f5768a3` · **NASAZENO** 2026-08-10, Version ID `b8aa638b-5ce0-4bc8-90ec-c0352abe0ace`.
+
+V tabulce Lidí je vidět, že Ferda má tři šablony — ale dostat se k jeho brankářskému
+hodnocení znamenalo přejít na *Hodnotit* a proklikat dvě rozbalovátka nad tím, co člověk
+právě viděl. **Klik na štítek to teď udělá rovnou**: otevře formulář s tím hráčem a právě
+tou šesticí os.
+
+Řešeno stejným způsobem jako příchod z Historie: jednorázová schránka ve `stav`
+(`naHodnoceni`), kterou si záložka *Hodnotit* po překreslení vybere. Štítek je `<button>`,
+takže se na něj dá i tabulátorem; **vyřazený hráč klikací štítek nemá** — ve výběru hráčů
+k hodnocení není, takže by zkratka vedla do formuláře s prázdným rozbalovátkem.
+
+**Pozorování k ověřování nasazení:** minutu po `npm run deploy` vracela custom doména
+**starý `app.js`** (`CF-Cache-Status: HIT`, starý ETag), zatímco `/api/version` už hlásila
+nový commit — verze je zapečená v bundlu, asset jde přes cache zóny. Ani `?v=náhoda`
+ani `Cache-Control: no-cache` to neobešly. Po ~2 minutách se ETag srovnal se záložní
+adresou a obsah byl nový. **Po nasazení tedy neověřovat jen `/api/version`, ale i to,
+že v `app.js` je opravdu ta změna** — a počítat s tím, že první minuty po nasazení
+může trenér dostat starý skript.
+
+---
+
 ## 2026-08-10 (34) — odkazy na anglickou a španělskou školu
 
 **Commit:** `3d46bcd` · **NASAZENO** 2026-08-10, Version ID `23e4000e-33cc-4914-8da0-462f0436d279`.

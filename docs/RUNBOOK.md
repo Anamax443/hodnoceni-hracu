@@ -71,6 +71,7 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | „Na serveru není nastaveno ADMIN_HESLO" | secret chybí úplně | totéž |
 | všichni se odhlásili najednou | změnil se `SESSION_KEY` | staré cookies přestanou platit, stačí se přihlásit znovu |
 | commit v liště nesedí s gitem | nasazovalo se s necommitnutými změnami | `/api/version` má `cisto: false`; commitnout a nasadit znovu |
+| lišta hlásí nový commit, ale aplikace se chová postaru | verze je v bundlu, `app.js` jde přes cache zóny a chvíli po nasazení bývá starý | počkat pár minut a Ctrl+F5; ověřit `curl https://hodnoceni.maxferit.cz/app.js` proti `…workers.dev/app.js` (stejný ETag = srovnané) |
 | aplikace je celá anglicky | jazyk prohlížeče nebo dřívější volba | tlačítko **Čeština** v horní liště, nebo adresa s `?lang=cs` |
 | po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
 | hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
