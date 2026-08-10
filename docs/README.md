@@ -173,6 +173,23 @@ po svém a na listech pak stojí tři různé věci:
 - **V partě** — spoluhráči, trenér, rozhodčí; jestli ostatní táhne, nebo se veze.
   („Mladší si k němu chodí pro radu.")
 
+**Odkud to je.** Rozdělení na graf a tři slovní bloky stojí na dvou školách a odkaz na obě
+je i v aplikaci pod bloky:
+
+- **anglická** — [FA Four Corner Model](https://learn.englandfootball.com/articles-and-resources/coaching/resources/2022/the-fa-4-corner-model)
+  anglické fotbalové asociace: čtyři rovnocenné rohy (technicko-taktický, fyzický,
+  psychologický, sociální), žádný nefunguje sám o sobě. Technicko-taktický roh je tady
+  radar s čísly, zbylé tři jsou ty slovní bloky.
+- **španělská** — strukturovaný trénink [Paca Seirul·la](https://barcainnovationhub.fcbarcelona.com/es/blog/la-propuesta-de-paco-seirul%C2%B7lo-para-el-entrenamiento-en-deportes-de-equipo-el-entrenamiento-estructurado-los-espacios-de-juego-y-las-situaciones-simuladoras-preferenciales/)
+  z FC Barcelona ([anglicky](https://barcainnovationhub.fcbarcelona.com/blog/paco-seirul%C2%B7los-proposal-for-team-sports-training-structured-training-game-spaces-and-preferential-simulation-situations/)):
+  hráč jako osm propojených struktur — kondiční, koordinační, kognitivní, socio-afektivní,
+  emotivně-volní, kreativně-expresivní, mentální a bioenergetická.
+
+Pro naše tři bloky to vychází zhruba takhle: *Fyzicky* = kondiční a bioenergetická,
+*Hlavou* = kognitivní a emotivně-volní, *V partě* = socio-afektivní a kreativně-expresivní.
+Obě školy říkají totéž: hráč není jen to, co jde změřit, a co změřit nejde, se popisuje
+větou, ne známkou.
+
 **Slovní bloky a cíle patří k té šabloně**, ne k člověku — „výkopy od brány" na leader list
 nepatří. Přepnutím šablony se proto vyprázdní; když v nich něco máš, aplikace se napřed
 zeptá, ať o rozepsaný text nepřijdeš.

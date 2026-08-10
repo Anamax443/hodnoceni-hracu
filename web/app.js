@@ -12,6 +12,7 @@ import { SABLONY, MAX, POZICE } from './src/sablony.js';
 import { esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
 import { dokumentaceHtml } from './src/dokumentace.js';
+import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN } from './src/zdroje.js';
 
 const $ = s => document.querySelector(s);
 /* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
@@ -286,6 +287,14 @@ const jmenoText = o => o.prezdivka ? `${o.jmeno} „${o.prezdivka}"` : o.jmeno;
    Každá šablona je vlastní řada, vlastní odkaz na sebehodnocení i vlastní list. */
 const sablonyOsoby = o => (o?.sablony?.length ? o.sablony : [o?.sablona ?? 'pole']);
 const nazvySablon = o => sablonyOsoby(o).map(s => t('sablona.' + s)).join(' · ');
+
+/* Prameny pod slovními bloky. Komu nestačí věta pod polem, má kam dojít —
+   a je vidět, že rozdělení na tři bloky není domácí výmysl: anglická škola
+   dělí hráče na čtyři rohy, španělská na osm struktur. */
+const zdrojeBloku = () => `<p class="popis">${t('bloky.zdroje')}
+    <a href="${ZDROJ_FA}" target="_blank" rel="noopener">${t('bloky.zdroje.fa')}</a> ·
+    <a href="${ZDROJ_ES}" target="_blank" rel="noopener">${t('bloky.zdroje.es')}</a>
+    (<a href="${ZDROJ_ES_EN}" target="_blank" rel="noopener">${t('bloky.zdroje.esEn')}</a>)</p>`;
 
 /* Barevný štítek šablony. Stejné odstíny jako na tiskovém listu (src/styl.css),
    ať trenér nemusí u každé tabulky luštit, jestli kouká na brankářskou nebo
@@ -1242,6 +1251,7 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
                 <div class="popis">${t('blok.hlavou.napoveda')}</div></div>
             <div class="pole"><label for="h-parta">${t('blok.parta')}</label><textarea id="h-parta"></textarea>
                 <div class="popis">${t('blok.parta.napoveda')}</div></div>
+            ${zdrojeBloku()}
         </div>
 
         <div class="karta">
@@ -1442,6 +1452,7 @@ function vykresliShodu(kam, s, hracId) {
                 <div class="popis">${t('blok.hlavou.napoveda')}</div></div>
             <div class="pole"><label for="s-parta">${t('blok.parta')}</label><textarea id="s-parta"></textarea>
                 <div class="popis">${t('blok.parta.napoveda')}</div></div>
+            ${zdrojeBloku()}
             <div class="pole"><label for="s-cil1">${esc(stav.nastaveni.cileNadpis)}</label>
                 <input type="text" id="s-cil1" placeholder="${t('hodnotit.cil', 1)}"></div>
             <div class="pole"><input type="text" id="s-cil2" placeholder="${t('hodnotit.cil', 2)}"></div>

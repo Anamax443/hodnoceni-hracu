@@ -11,6 +11,9 @@
    nápověda, kterou trenér uvidí.
    ===================================================================== */
 
+/* Metodické prameny drží `zdroje.js` — odkazuje na ně i formulář hodnocení. */
+import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN } from './zdroje.js';
+
 /* Ostatní dokumenty servíruje Worker na `/dok/<klíč>` za týmž přihlášením
    jako aplikaci. Odkazovat na GitHub nemá smysl: repozitář je soukromý,
    takže by trenér místo dokumentu uviděl přihlašovací stránku GitHubu. */
@@ -120,6 +123,25 @@ měřilo biologický věk, ne odvedenou práci), <b>Hlavou</b> (soustředění, 
 chybu a na tlak, sebedůvěra, snaha) a <b>V partě</b> (spoluhráči, trenér, rozhodčí,
 jestli ostatní táhne). Vysvětlení je i pod každým políčkem ve formuláři, ať do nich
 tři trenéři nepíšou tři různé věci.</p>
+
+<h3>Odkud to je</h3>
+<p>Rozdělení na graf a tři slovní bloky není domácí výmysl. Stojí na
+<b>anglické škole</b> — <a href="${ZDROJ_FA}" target="_blank" rel="noopener">FA
+Four Corner Model</a> anglické fotbalové asociace dělí hráče na čtyři rovnocenné
+rohy: technicko-taktický, fyzický, psychologický a sociální. Žádný z nich nefunguje
+sám o sobě. Tahle aplikace dala technicko-taktický roh do radaru s čísly (je vidět,
+je trénovatelný, hráč ho ovlivní) a zbylé tři nechala ve slovech.</p>
+<p><b>Španělská škola</b> jde v témž duchu ještě dál: strukturovaný trénink
+<a href="${ZDROJ_ES}" target="_blank" rel="noopener">Paca Seirul·la</a> z FC Barcelona
+(<a href="${ZDROJ_ES_EN}" target="_blank" rel="noopener">anglicky</a>) popisuje hráče
+jako <b>osm propojených struktur</b> — kondiční, koordinační, kognitivní, socio-afektivní,
+emotivně-volní, kreativně-expresivní, mentální a bioenergetickou. Trenér má rozvíjet
+všechny, ne jen ty, co jdou změřit hodinkami.</p>
+<p>Pro tři bloky v aplikaci to znamená zhruba tohle: <b>Fyzicky</b> = kondiční
+a bioenergetická struktura, <b>Hlavou</b> = kognitivní a emotivně-volní,
+<b>V partě</b> = socio-afektivní a kreativně-expresivní. Obě školy říkají totéž
+jinými slovy: <b>hráč není jen to, co jde změřit</b>, a co změřit nejde, se
+popisuje větou, ne známkou.</p>
 
 <p><b>Slovní bloky a cíle patří k šabloně</b>, ne k člověku. Brankářský list má „výkopy
 od brány", leader list něco úplně jiného — proto se při přepnutí šablony ve formuláři
@@ -537,6 +559,27 @@ at this age a number would measure biological age, not the work done), <b>Mental
 (focus, reaction to mistakes and pressure, confidence, effort) and <b>Social</b>
 (team-mates, coach, referee, whether they pull the others along). The same explanation
 sits under each field in the form, so three coaches do not write three different things.</p>
+
+<h3>Where this comes from</h3>
+<p>Splitting the sheet into one chart and three written blocks is not a local
+invention. It rests on the <b>English school</b> — the
+<a href="${ZDROJ_FA}" target="_blank" rel="noopener">FA 4 Corner Model</a> of the
+English Football Association divides a player into four equal corners:
+technical/tactical, physical, psychological and social, and none of them works in
+isolation. This app put the technical/tactical corner into a radar with numbers
+(visible, trainable, the player can change it) and left the other three in words.</p>
+<p>The <b>Spanish school</b> goes further in the same direction: the structured
+training of <a href="${ZDROJ_ES_EN}" target="_blank" rel="noopener">Paco Seirul·lo</a>
+at FC Barcelona (<a href="${ZDROJ_ES}" target="_blank" rel="noopener">in Spanish</a>)
+describes a player as <b>eight interrelated structures</b> — conditional, coordinative,
+cognitive, socio-affective, emotive-volitional, creative-expressive, mental and
+bioenergetic. A coach is meant to develop all of them, not only the ones a watch
+can measure.</p>
+<p>For the three blocks here that maps roughly as: <b>Physical</b> = conditional and
+bioenergetic, <b>Mental</b> = cognitive and emotive-volitional, <b>Social</b> =
+socio-affective and creative-expressive. Both schools say the same thing in different
+words: <b>a player is more than what can be measured</b>, and what cannot be measured
+is written as a sentence, not a score.</p>
 
 <p><b>The written notes and the goals belong to the template</b>, not to the person. A
 goalkeeper sheet says “goal kicks”, a leader sheet says something entirely different — so

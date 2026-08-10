@@ -122,6 +122,23 @@ without it three coaches write three different things:
 - **Social** — team-mates, coach, referee; whether they pull the others along or tag along.
   (“Younger players come to them for advice.”)
 
+**Where this comes from.** The split into one chart and three written blocks rests on two
+schools, and both are linked under the blocks in the app itself:
+
+- **English** — the [FA 4 Corner Model](https://learn.englandfootball.com/articles-and-resources/coaching/resources/2022/the-fa-4-corner-model)
+  of the English Football Association: four equal corners (technical/tactical, physical,
+  psychological, social), none of which works in isolation. The technical/tactical corner
+  is the radar with numbers here; the other three are the written blocks.
+- **Spanish** — the structured training of [Paco Seirul·lo](https://barcainnovationhub.fcbarcelona.com/blog/paco-seirul%C2%B7los-proposal-for-team-sports-training-structured-training-game-spaces-and-preferential-simulation-situations/)
+  at FC Barcelona ([in Spanish](https://barcainnovationhub.fcbarcelona.com/es/blog/la-propuesta-de-paco-seirul%C2%B7lo-para-el-entrenamiento-en-deportes-de-equipo-el-entrenamiento-estructurado-los-espacios-de-juego-y-las-situaciones-simuladoras-preferenciales/)):
+  the player as eight interrelated structures — conditional, coordinative, cognitive,
+  socio-affective, emotive-volitional, creative-expressive, mental and bioenergetic.
+
+For the three blocks here that maps roughly as: *Physical* = conditional and bioenergetic,
+*Mental* = cognitive and emotive-volitional, *Social* = socio-affective and
+creative-expressive. Both schools say the same thing: a player is more than what can be
+measured, and what cannot be measured is written as a sentence, not a score.
+
 **The written notes and the goals belong to that template**, not to the person — “goal
 kicks” does not belong on a leader sheet. Switching the template therefore clears them; if
 you have anything typed, the app asks first so nothing is lost.
