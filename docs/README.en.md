@@ -110,6 +110,18 @@ mistakes and pressure, fair play, supporting team-mates, reliability. It is a *s
 own* alongside the playing one, not a seventh axis, and it describes visible behaviour
 rather than personality.
 
+**The three written blocks** are the remaining three corners of the model and carry no
+number on purpose. What belongs in each is written under the field in the form too —
+without it three coaches write three different things:
+
+- **Physical** — fitness, speed, strength, growth, health. (“Lasts the whole match, still
+  gets outmuscled in duels.”) There is no number because at this age it would measure
+  biological age, not the work done.
+- **Mental** — focus, reaction to mistakes and to pressure, confidence, effort in training.
+  (“Takes a long time to recover from an own mistake, plays again by the end.”)
+- **Social** — team-mates, coach, referee; whether they pull the others along or tag along.
+  (“Younger players come to them for advice.”)
+
 **The written notes and the goals belong to that template**, not to the person — “goal
 kicks” does not belong on a leader sheet. Switching the template therefore clears them; if
 you have anything typed, the app asks first so nothing is lost.

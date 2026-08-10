@@ -114,6 +114,13 @@ fair play, podpora spoluhráčů, spolehlivost). Je to <i>druhý list</i> vedle
 herního, ne sedmá osa: sedm vrcholů by změnilo tvar radaru a nešlo by porovnat
 se staršími hodnoceními. Osy popisují chování, které je vidět, ne povahu.</p>
 
+<p><b>Tři slovní bloky</b> jsou zbylé tři rohy modelu a číslo v nich schválně není:
+<b>Fyzicky</b> (kondice, rychlost, síla, růst, zdraví — u téhle kategorie by číslo
+měřilo biologický věk, ne odvedenou práci), <b>Hlavou</b> (soustředění, reakce na
+chybu a na tlak, sebedůvěra, snaha) a <b>V partě</b> (spoluhráči, trenér, rozhodčí,
+jestli ostatní táhne). Vysvětlení je i pod každým políčkem ve formuláři, ať do nich
+tři trenéři nepíšou tři různé věci.</p>
+
 <p><b>Slovní bloky a cíle patří k šabloně</b>, ne k člověku. Brankářský list má „výkopy
 od brány", leader list něco úplně jiného — proto se při přepnutí šablony ve formuláři
 vyprázdní a píšou se ke každé řadě zvlášť (aplikace se předtím zeptá, ať se nezahodí
@@ -523,6 +530,13 @@ mistakes and pressure, fair play, supporting team-mates, reliability). It is a
 <i>second sheet</i> alongside the playing one, not a seventh axis: seven vertices
 would change the radar's shape and break comparison with older evaluations. The
 axes describe visible behaviour, not personality.</p>
+
+<p><b>The three written blocks</b> are the remaining three corners of the model and
+carry no number on purpose: <b>Physical</b> (fitness, speed, strength, growth, health —
+at this age a number would measure biological age, not the work done), <b>Mental</b>
+(focus, reaction to mistakes and pressure, confidence, effort) and <b>Social</b>
+(team-mates, coach, referee, whether they pull the others along). The same explanation
+sits under each field in the form, so three coaches do not write three different things.</p>
 
 <p><b>The written notes and the goals belong to the template</b>, not to the person. A
 goalkeeper sheet says “goal kicks”, a leader sheet says something entirely different — so

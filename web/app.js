@@ -1236,9 +1236,12 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
         <div class="karta">
             <h2>${t('hodnotit.bloky')}</h2>
             <p class="popis">${t('hodnotit.bloky.popis')}</p>
-            <div class="pole"><label for="h-fyzicky">${t('blok.fyzicky')}</label><textarea id="h-fyzicky"></textarea></div>
-            <div class="pole"><label for="h-hlavou">${t('blok.hlavou')}</label><textarea id="h-hlavou"></textarea></div>
-            <div class="pole"><label for="h-parta">${t('blok.parta')}</label><textarea id="h-parta"></textarea></div>
+            <div class="pole"><label for="h-fyzicky">${t('blok.fyzicky')}</label><textarea id="h-fyzicky"></textarea>
+                <div class="popis">${t('blok.fyzicky.napoveda')}</div></div>
+            <div class="pole"><label for="h-hlavou">${t('blok.hlavou')}</label><textarea id="h-hlavou"></textarea>
+                <div class="popis">${t('blok.hlavou.napoveda')}</div></div>
+            <div class="pole"><label for="h-parta">${t('blok.parta')}</label><textarea id="h-parta"></textarea>
+                <div class="popis">${t('blok.parta.napoveda')}</div></div>
         </div>
 
         <div class="karta">
@@ -1432,9 +1435,13 @@ function vykresliShodu(kam, s, hracId) {
 
         <div class="karta" id="s-finalni">
             <h2>${t('shoda.finalni')}</h2>
-            <div class="pole"><label for="s-fyzicky">${t('blok.fyzicky')}</label><textarea id="s-fyzicky"></textarea></div>
-            <div class="pole"><label for="s-hlavou">${t('blok.hlavou')}</label><textarea id="s-hlavou"></textarea></div>
-            <div class="pole"><label for="s-parta">${t('blok.parta')}</label><textarea id="s-parta"></textarea></div>
+            <p class="popis">${t('shoda.finalni.popis')}</p>
+            <div class="pole"><label for="s-fyzicky">${t('blok.fyzicky')}</label><textarea id="s-fyzicky"></textarea>
+                <div class="popis">${t('blok.fyzicky.napoveda')}</div></div>
+            <div class="pole"><label for="s-hlavou">${t('blok.hlavou')}</label><textarea id="s-hlavou"></textarea>
+                <div class="popis">${t('blok.hlavou.napoveda')}</div></div>
+            <div class="pole"><label for="s-parta">${t('blok.parta')}</label><textarea id="s-parta"></textarea>
+                <div class="popis">${t('blok.parta.napoveda')}</div></div>
             <div class="pole"><label for="s-cil1">${esc(stav.nastaveni.cileNadpis)}</label>
                 <input type="text" id="s-cil1" placeholder="${t('hodnotit.cil', 1)}"></div>
             <div class="pole"><input type="text" id="s-cil2" placeholder="${t('hodnotit.cil', 2)}"></div>

@@ -214,6 +214,7 @@ const SLOVNIK = {
         'shoda.zadnaData': 'Za tohle období zatím nikdo z trenérů hráče neoznámkoval.',
         'shoda.texty': 'Slovní bloky od trenérů',
         'shoda.finalni': 'Co půjde na list',
+        'shoda.finalni.popis': 'Tohle se hráči vytiskne. Předvyplněné je to od prvního trenéra — přepiš to tak, jak jste se na tom shodli.',
         'shoda.poznamka': 'Poznámka k uzavření (proč jste se rozcházeli)',
         'shoda.poznamka.napoveda': 'Zůstane u záznamu, na tištěný list se nedostane.',
         'shoda.ulozit': 'Uzavřít shodu',
@@ -329,6 +330,11 @@ const SLOVNIK = {
         'blok.fyzicky': 'Fyzicky',
         'blok.hlavou': 'Hlavou',
         'blok.parta': 'V partě',
+        /* Tři rohy modelu, které se nikdy neznámkují číslem. Bez vysvětlení si
+           je každý trenér vyloží po svém a na listech pak stojí tři různé věci. */
+        'blok.fyzicky.napoveda': 'Fyzický roh: kondice, rychlost, síla, růst, zdraví. Číslo tu schválně není — u téhle kategorie by měřilo biologický věk, ne odvedenou práci. Třeba: „Vydrží celý zápas, v soubojích ho zatím přetlačí."',
+        'blok.hlavou.napoveda': 'Psychologický roh: co se děje v hlavě — soustředění, reakce na chybu a na tlak, sebedůvěra, snaha na tréninku. Třeba: „Po vlastní chybě se dlouho hledá, na konci zápasu už zase hraje."',
+        'blok.parta.napoveda': 'Sociální roh: jak funguje mezi lidmi — se spoluhráči, s trenérem, s rozhodčím, jestli ostatní táhne, nebo se veze. Třeba: „Mladší si k němu chodí pro radu."',
 
         /* --- Listy --- */
         'listy.nadpis': 'Tiskové listy',
@@ -840,6 +846,7 @@ const SLOVNIK = {
         'shoda.zadnaData': 'No coach has scored this player for this period yet.',
         'shoda.texty': 'Written notes from the coaches',
         'shoda.finalni': 'What goes on the sheet',
+        'shoda.finalni.popis': 'This is what gets printed for the player. It is pre-filled from the first coach — rewrite it the way you agreed.',
         'shoda.poznamka': 'Note on closing (why you differed)',
         'shoda.poznamka.napoveda': 'Stays with the record, never reaches the printed sheet.',
         'shoda.ulozit': 'Close the consensus',
@@ -950,6 +957,9 @@ const SLOVNIK = {
         'blok.fyzicky': 'Physical',
         'blok.hlavou': 'Mental',
         'blok.parta': 'Social',
+        'blok.fyzicky.napoveda': 'Physical corner: fitness, speed, strength, growth, health. Deliberately never a number — at this age it would measure biological age, not the work done. For example: “Lasts the whole match, still gets outmuscled in duels.”',
+        'blok.hlavou.napoveda': 'Psychological corner: what goes on in the head — focus, reaction to mistakes and to pressure, confidence, effort in training. For example: “Takes a long time to recover from an own mistake, plays again by the end.”',
+        'blok.parta.napoveda': 'Social corner: how they work with people — team-mates, coach, referee, whether they pull the others along or just tag along. For example: “Younger players come to them for advice.”',
 
         'listy.nadpis': 'Printable sheets',
         'listy.popis': 'One template = one A4; a player with several templates gets a sheet for each. Combined, they fit on a single page. Sheets are built from the database, open in a new tab and print from there.',

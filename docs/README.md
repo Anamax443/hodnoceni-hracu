@@ -162,6 +162,17 @@ i vede mužstvo, se vyplňuje tolikrát, kolik má šablon — po uložení nab�
 *Ohodnotit: brankář* a další. Dostane pak list na každou z nich a každá řada v čase žije
 samostatně; do jednoho grafu se sloučit nedají, protože jiných šest os má jiný tvar.
 
+**Tři slovní bloky** jsou zbylé tři rohy modelu a číslo v nich schválně není. Co do kterého
+patří, je napsané i pod každým políčkem ve formuláři — bez toho si je tři trenéři vyloží
+po svém a na listech pak stojí tři různé věci:
+
+- **Fyzicky** — kondice, rychlost, síla, růst, zdraví. („Vydrží celý zápas, v soubojích ho
+  zatím přetlačí.") Číslo tu není proto, že by u téhle kategorie měřilo biologický věk.
+- **Hlavou** — soustředění, reakce na chybu a na tlak, sebedůvěra, snaha na tréninku.
+  („Po vlastní chybě se dlouho hledá, na konci zápasu už zase hraje.")
+- **V partě** — spoluhráči, trenér, rozhodčí; jestli ostatní táhne, nebo se veze.
+  („Mladší si k němu chodí pro radu.")
+
 **Slovní bloky a cíle patří k té šabloně**, ne k člověku — „výkopy od brány" na leader list
 nepatří. Přepnutím šablony se proto vyprázdní; když v nich něco máš, aplikace se napřed
 zeptá, ať o rozepsaný text nepřijdeš.
