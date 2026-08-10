@@ -2,6 +2,37 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (34) — odkazy na anglickou a španělskou školu
+
+**Commit:** `3d46bcd` · **NASAZENO** 2026-08-10, Version ID `23e4000e-33cc-4914-8da0-462f0436d279`.
+
+Vysvětlivky pod bloky říkaly *co* do nich patří, ale ne *odkud to je*. Komu jedna věta
+nestačí, neměl kam dojít — a nebylo poznat, že rozdělení na graf a tři bloky stojí na
+metodice, ne na domácím nápadu.
+
+Pod bloky (v hodnocení i v Shodě) je teď řádek s prameny a v dokumentaci aplikace
+i v příručce CS/EN kapitola *Odkud to je*:
+
+- **anglická škola** — [FA Four Corner Model](https://learn.englandfootball.com/articles-and-resources/coaching/resources/2022/the-fa-4-corner-model)
+  anglické FA: čtyři rovnocenné rohy, žádný nefunguje sám o sobě
+- **španělská škola** — strukturovaný trénink Paca Seirul·la (FC Barcelona,
+  [Barça Innovation Hub](https://barcainnovationhub.fcbarcelona.com/blog/paco-seirul%C2%B7los-proposal-for-team-sports-training-structured-training-game-spaces-and-preferential-simulation-situations/)):
+  hráč jako osm propojených struktur
+
+Napsané je i **mapování** osmi struktur na naše tři bloky, ať je vidět, že se nemíchají
+dvě různé věci: *Fyzicky* = kondiční + bioenergetická, *Hlavou* = kognitivní +
+emotivně-volní, *V partě* = socio-afektivní + kreativně-expresivní.
+
+Obě stránky **ověřené 10. 8. 2026** (staženy a zkontrolováno, že obsahují to, co u nich
+stojí — čtyři rohy, osm struktur). Odkazy žijí v jednom souboru `web/src/zdroje.js`,
+protože na ně sahá formulář i dokumentace a rozejít se nesmí.
+
+**Pozorování k nasazení:** `hodnoceni.maxferit.cz` ohlásila nový commit hned,
+`hodnoceni-hracu.bass443.workers.dev` ještě chvíli vracela předchozí. Záložní adresa
+dobíhá pomaleji — ověřovat podle custom domény.
+
+---
+
 ## 2026-08-10 (33) — u slovních bloků je napsané, co do nich patří
 
 **Commit:** `2a5931a` · **NASAZENO** 2026-08-10, Version ID `4e466f8d-90d7-4452-90d3-6fdaff7cdb3c`.
