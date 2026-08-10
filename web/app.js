@@ -1031,6 +1031,19 @@ function stupnice(nazev) {
 const kotvyHtml = () =>
     `<div class="kotvy">${kotvy().map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>`;
 
+/* Podpis pod hodnocením. Kdo je přihlášený svým účtem, podepisuje se sám —
+   server bere identitu ze session, takže nabídka jiného trenéra by lhala
+   a zamkne se. U společného hesla aplikace nepozná, kdo sedí u klávesnice,
+   a výběr zůstane na trenérovi; prázdný ale zůstat nesmí. */
+function podepisSe(vyber) {
+    const s = $(vyber);
+    if (!s) return;
+    if (!stav.kdoId || !stav.lide.some(o => o.id === stav.kdoId && o.role === 'trener')) return;
+    s.value = String(stav.kdoId);
+    s.disabled = true;
+    s.title = t('hodnotit.hodnoti.prihlasen');
+}
+
 async function hodnotit(kam) {
     const hraci = hraciAktivni();
     const treneri = stav.lide.filter(o => o.role === 'trener');
@@ -1047,9 +1060,10 @@ async function hodnotit(kam) {
                     </select></div>
                 <div class="pole"><label for="h-autor">${t('hodnotit.hodnoti')}</label>
                     <select id="h-autor">
-                        <option value="">${t('hodnotit.neuvedeno')}</option>
+                        <option value="">${t('hodnotit.vyberAutora')}</option>
                         ${treneri.map(x => `<option value="${x.id}">${esc(x.jmeno)}</option>`).join('')}
-                    </select></div>
+                    </select>
+                    <div class="popis">${t('hodnotit.hodnoti.napoveda')}</div></div>
             </div>
             <div id="h-predloha"></div>
         </div>
@@ -1061,6 +1075,8 @@ async function hodnotit(kam) {
             <button class="vedlejsi" id="hromadne-otevrit" title="${t('hromadne.otevrit.tip')}">${t('hromadne.otevrit')}</button>
             <div id="hromadne"></div>
         </div>`;
+
+    podepisSe('#h-autor');
 
     $('#h-hrac').onchange = () => {
         formularHodnoceni($('#formular'), Number($('#h-hrac').value));
@@ -1158,6 +1174,15 @@ function formularHromadny(kam) {
                 <select id="hr-sablona">${Object.keys(SABLONY)
                     .map(s => `<option value="${s}"${s === sablona ? ' selected' : ''}>${t('sablona.' + s)}</option>`).join('')}</select>
             </div>
+            <div class="pole" style="max-width:320px">
+                <label for="hr-autor">${t('hodnotit.hodnoti')}</label>
+                <select id="hr-autor">
+                    <option value="">${t('hodnotit.vyberAutora')}</option>
+                    ${stav.lide.filter(o => o.role === 'trener')
+                        .map(x => `<option value="${x.id}"${x.id === stav.kdoId ? ' selected' : ''}>${esc(x.jmeno)}</option>`).join('')}
+                </select>
+                <div class="popis">${t('hromadne.autor.napoveda')}</div>
+            </div>
 
             <h3 style="margin:14px 0 4px;font-size:14px">${t('hromadne.osy')}</h3>
             <p class="popis">${t('hromadne.osy.popis')}</p>
@@ -1187,6 +1212,7 @@ function formularHromadny(kam) {
             </p>
             <div id="hr-vysledek"></div>`;
 
+        podepisSe('#hr-autor');
         $('#hr-sablona').onchange = () => vykresli($('#hr-sablona').value);
         $('#hr-vse').onclick = () => kam.querySelectorAll('.hr-hrac').forEach(c => { c.checked = true; });
         $('#hr-nic').onclick = () => kam.querySelectorAll('.hr-hrac').forEach(c => { c.checked = false; });
@@ -1202,7 +1228,8 @@ function formularHromadny(kam) {
             }
             const player_ids = [...kam.querySelectorAll('.hr-hrac:checked')].map(c => Number(c.value));
             return api('/api/evaluations/hromadne', {
-                telo: { sablona: $('#hr-sablona').value, obdobi: stav.nastaveni.obdobi, hodnoty, player_ids, nanecisto }
+                telo: { sablona: $('#hr-sablona').value, obdobi: stav.nastaveni.obdobi, hodnoty, player_ids,
+                        autor_id: $('#hr-autor').value || null, nanecisto }
             });
         };
 
@@ -1210,6 +1237,11 @@ function formularHromadny(kam) {
 
         $('#hr-ulozit').onclick = async () => {
             const cil = $('#hr-vysledek');
+            if (!$('#hr-autor').value) {
+                cil.innerHTML = `<div class="hlaska chyba">${t('hodnotit.autor.chybi')}</div>`;
+                $('#hr-autor').focus();
+                return;
+            }
             cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
             try {
                 // Nanečisto řekne, komu to sedne a komu chybí základ — teprve pak se zapisuje.
@@ -1361,6 +1393,13 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
         const hodnoty = zadaneHodnoty();
         const chybi = seznamOs.filter(o => hodnoty[o.klic] === undefined).map(o => o.popis);
         if (chybi.length) { hlaska(kam, 'chyba', t('hodnotit.chybi', chybi.join(', '))); return; }
+        // Hodnocení bez podpisu nemá cenu: za půl roku nikdo nedohledá, kdo ho psal,
+        // a Shoda mezi trenéry by neměla co s čím porovnávat.
+        if (!$('#h-autor').value) {
+            hlaska(kam, 'chyba', t('hodnotit.autor.chybi'));
+            $('#h-autor').focus();
+            return;
+        }
 
         const telo = {
             player_id: hracId,
@@ -1516,6 +1555,14 @@ function vykresliShodu(kam, s, hracId) {
             <div class="pole"><label for="s-poznamka">${t('shoda.poznamka')}</label>
                 <textarea id="s-poznamka"></textarea>
                 <div class="popis">${t('shoda.poznamka.napoveda')}</div></div>
+            <div class="pole" style="max-width:320px">
+                <label for="s-autor">${t('shoda.uzavira')}</label>
+                <select id="s-autor">
+                    <option value="">${t('hodnotit.vyberAutora')}</option>
+                    ${stav.lide.filter(o => o.role === 'trener')
+                        .map(x => `<option value="${x.id}"${x.id === stav.kdoId ? ' selected' : ''}>${esc(x.jmeno)}</option>`).join('')}
+                </select>
+                <div class="popis">${t('shoda.uzavira.napoveda')}</div></div>
             <button class="hl" id="s-ulozit" title="${t('shoda.ulozit.tip')}">${t('shoda.ulozit')}</button>
         </div>`;
 
@@ -1528,6 +1575,8 @@ function vykresliShodu(kam, s, hracId) {
         (zdroj.cile ?? []).forEach((c, i) => { if (i < 3) $('#s-cil' + (i + 1)).value = c; });
     }
 
+    podepisSe('#s-autor');
+
     $('#s-ulozit').onclick = async () => {
         const hodnoty = {};
         const chybi = [];
@@ -1537,13 +1586,19 @@ function vykresliShodu(kam, s, hracId) {
             else hodnoty[o.klic] = Number(vybrano.value);
         }
         if (chybi.length) { hlaska($('#s-finalni'), 'chyba', t('shoda.chybiOsy') + ' ' + chybi.join(', ')); return; }
+        // I uzavření shody je hodnocení — musí být podepsané, kdo ho uzavřel.
+        if (!$('#s-autor').value) {
+            hlaska($('#s-finalni'), 'chyba', t('hodnotit.autor.chybi'));
+            $('#s-autor').focus();
+            return;
+        }
 
         try {
             await api('/api/shoda', { telo: {
                 player_id: hracId, obdobi: stav.nastaveni.obdobi, sablona: s.sablona, hodnoty,
                 fyzicky: $('#s-fyzicky').value, hlavou: $('#s-hlavou').value, parta: $('#s-parta').value,
                 cile: [$('#s-cil1').value, $('#s-cil2').value, $('#s-cil3').value],
-                poznamka_shody: $('#s-poznamka').value
+                poznamka_shody: $('#s-poznamka').value, autor_id: $('#s-autor').value || null
             } });
             hlaska($('#s-finalni'), 'ok', t('shoda.ulozeno'));
         } catch (e) {

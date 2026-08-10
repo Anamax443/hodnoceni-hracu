@@ -744,6 +744,22 @@ async function posledni(env: Env, playerId: number, obdobi: string, autor: strin
  * všechny tři — každá je vlastní řada, vlastní odkaz a vlastní list.
  * Bere i starší tvar (jediná `sablona`), ať projdou i data před migrací 013.
  */
+/**
+ * Hodnocení musí být podepsané — bez autora se neuloží. Vrací text chyby,
+ * nebo `null`, když je autor v pořádku.
+ *
+ * Netýká se sebehodnocení hráče: to chodí přes token na vlastní adrese,
+ * ukládá se s `autor='hrac'` a autorem je hráč sám, žádné id trenéra nemá.
+ */
+async function overTrenera(env: Env, autorId: number | null): Promise<string | null> {
+    if (!autorId) return 'Chybí, kdo hodnotí — vyber trenéra.';
+    const kdo = await env.DB.prepare('SELECT role FROM players WHERE id = ?')
+        .bind(autorId).first<{ role: string }>();
+    if (!kdo) return 'Vybraný hodnotitel v databázi není.';
+    if (kdo.role !== 'trener') return 'Hodnotit může jen trenér.';
+    return null;
+}
+
 function sablonyOsoby(r: any): string[] {
     try {
         const s = JSON.parse(r?.sablony ?? 'null');
@@ -2737,7 +2753,13 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 ? h.cile.map((c: unknown) => String(c).trim()).filter(Boolean).slice(0, 5)
                 : [];
 
-            const autorId = h.autor_id ? Number(h.autor_id) : null;
+            // Hodnocení se neukládá bez podpisu. Za půl roku nikdo nedohledá, kdo
+            // ho psal, a Shoda mezi trenéry nemá co s čím porovnávat. Přihlášený
+            // účet má přednost před volbou ve formuláři — u společného hesla
+            // (session bez id) platí to, co trenér vybral.
+            const autorId = kdo.id ?? (h.autor_id ? Number(h.autor_id) : null);
+            const problemAutora = await overTrenera(env, autorId);
+            if (problemAutora) return chyba(problemAutora, 400);
 
             // Úprava staršího hodnocení. Původní řádek zůstává, tenhle je jeho
             // další verze — `uprava_id` drží nit, aby v historii šlo poznat
@@ -2845,6 +2867,12 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const ids = Array.isArray(h.player_ids) ? h.player_ids.map(Number).filter(Boolean) : [];
         if (!ids.length) return chyba('Nevybral jsi ani jednoho hráče.', 400);
 
+        // Podpis platí i tady — a navíc rozhoduje, ke kterému hodnocení se
+        // doplňuje: základ se hledá mezi řádky od téhož trenéra.
+        const autorId = kdo.id ?? (h.autor_id ? Number(h.autor_id) : null);
+        const problemAutora = await overTrenera(env, autorId);
+        if (problemAutora) return chyba(problemAutora, 400);
+
         const obdobi = (h.obdobi || '').trim() || (await nastaveni(env)).obdobi;
         const ulozeno: { id: number; jmeno: string }[] = [];
         const ceka: { id: number; jmeno: string }[] = [];
@@ -2864,7 +2892,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 `SELECT hodnoty, fyzicky, hlavou, parta, cile FROM evaluations
                   WHERE player_id = ? AND obdobi = ? AND sablona = ? AND autor = 'trener'
                     AND autor_id IS ? ORDER BY id DESC LIMIT 1`
-            ).bind(id, obdobi, sablona, kdo.id ?? null).first<RadekHodnoceni>();
+            ).bind(id, obdobi, sablona, autorId).first<RadekHodnoceni>();
 
             if (!zaklad) { ceka.push({ id, jmeno: hrac.jmeno }); continue; }
 
@@ -2881,11 +2909,11 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                         (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile)
                      VALUES (?, ?, 'trener', ?, ?, ?, ?, ?, ?, ?)`
                 ).bind(
-                    id, obdobi, kdo.id ?? null, sablona, JSON.stringify(hodnoty),
+                    id, obdobi, autorId, sablona, JSON.stringify(hodnoty),
                     zaklad.fyzicky ?? null, zaklad.hlavou ?? null, zaklad.parta ?? null,
                     zaklad.cile ?? '[]'
                 ).run();
-                await zapisUdalost(env, 'hodnoceni', id, obdobi, kdo.id ?? null);
+                await zapisUdalost(env, 'hodnoceni', id, obdobi, autorId);
             }
             ulozeno.push({ id, jmeno: hrac.jmeno });
         }
@@ -2919,6 +2947,12 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const problem = zkontrolujHodnoty(sablona, h.hodnoty);
         if (problem) return chyba(problem, 400);
 
+        // Uzavření shody je taky hodnocení, takže i tady musí být podepsané,
+        // kdo ho uzavřel — jinak by v historii stál záznam bez původce.
+        const autorId = kdo.id ?? (h.autor_id ? Number(h.autor_id) : null);
+        const problemAutora = await overTrenera(env, autorId);
+        if (problemAutora) return chyba(problemAutora, 400);
+
         const cile = Array.isArray(h.cile)
             ? h.cile.map((c: unknown) => String(c).trim()).filter(Boolean).slice(0, 5)
             : [];
@@ -2930,7 +2964,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                  fyzicky, hlavou, parta, cile, poznamka_shody)
              VALUES (?, ?, 'shoda', ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, datum`
         ).bind(
-            playerId, obdobi, kdo.id ?? null, sablona, JSON.stringify(h.hodnoty),
+            playerId, obdobi, autorId, sablona, JSON.stringify(h.hodnoty),
             (h.fyzicky ?? '').trim() || null,
             (h.hlavou ?? '').trim() || null,
             (h.parta ?? '').trim() || null,
@@ -2938,7 +2972,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             (h.poznamka_shody ?? '').trim() || null
         ).first();
 
-        await zapisUdalost(env, 'hodnoceni', playerId, obdobi, kdo.id ?? null);
+        await zapisUdalost(env, 'hodnoceni', playerId, obdobi, autorId);
         return json({ ulozeno: true, ...r }, 201);
     }
 

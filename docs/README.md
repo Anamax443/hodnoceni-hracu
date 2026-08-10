@@ -155,6 +155,13 @@ Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tř
 
 Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
 
+**Kdo hodnotí, musí být vyplněné.** Bez podpisu se hodnocení neuloží (aplikace to řekne
+a server to odmítne i při volání napřímo) — platí to i pro hromadné hodnocení a pro
+uzavření shody. Kdo je přihlášený svým jménem, má sebe předvyplněného a nabídka je zamčená:
+podepisuje se přihlášený účet. U společného hesla aplikace nepozná, kdo sedí u počítače,
+a trenér se musí vybrat. Sebehodnocení hráče je jiná věc — to podepisuje hráč sám tím,
+že přišel svým odkazem.
+
 **Šestice os** se vybírá nahoře ve formuláři, ale **jen z těch, které má hráč v Lidech
 zaškrtnuté** — cizí šablona v nabídce vůbec není a při jediné přiřazené je výběr zamčený.
 Předvolená je první zaškrtnutá a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli

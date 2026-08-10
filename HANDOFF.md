@@ -2,6 +2,37 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (38) — hodnocení se neuloží bez podpisu
+
+Uživatel: *„při hodnocení musí být vždy vyplněna hodnotící osoba, nemůže být prázdná."*
+Dosud šlo uložit hodnocení s volbou *— neuvedeno —* a v historii pak stál záznam,
+u kterého se za půl roku nedalo zjistit, kdo ho psal. Shoda mezi trenéry navíc nemá
+co s čím porovnávat, když jeden ze sloupců nemá jméno.
+
+**Platí to na všech třech místech, kde vzniká hodnocení:** formulář, hromadné hodnocení
+(dostalo vlastní pole *Hodnotí*, dřív žádné nemělo) a uzavření shody (pole *Uzavírá*).
+Prázdná volba zůstala v nabídce jen jako výzva „vyber, kdo hodnotí" — uložení ji odmítne.
+
+**Není to jen v prohlížeči.** Server u všech tří endpointů ověřuje, že autor existuje
+a že je to trenér (`overTrenera()`), takže to platí i pro volání API napřímo a pro
+formulář, který zůstal otevřený z doby před opravou.
+
+**Kdo je přihlášený svým účtem, podepisuje se sám** — nabídka se předvyplní a zamkne,
+protože server bere identitu ze session; jiná volba v nabídce by lhala. U společného
+hesla (dnešní stav) aplikace nepozná, kdo sedí u počítače, a trenér se vybírá ručně.
+
+**Sebehodnocení hráče se to netýká.** Chodí jiným endpointem přes jednorázový odkaz,
+ukládá se s `autor='hrac'` a autorem je hráč sám.
+
+**Hromadné hodnocení tím dostalo i opravu, o které se nevědělo:** základ se hledá mezi
+hodnoceními *od téhož trenéra* (`autor_id IS ?`) a dosud se pod společným heslem hledal
+mezi řádky bez autora. Teď se hledá pod tím, kdo je vybraný — takže co se doplňuje
+a pod čí jméno se to zapíše, je jedna a tatáž věc.
+
+Doklad o odmítnutí všech sedmi případů je v `known_good.md` (25).
+
+---
+
 ## 2026-08-10 (37) — formulář osoby až na vyžádání, videa k oběma školám
 
 **Commit:** `ddf2707` · **NASAZENO** 2026-08-10, Version ID `9316cb60-423a-41cc-8255-3535189a0466`.

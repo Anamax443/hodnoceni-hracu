@@ -5,6 +5,30 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-10 (25) — hodnocení bez podpisu neprojde
+
+Ověřeno proti lokálnímu `wrangler dev` (`--local`), přihlášeno **společným heslem**
+(tedy session bez identity — právě ten případ, kde autor může chybět):
+
+| Volání | Výsledek |
+|---|---|
+| `POST /api/evaluations` bez `autor_id` | **HTTP 400** — „Chybí, kdo hodnotí — vyber trenéra." |
+| totéž s `autor_id` trenéra | HTTP 201, uloženo |
+| `autor_id` ukazuje na **hráče**, ne trenéra | HTTP 400 — „Hodnotit může jen trenér." |
+| `autor_id` = neexistující id | HTTP 400 — „Vybraný hodnotitel v databázi není." |
+| `POST /api/evaluations/hromadne` bez autora | HTTP 400 — tentýž text |
+| hromadné s autorem (nanečisto) | HTTP 200, `ulozeno` obsahuje hráče |
+| `POST /api/shoda` (uzavření) bez autora | HTTP 400 — tentýž text |
+
+Sebehodnocení hráče se pravidlo **netýká** — jde jiným endpointem, ukládá se s
+`autor='hrac'` a žádné id trenéra nemá; ten kód zůstal nedotčený.
+
+V ostré databázi mělo před změnou 19 z 20 trenérských hodnocení autora vyplněného
+(1 bez autora ze začátků, 2 sebehodnocení hráčů mají `autor_id` NULL správně),
+takže pravidlo nikomu nerozbije dohledávání předchozích záznamů.
+
+---
+
 ## 2026-08-10 (24) — cizí šablonu server odmítne
 
 **Commit:** `fe9c640` · **NASAZENO** 2026-08-10, Version ID `803c719d-de81-4836-9fdd-ff001f172fc3`

@@ -76,6 +76,8 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
 | hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
 | ve formuláři nejde vybrat brankář (nebo leader) | hráč tu šesticí os nemá zaškrtnutou; nabízejí se jen přiřazené | Lidé → hráč → zaškrtnout šablonu → Uložit |
+| „Vyber, kdo hodnotí" / API vrátí „Chybí, kdo hodnotí" | hodnocení se neukládá bez podpisu (platí i pro hromadné a pro uzavření shody) | vybrat trenéra v poli *Hodnotí*; kdo je přihlášený svým účtem, má sebe zamčeného |
+| pole *Hodnotí* je zašedlé a nejde přepnout | jsi přihlášený svým účtem — podepisuje se přihlášení, ne volba v nabídce | chce-li zapsat hodnocení jiný trenér, ať se přihlásí sám |
 | v hromadném hodnocení chybí půlka kádru | seznam ukazuje jen ty, kdo mají zvolenou šesticí os | přepnout šablonu, nebo ji hráčům zaškrtnout v Lidech |
 | API vrátí „Hráč nemá přiřazenou šablonu…" | formulář zůstal otevřený z doby, kdy šablonu ještě měl | obnovit stránku; opravit starší záznam v té šabloně jde dál přes *Upravit ho* |
 | „Tenhle účet ještě nemá nastavené heslo" | trenér má login, ale heslo si nenastavil | Lidé → *Poslat odkaz na nastavení hesla* |

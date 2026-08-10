@@ -96,6 +96,13 @@ midfielder`, `yes` / `no`) in the language you have switched on.
 Pick a player; the form appears below: six axes with ten scores each, three written blocks
 and the goals. Nothing is pre-filled and previous values are not shown — that is deliberate.
 
+**Who is evaluating must be filled in.** Without a signature the evaluation is not saved —
+the app says so and the server refuses it even when called directly — and the same applies
+to bulk evaluation and to closing an agreement. Whoever is logged in under their own name
+is pre-filled and the list is locked: the logged-in account signs it. With the shared
+password the app cannot tell who is at the keyboard, so a coach has to be picked. A player's
+self-evaluation is a different thing — the player signs it by arriving through their own link.
+
 The **set of axes** is chosen in the form, but **only among those ticked for that player
 in People** — a template they do not have is not offered at all, and with a single one
 assigned the selector is locked. The default is the first ticked one, and everything they
