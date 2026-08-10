@@ -4,6 +4,8 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-10 (32) — známkovat jde jen tím, co má hráč zaškrtnuté
 
+**Commit:** `fe9c640` · **NASAZENO** 2026-08-10, Version ID `803c719d-de81-4836-9fdd-ff001f172fc3`.
+
 **Uživatel poslal snímek s kroužkem:** Mirda má v Lidech *hráče v poli* a *leadera*,
 ale ve formuláři hodnocení mu šlo vybrat **brankáře**. Nabídka se plnila z `Object.keys(SABLONY)`,
 tedy ze všech šablon, jaké aplikace zná — přiřazení hráče se v ní vůbec neuplatnilo.

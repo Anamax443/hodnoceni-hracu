@@ -7,6 +7,9 @@ Nový záznam nahoru.
 
 ## 2026-08-10 (24) — cizí šablonu server odmítne
 
+**Commit:** `fe9c640` · **NASAZENO** 2026-08-10, Version ID `803c719d-de81-4836-9fdd-ff001f172fc3`
+(`/api/version` hlásí `fe9c640`, `cisto: true`).
+
 Ověřeno proti **lokálnímu `wrangler dev`** (`--local`, D1 se schématem po migraci 013),
 přihlášeno společným heslem, testovací hráči: *Test Polar* = `["pole","leader"]`,
 *Test Hráč* = `["pole","brankar","leader"]`.
