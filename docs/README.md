@@ -91,10 +91,36 @@ Tištěný list je vždy světlý, i když máš aplikaci tmavou — je to papí
 
 ## 4. Záložky
 
+### Úvod
+
+První obrazovka po přihlášení. Není to uvítací plakát: půl roku se s aplikací nic neděje
+a pak přijde kolo hodnocení — tehdy má být na jedno otevření vidět, kde kádr stojí.
+
+- **znak klubu a období**, ať je jasné, do čeho se zapisuje;
+- **kde to stojí** — počítá se **po listech**, ne po hráčích: kdo má tři šablony, má tři
+  řady i tři papíry. Čísla jsou z týchž dat jako Listy, žádná druhá pravda;
+- **co udělat dál** — konkrétní kroky s tlačítkem tam, kde se to dělá. Ukazují se **jen
+  když opravdu něco zbývá**; seznam samých odškrtnutých úkolů nikdo nečte;
+- **jazykový model** — jestli odpovídá, a co je nastavené. Stav je z posledního
+  skutečného použití, ne ze zkušebního dotazu (ten by ujídal denní limit).
+
+**Znak klubu** je soubor `web/logo.png` v repozitáři. Když tam není, obrázek se schová
+a zůstane samotný název — rozbitá ikona vypadá jako chyba aplikace, a přitom je to jen
+nenahraný soubor.
+
 ### Lidé
 
 Kdo je v týmu. U každého jméno, přezdívka, pozice, role a šablony os, kterými se známkuje.
 **Kliknutím na jméno se otevře jeho úprava** (tlačítko na konci řádku zůstává).
+
+**Formulář se otevře až na vyžádání** — tlačítkem *+ Přidat osobu* nebo klikem na jméno.
+Zavírá se tlačítkem *Zavřít* a po uložení sám.
+
+**Smazat jde jen člověk, po kterém nic nezůstalo** — překlep v kádru, dvojitý import,
+omylem založený trenér. Kdo má hodnocení (svoje nebo pořízená) nebo odkaz na
+sebehodnocení, se smazat nedá a aplikace řekne proč: **jeho čísla jsou historie**.
+Kdo v týmu skončil, se vyřazuje odškrtnutím *aktivní* — zůstane i s historií a se
+svým číslem, které se už nikomu nepřidělí.
 
 **Pozic může být několik.** Hráč použitelný na levém beku, pravém křídle i v bráně má
 zaškrtnuté všechny tři. Je to popis toho, kde nastupuje — se známkováním to nesouvisí.
@@ -370,6 +396,10 @@ Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 - **Období** — například „2025/2026 zima". Podle něj se páruje tvoje hodnocení
   se sebehodnocením hráče. Před novým kolem ho přepiš.
 - **Sezóna, klub, kategorie, laťka, nadpis nad cíli** — text do hlavičky a patičky listu
+- **Preferované sestavy** — rozestavení, která tým hraje, oddělená čárkou („1-4-4-2,
+  1-4-3-3"). Známkování to nemění, osy jsou pro každou sestavu stejné. Je to společná
+  paměť trenérů a **kontext pro analýzy**: „pravý bek v 1-4-4-2" znamená něco jiného
+  než v 1-3-5-2, a bez toho si to model domýšlí
 - **Změna hesla** — svého vlastního
 - **Souhrnné notifikace** — viz níž
 - **Povolit odesílání SMS** — mimořádný kanál, výchozí vypnuto (viz níž)

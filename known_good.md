@@ -5,6 +5,23 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-10 (26) — úvodní stránka, sestavy, mazání osoby
+
+Ověřeno proti lokálnímu `wrangler dev` (`--local`):
+
+| Kontrola | Výsledek |
+|---|---|
+| čísla pro úvodní stránku z `/api/prehled` | 2 hráči, **5 listů**, 4 s hodnocením trenéra, 1 se sebehodnocením — sedí s tím, co je v DB |
+| `GET /api/settings` nese nový klíč | `sestavy = "1-4-4-2"` |
+| `DELETE /api/players/<nový bez historie>` | HTTP 200 `{"smazano":true}` |
+| `DELETE` u hráče se 4 hodnoceními | **HTTP 409** — „má v databázi 4× hodnocení… Odškrtni místo toho »aktivní«." |
+| `DELETE` neexistujícího id | HTTP 404 „Osoba nenalezena." |
+
+Úvodní stránka počítá **po listech** (hráč × šablona), ne po hráčích — proto 5 listů
+u 2 hráčů. Bere je z téhož endpointu jako Listy, takže se obě čísla nemůžou rozejít.
+
+---
+
 ## 2026-08-10 (25) — hodnocení bez podpisu neprojde
 
 Ověřeno proti lokálnímu `wrangler dev` (`--local`), přihlášeno **společným heslem**

@@ -300,6 +300,11 @@ const VYCHOZI_NASTAVENI: Record<string, string> = {
     kategorie: 'Starší žáci',
     latka: 'starší žák',
     cileNadpis: 'Na čem makáme do zimy',
+    /* Rozestavení, která klub hraje. Je jich víc než jedno a mění se — proto
+       volný seznam oddělený čárkou, ne pevná nabídka v kódu. Hodnocení to
+       neovlivňuje (osy jsou stejné pro každou sestavu); slouží jako kontext
+       pro jazykový model u analýz a jako společná paměť trenérů. */
+    sestavy: '1-4-4-2',
     notifZapnuto: '1',         // hlavní vypínač souhrnů
     notifCas: '19:00',         // místní čas; cron běží každou hodinu a vybere si tu svou
     notifDnyZmeny: '3',        // když se něco změnilo: nejvýš jednou za N dní
@@ -594,6 +599,11 @@ async function podkladyProAnalyzu(env: Env, obdobi: string, nas: Record<string, 
 
     return {
         obdobi, tolerance,
+        // Sestavy, které klub hraje. Pro model je to kontext k pozicím: „pravý bek
+        // v 1-4-4-2" je něco jiného než v 1-3-5-2, a bez toho by hádal.
+        sestavy: (nas.sestavy ?? '').trim(),
+        kategorie: (nas.kategorie ?? '').trim(),
+        latka: (nas.latka ?? '').trim(),
         pocty: {
             hracu: (hraci ?? []).length,
             listu: zaznamy.length,
@@ -624,6 +634,11 @@ function podkladyDoTextu(p: any, popisky?: { osy?: Record<string, string>; sablo
     const r: string[] = [];
 
     r.push(`OBDOBÍ: ${p.obdobi} · tolerance ${p.tolerance} body`);
+    if (p.kategorie || p.latka) {
+        r.push(`KATEGORIE: ${p.kategorie || '—'}`
+            + (p.latka ? ` · hodnotí se proti laťce „co má umět ${p.latka}", ne proti kádru` : ''));
+    }
+    if (p.sestavy) r.push(`SESTAVY, KTERÉ TÝM HRAJE: ${p.sestavy} (pozice hráčů čti v nich)`);
     r.push(`POČTY: ${p.pocty.hracu} aktivních hráčů, ${p.pocty.listu} kombinací hráč+šablona, `
         + `${p.pocty.sHodnocenim} s hodnocením trenéra, ${p.pocty.seSebehodnocenim} se sebehodnocením hráče, `
         + `${p.pocty.sObojim} s obojím (jen u nich jde porovnávat pohledy).`);
@@ -2673,6 +2688,49 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         ).first();
         if (!r) return chyba('Osoba nenalezena.', 404);
         return json(osobaVen(r));
+    }
+
+    /* ---------- smazání osoby ----------
+       Vyřazený hráč se NEMAŽE, jen se odškrtne „aktivní" — jeho hodnocení jsou
+       součástí historie a číslo, které dostal, se už nikomu nepřidělí. Smazat
+       jde proto jen člověk, po kterém nic nezůstalo: překlep v kádru, dvojitý
+       import, omylem založený trenér. Kdo má hodnocení (svoje nebo pořízená),
+       odkaz na sebehodnocení nebo zápis v komunikaci, se smazat nedá a aplikace
+       řekne proč — mazat záznamy „nějak kolem" by z historie udělalo děravý
+       dokument, který nejde vzít do ruky.                                      */
+    if (osobaId && metoda === 'DELETE') {
+        const id = Number(osobaId);
+        const osoba = await env.DB.prepare('SELECT id, jmeno, role FROM players WHERE id = ?')
+            .bind(id).first<{ id: number; jmeno: string; role: string }>();
+        if (!osoba) return chyba('Osoba nenalezena.', 404);
+
+        const pocty = await env.DB.prepare(
+            `SELECT
+                (SELECT COUNT(*) FROM evaluations WHERE player_id = ?) AS hodnoceni,
+                (SELECT COUNT(*) FROM evaluations WHERE autor_id = ?)  AS porizil,
+                (SELECT COUNT(*) FROM tokens      WHERE player_id = ?) AS odkazy`
+        ).bind(id, id, id).first<{ hodnoceni: number; porizil: number; odkazy: number }>();
+
+        const drzi = [
+            pocty?.hodnoceni ? `${pocty.hodnoceni}× hodnocení` : '',
+            pocty?.porizil ? `${pocty.porizil}× hodnocení, které pořídil(a)` : '',
+            pocty?.odkazy ? `${pocty.odkazy}× odkaz na sebehodnocení` : ''
+        ].filter(Boolean);
+
+        if (drzi.length) {
+            return chyba(
+                `${osoba.jmeno} má v databázi ${drzi.join(', ')} — smazat to nejde, `
+                + 'protože by z historie zmizely záznamy. Odškrtni místo toho „aktivní".',
+                409
+            );
+        }
+
+        // Nedokončené odkazy na nastavení hesla po téhle osobě už nemají komu patřit.
+        await env.DB.batch([
+            env.DB.prepare('DELETE FROM obnova WHERE player_id = ?').bind(id),
+            env.DB.prepare('DELETE FROM players WHERE id = ?').bind(id)
+        ]);
+        return json({ smazano: true, jmeno: osoba.jmeno });
     }
 
     /* ---------- přehled stavu za období ----------

@@ -65,10 +65,36 @@ resolve, and only if it is switched on (Settings → Language model).
 
 ## 5. Tabs
 
+### Home
+
+The first screen after signing in. Not a welcome poster: nothing happens for half a year
+and then a round of evaluations arrives — that is when one glance has to show where the
+squad stands.
+
+- **club badge and period**, so it is clear what is being written into;
+- **where it stands** — counted **per sheet**, not per player: someone with three templates
+  has three series and three papers. The numbers come from the same data as Sheets;
+- **what to do next** — concrete steps with a button where the work happens, shown **only
+  when something is actually left**;
+- **language model** — whether it answers and what is configured, taken from the last real
+  use rather than a test query.
+
+The **club badge** is the file `web/logo.png` in the repository. If it is missing, the image
+hides itself and only the name stays — a broken icon looks like an app error when it is
+merely a file nobody uploaded.
+
 ### People
 
 Who is in the team: name, nickname, positions, role and the templates they are scored with.
 Clicking a name opens that person for editing.
+
+**The form opens on request** — with *+ Add person* or by clicking a name. It closes with
+*Close* and after saving by itself.
+
+**Only someone who left nothing behind can be deleted** — a typo, a double import, a coach
+created by mistake. Anyone with an evaluation (their own or one they made) or a
+self-evaluation link cannot be deleted and the app says why: **their numbers are history**.
+Someone who left the team is retired by unticking *active*.
 
 A player can have **several templates** ticked — outfield, goalkeeper and leader all at
 once. Each one is its own series, its own self-evaluation link and its own sheet; they
@@ -287,8 +313,13 @@ are configured for coaches only and carry just who did what, never content.
 
 ### Settings
 
-Tolerance, period, season, club, category, the bar, the goals heading, your own password,
-digest notifications, the SMS switch and the language model.
+Tolerance, period, season, club, category, the bar, the goals heading, **preferred
+formations**, your own password, digest notifications, the SMS switch and the language model.
+
+**Preferred formations** are the ones the team plays, separated by commas (“1-4-4-2,
+1-4-3-3”). They do not change the scoring — the axes are the same for every formation.
+They are shared memory for the coaches and **context for the analyses**: “right-back in
+1-4-4-2” means something different than in 1-3-5-2, and without it the model guesses.
 
 ### 📖 Documentation
 

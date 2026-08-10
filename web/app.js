@@ -17,7 +17,7 @@ import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN, ZDROJ_FA_VIDEO, ZDROJ_ES_VIDEO } from 
 const $ = s => document.querySelector(s);
 /* `uprava` je jednorázová schránka mezi záložkami: Historie do ní položí verzi,
    kterou chce trenér opravit, a Hodnotit ji hned po překreslení vybere. */
-const stav = { nastaveni: {}, lide: [], zalozka: 'lide', prihlasen: false, kdo: null, kdoId: null, uprava: null,
+const stav = { nastaveni: {}, lide: [], zalozka: 'uvod', prihlasen: false, kdo: null, kdoId: null, uprava: null,
     naHodnoceni: null, konektivita: null };
 
 /* Abeceda GSM 03.38. Zpráva složená jen z těchhle znaků se vejde do 160 znaků
@@ -135,7 +135,7 @@ function prekresliShell() {
     verze();
 
     if (stav.prihlasen) {
-        $('#hl-klub').textContent = '⚽ ' + (stav.nastaveni.klub || '');
+        $('#hl-klub-text').textContent = stav.nastaveni.klub || '';
         $('#hl-obdobi').textContent = `${t('shell.obdobi')}: ${stav.nastaveni.obdobi || ''}`
             + ' · ' + t('shell.prihlasen', stav.kdo || t('shell.spolecne'));
         vykresliKonektivitu();
@@ -265,7 +265,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { lide, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
+        const kresli = { uvod, lide, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -327,6 +327,116 @@ function zapojZkratkyNaHodnoceni(kam) {
         stav.zalozka = 'hodnotit';
         prekresli();
     });
+}
+
+/* ===================== záložka: Úvod =====================
+
+   První obrazovka po přihlášení. Není to uvítací plakát: půl roku se s appkou
+   nic neděje a pak přijde kolo hodnocení — a tehdy má být na jedno otevření
+   vidět, kde kádr stojí a co udělat dál. Čísla se počítají z `/api/prehled`,
+   tedy z týchž dat jako Listy; žádný další endpoint kvůli tomu nevznikl.     */
+
+async function uvod(kam) {
+    kam.innerHTML = `<div class="karta"><p class="popis">${t('shell.nacitam')}</p></div>`;
+
+    let prehled;
+    try {
+        prehled = await api(`/api/prehled?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
+    } catch (e) {
+        kam.innerHTML = `<div class="karta"><div class="hlaska chyba">${esc(e.message)}</div></div>`;
+        return;
+    }
+
+    // Jednotka je LIST, ne hráč: kdo má tři šablony, má tři řady i tři papíry.
+    const hraci = prehled.hraci.filter(h => h.aktivni);
+    const listy = hraci.flatMap(h => (h.stavSablon ?? []).map(s => ({ hrac: h, ...s })));
+    const sTrenerem = listy.filter(l => l.maTrener);
+    const seSebe = listy.filter(l => l.maHrac);
+    const bezOdkazu = listy.filter(l => !l.maHrac && !l.maOdkaz);
+
+    const dlazdice = [
+        { cislo: hraci.length, stitek: t('uvod.hracu') },
+        { cislo: `${sTrenerem.length}/${listy.length}`, stitek: t('uvod.ohodnoceno') },
+        { cislo: `${seSebe.length}/${listy.length}`, stitek: t('uvod.sebehodnoceni') },
+        { cislo: listy.length - sTrenerem.length, stitek: t('uvod.zbyva') }
+    ];
+
+    /* Co dělat dál. Kroky se ukazují jen tehdy, když opravdu něco zbývá —
+       seznam samých odškrtnutých úkolů nikdo nečte. */
+    const kroky = [];
+    if (!hraci.length) {
+        kroky.push({ text: t('uvod.krok.kadr'), kam: 'lide', tlacitko: t('nav.lide') });
+    } else {
+        if (listy.length - sTrenerem.length > 0) {
+            kroky.push({ text: t('uvod.krok.hodnotit', listy.length - sTrenerem.length), kam: 'hodnotit', tlacitko: t('nav.hodnotit') });
+        }
+        if (bezOdkazu.length) {
+            kroky.push({ text: t('uvod.krok.odkazy', bezOdkazu.length), kam: 'odkazy', tlacitko: t('nav.odkazy') });
+        }
+        if (sTrenerem.length && seSebe.length) {
+            kroky.push({ text: t('uvod.krok.porovnat'), kam: 'porovnani', tlacitko: t('nav.porovnani') });
+        }
+        if (sTrenerem.length) {
+            kroky.push({ text: t('uvod.krok.listy'), kam: 'listy', tlacitko: t('nav.listy') });
+        }
+    }
+
+    const ai = stav.konektivita?.ai;
+
+    kam.innerHTML = `
+        <div class="karta">
+            <div class="uvod-hlavicka">
+                <img id="uvod-znak" src="/logo.png" alt="">
+                <div>
+                    <div class="nazev">${esc(stav.nastaveni.klub || t('shell.app'))}</div>
+                    <div class="popis" style="margin:2px 0 0">${t('uvod.podtitulek')}</div>
+                    <div class="popis" style="margin:6px 0 0">${t('shell.obdobi')}: <b>${esc(stav.nastaveni.obdobi || '—')}</b>
+                        · ${t('shell.prihlasen', esc(stav.kdo || t('shell.spolecne')))}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="karta">
+            <h2>${t('uvod.stav')}</h2>
+            <p class="popis">${t('uvod.stav.popis')}</p>
+            <div class="dlazdice">
+                ${dlazdice.map(d => `
+                    <div><div class="cislo">${esc(String(d.cislo))}</div>
+                         <div class="stitek">${d.stitek}</div></div>`).join('')}
+            </div>
+        </div>
+
+        <div class="karta">
+            <h2>${t('uvod.dal')}</h2>
+            ${kroky.length ? `<ul class="kroky">${kroky.map(k => `
+                <li><span class="text">${k.text}</span>
+                    <button class="vedlejsi" data-kam="${k.kam}">${k.tlacitko} →</button></li>`).join('')}</ul>`
+                : `<div class="hlaska ok">${t('uvod.hotovo')}</div>`}
+        </div>
+
+        <div class="karta">
+            <h2>${t('uvod.model')}</h2>
+            <p class="popis">${t('uvod.model.popis')}</p>
+            <p>${ai
+                ? `<b class="st-${esc(ai.stav)}">${ZNACKY_STAVU[ai.stav] ?? '○'} ${esc(t('konektivita.ai'))}</b> — ${esc(ai.popis)}`
+                : `<span class="popis">${t('uvod.model.neznamy')}</span>`}</p>
+            <button class="vedlejsi" data-kam="nastaveni">${t('nav.nastaveni')} →</button>
+        </div>`;
+
+    kam.querySelectorAll('[data-kam]').forEach(b => b.onclick = () => {
+        stav.zalozka = b.dataset.kam;
+        prekresli();
+    });
+    schovejChybejiciZnak(kam.querySelector('#uvod-znak'));
+}
+
+/* Logo je soubor, který si klub nahraje sám (`web/logo.png`). Když tam není,
+   obrázek se schová — rozbitá ikona vedle názvu vypadá jako chyba aplikace,
+   a přitom je to jen nenahraný soubor. */
+function schovejChybejiciZnak(prvek) {
+    if (!prvek) return;
+    prvek.onerror = () => { prvek.hidden = true; };
+    if (prvek.complete && !prvek.naturalWidth) prvek.hidden = true;
 }
 
 /* ===================== záložka: Lidé ===================== */
@@ -437,6 +547,7 @@ async function lide(kam) {
             <button class="hl" id="ulozit-osobu" title="${t('lide.ulozit.tip')}">${t('lide.ulozit')}</button>
             <button class="vedlejsi" id="nova-osoba" title="${t('lide.novy.tip')}">${t('lide.novy')}</button>
             <button class="vedlejsi" id="zavrit-osobu" title="${t('lide.zavrit.tip')}">${t('lide.zavrit')}</button>
+            <button class="vedlejsi zrusit" id="smazat-osobu" title="${t('lide.smazat.tip')}" hidden>${t('lide.smazat')}</button>
         </div>`;
 
     /* ===== čtení nahraného souboru =====
@@ -615,6 +726,8 @@ async function lide(kam) {
         $('#o-povinne').checked = false;
         $('#chat-vysledek').innerHTML = '';
         delete $('#formular-osoby').dataset.id;
+        // U nové osoby není co mazat — tlačítko se ukáže až u existující.
+        $('#smazat-osobu').hidden = true;
     };
 
     $('#dotahnout-chat').onclick = async () => {
@@ -701,6 +814,7 @@ async function lide(kam) {
             ? `<div class="hlaska ${o.ma_heslo ? 'ok' : 'pozor'}">${o.ma_heslo ? t('lide.maHeslo') : t('lide.bezHesla')}</div>`
             : '';
         $('#formular-osoby').dataset.id = o.id;
+        $('#smazat-osobu').hidden = false;
         ukazFormular();
     });
 
@@ -712,6 +826,24 @@ async function lide(kam) {
     $('#pridat-osobu').onclick = () => { vyprazdni(); ukazFormular(); };
     $('#nova-osoba').onclick = vyprazdni;          // v otevřeném formuláři = „a teď dalšího"
     $('#zavrit-osobu').onclick = () => { vyprazdni(); zavriFormular(); };
+
+    /* Smazat jde jen ten, po kom nic nezůstalo — překlep v kádru, dvojitý import.
+       Kdo má hodnocení nebo odkaz, se vyřazuje odškrtnutím „aktivní": jeho čísla
+       jsou historie a ta se nemaže. Server to hlídá taky a řekne důvod. */
+    $('#smazat-osobu').onclick = async () => {
+        const id = $('#osoba-id').value;
+        if (!id) return;
+        const o = stav.lide.find(x => x.id === Number(id));
+        if (!confirm(t('lide.smazat.potvrdit', o?.jmeno ?? ''))) return;
+        try {
+            await api(`/api/players/${id}`, { method: 'DELETE' });
+            stav.lide = await api('/api/players');
+            await prekresli();
+            hlaska($('#obsah'), 'ok', t('lide.smazano', o?.jmeno ?? ''));
+        } catch (e) {
+            hlaska($('#formular-osoby'), 'chyba', e.message);
+        }
+    };
 
     $('#ulozit-osobu').onclick = async () => {
         const id = $('#osoba-id').value;
@@ -2303,8 +2435,8 @@ async function odkazy(kam) {
 
 /* ===================== záložka: Nastavení ===================== */
 
-const KLICE_NASTAVENI = ['tolerance', 'obdobi', 'sezona', 'klub', 'kategorie', 'latka', 'cileNadpis'];
-const MA_NAPOVEDU = ['tolerance', 'obdobi', 'sezona', 'latka', 'cileNadpis'];
+const KLICE_NASTAVENI = ['tolerance', 'obdobi', 'sezona', 'klub', 'kategorie', 'latka', 'cileNadpis', 'sestavy'];
+const MA_NAPOVEDU = ['tolerance', 'obdobi', 'sezona', 'latka', 'cileNadpis', 'sestavy'];
 
 async function nastaveni(kam) {
     kam.innerHTML = `
@@ -2663,6 +2795,11 @@ async function nastaveni(kam) {
 }
 
 /* ===================== start ===================== */
+
+// Znak klubu v liště i na přihlašovací stránce. Soubor `web/logo.png` si klub
+// nahraje sám; dokud tam není, obrázky se schovají a zůstane samotný název.
+schovejChybejiciZnak($('#hl-znak'));
+schovejChybejiciZnak($('#login-znak'));
 
 $('#prihlasit').onclick = prihlas;
 $('#heslo').onkeydown = e => { if (e.key === 'Enter') prihlas(); };

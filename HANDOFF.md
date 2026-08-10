@@ -2,6 +2,40 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (39) — úvodní stránka, preferované sestavy, mazání osoby
+
+Tři přání z jednoho sezení.
+
+**Úvodní stránka (záložka *Úvod*, nově výchozí).** Aplikace dosud spadla rovnou do tabulky
+Lidí — na kartotéku, ne na stav. Nová první obrazovka nese znak klubu, období, čtyři
+dlaždice (hráčů, listů ohodnocených trenérem, listů se sebehodnocením, kolik zbývá) a
+**kroky „co udělat dál"** s tlačítkem tam, kde se to dělá. Kroky se ukazují jen tehdy,
+když opravdu něco zbývá — seznam samých odškrtnutých úkolů nikdo nečte. Čísla jsou
+z `/api/prehled`, tedy z týchž dat jako Listy; druhá pravda o stavu nevznikla. Poslední
+karta je **stav jazykového modelu** (na přání uživatele) — z posledního skutečného
+použití, ne ze zkušebního dotazu.
+
+Počítá se **po listech**, ne po hráčích: kdo má tři šablony, má tři řady i tři papíry.
+
+**Znak klubu** čeká jako `web/logo.png`; dokud tam soubor není, obrázek se schová a zůstane
+název. Rozbitá ikona vedle jména vypadá jako chyba aplikace, a přitom je to nenahraný soubor.
+
+**Preferované sestavy** (`sestavy`, výchozí `1-4-4-2`) jsou volný seznam oddělený čárkou,
+ne pevná nabídka v kódu — uživatel rovnou řekl, že jich bude nejspíš víc. Hodnocení to
+nemění (osy jsou pro každou sestavu stejné), ale jde to **do podkladů pro jazykový model**:
+„pravý bek v 1-4-4-2" znamená něco jiného než v 1-3-5-2. Při té příležitosti dostal model
+i kategorii a laťku, které v podkladech chyběly.
+
+**Mazání osoby.** Doteď šlo jen odškrtnout „aktivní" — správně u hráče, který skončil,
+ale nepoužitelné u překlepu nebo dvojitého importu. Formulář má teď *Smazat osobu*,
+server ale pustí jen toho, po kom **nic nezůstalo**: kdo má hodnocení (svoje nebo pořízená)
+nebo odkaz na sebehodnocení, dostane 409 a v něm napsáno, co ho drží a co dělat místo toho.
+Historie zůstává celá.
+
+Doklady v `known_good.md` (26).
+
+---
+
 ## 2026-08-10 (38) — hodnocení se neuloží bez podpisu
 
 **Commit:** `d2f178e` · **NASAZENO** 2026-08-10, Version ID `d8df854c-9f36-469e-b88b-726c7cf09765`.
