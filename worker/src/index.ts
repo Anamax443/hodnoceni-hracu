@@ -2743,15 +2743,27 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             // další verze — `uprava_id` drží nit, aby v historii šlo poznat
             // opravu od druhého, samostatně pořízeného hodnocení.
             const upravaId = h.uprava_id ? Number(h.uprava_id) : null;
+            let sablonaPredlohy: string | null = null;
             if (upravaId) {
                 const zdroj = await env.DB.prepare(
-                    'SELECT player_id, autor FROM evaluations WHERE id = ?'
-                ).bind(upravaId).first<{ player_id: number; autor: string }>();
+                    'SELECT player_id, autor, sablona FROM evaluations WHERE id = ?'
+                ).bind(upravaId).first<{ player_id: number; autor: string; sablona: string }>();
                 if (!zdroj) return chyba('Upravovaná verze hodnocení neexistuje.', 404);
                 if (zdroj.player_id !== playerId) return chyba('Upravovaná verze patří jinému hráči.', 400);
                 // Sebehodnocení hráče trenér nepřepisuje ani formou nové verze
                 // a uzavřená shoda se dělá v Shodě, ne tady.
                 if (zdroj.autor !== 'trener') return chyba('Upravovat jde jen hodnocení od trenéra.', 400);
+                sablonaPredlohy = zdroj.sablona;
+            }
+
+            // Známkuje se jen šesticí os, kterou má hráč přiřazenou. Nabídka ve
+            // formuláři je omezená stejně, tohle je pojistka na přímé volání API
+            // a na starý otevřený formulář — jinak by hráči v poli vznikla
+            // brankářská řada, kterou by v Listech nikdo nečekal.
+            // Výjimka je oprava už pořízeného záznamu: šablonu mohl hráč mezitím
+            // ztratit a novou verzi musí jít uložit tam, kam původní patří.
+            if (!sablonyOsoby(hrac).includes(sablona) && sablona !== sablonaPredlohy) {
+                return chyba(`Hráč nemá přiřazenou šablonu ${sablona} — zaškrtává se u něj v Lidech.`, 400);
             }
 
             const r = await env.DB.prepare(

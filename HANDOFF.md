@@ -2,6 +2,39 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-10 (32) — známkovat jde jen tím, co má hráč zaškrtnuté
+
+**Uživatel poslal snímek s kroužkem:** Mirda má v Lidech *hráče v poli* a *leadera*,
+ale ve formuláři hodnocení mu šlo vybrat **brankáře**. Nabídka se plnila z `Object.keys(SABLONY)`,
+tedy ze všech šablon, jaké aplikace zná — přiřazení hráče se v ní vůbec neuplatnilo.
+Nápověda pod výběrem přitom správně vypisovala, co hráč má; ukazovala tedy na rozpor,
+který sama nezpůsobila.
+
+**Není to jen zbytečná volba.** Uložením by vznikla brankářská řada a brankářský tiskový
+list u hráče, který nikdy nechytal — a v Listech by u něj svítilo hodnocení, které nikdo
+nezadal úmyslně. Špatné číslo v datové řadě se hůř hledá než chybějící.
+
+**Opraveno na dvou místech, protože UI není pravidlo:**
+- formulář hodnocení nabízí jen přiřazené šablony; při jediné je výběr zamčený (`disabled`),
+- hromadné hodnocení nabízí u zvolené šablony **jen hráče, kteří ji mají** — komentář
+  v kódu to tvrdil už dřív, ale filtr tam nikdy nebyl (`hraciAktivni()` bez omezení),
+- `POST /api/evaluations` cizí šablonu odmítne s 400. Pojistka platí na přímé volání API
+  i na formulář, který zůstal otevřený z doby před opravou.
+
+**Výjimka, která tam musí být:** oprava už pořízeného záznamu. Když se hráči šablona
+mezitím odškrtne, musí jít jeho starší hodnocení opravit a uložit jako novou verzi —
+server proto pustí i nepřiřazenou šablonu, pokud se rovná šabloně předlohy (`uprava_id`).
+Ve formuláři taková šablona v nabídce zůstane a je u ní napsané, proč tam je.
+
+**Nesouvisející, ale ze stejného dne:** na přání uživatele dostali `leader` **všichni
+hráči** (19 řádků v ostré DB). První `UPDATE` šel přes `wrangler d1 execute --command`
+a escapování uvozovek v PowerShellu rozbilo podmínku `NOT LIKE '%"leader"%'`, takže se
+místo 10 chybějících trefilo všech 19 a devíti lidem přibyl `leader` **podruhé**.
+Opraveno druhým během ze souboru a ověřeno dotazem. **Hromadné SQL do D1 posílat přes
+`--file`, ne `--command`.**
+
+---
+
 ## 2026-08-09 (31) — dokumentace lhala o číslech; čísla se berou z databáze
 
 **Uživatel přistihl dokumentaci při lži.** V kapitole *Stav projektu* stálo „hráčům

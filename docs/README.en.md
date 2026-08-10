@@ -75,6 +75,10 @@ once. Each one is its own series, its own self-evaluation link and its own sheet
 cannot be merged into a single chart, but they can be printed on one page (Sheets →
 combined sheet). The first ticked one is the default in the evaluation form.
 
+**What is ticked here decides what the player can be scored with at all.** The evaluation
+form and the bulk evaluation offer those templates only — an outfield player cannot be
+scored with the goalkeeper set of axes.
+
 A player can hold **several positions**. **Function** is free text (“Captain”) and is
 printed on the sheet. **Active** is unticked instead of deleting — the history stays, and
 the number a player was given is never reused.
@@ -92,8 +96,10 @@ midfielder`, `yes` / `no`) in the language you have switched on.
 Pick a player; the form appears below: six axes with ten scores each, three written blocks
 and the goals. Nothing is pre-filled and previous values are not shown — that is deliberate.
 
-The **set of axes** is chosen in the form; the default is the first one ticked for that
-player in People, and everything they have assigned is listed under the selector. A player
+The **set of axes** is chosen in the form, but **only among those ticked for that player
+in People** — a template they do not have is not offered at all, and with a single one
+assigned the selector is locked. The default is the first ticked one, and everything they
+have assigned is listed under the selector. A player
 who keeps goal, plays outfield and leads the team is filled in as many times as they have
 templates — after saving, the app offers *Score: goalkeeper* and the rest straight away.
 They then get a sheet for each, and each series lives on its own; the sets cannot be merged

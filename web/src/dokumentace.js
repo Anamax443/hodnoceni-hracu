@@ -71,7 +71,9 @@ nebo za rodiči.</p>
       sebehodnocení a vlastní list</b> — do jednoho grafu se sloučit nedají,
       protože jiných šest os má jiný tvar a nešlo by porovnávat v čase.
       Vytisknout je vedle sebe na jednu stránku ale jde (Listy → kumulovaný
-      list). První zaškrtnutá je výchozí ve formuláři hodnocení.</li>
+      list). První zaškrtnutá je výchozí ve formuláři hodnocení a <b>na výběr
+      jsou jen zaškrtnuté</b> — hráče v poli aplikace brankářskou šesticí os
+      oznámkovat nenechá.</li>
   <li><b>Aktivní</b> — vyřazení hráči se nemažou, jen se odškrtnou. Zůstávají
       i s historií a se svým číslem, které se už nikdy nepřidělí nikomu jinému.</li>
   <li><b>Kanály</b> — e-mail, Telegram chat id, telefon a k nim přepínače,
@@ -481,7 +483,9 @@ Where the coach and the player disagree, there is something to talk about.</p>
       its own sheet</b> — they cannot be merged into one chart, because a different
       set of six axes has a different shape and could no longer be compared over
       time. Printing them side by side on one page is possible though (Sheets →
-      combined sheet). The first ticked one is the default in the form.</li>
+      combined sheet). The first ticked one is the default in the form and
+      <b>only the ticked ones can be picked</b> — the app will not let an
+      outfield player be scored with the goalkeeper set of axes.</li>
   <li><b>Active</b> — players are never deleted, only unticked. They keep their
       history and their number, which is never given to anybody else.</li>
   <li><b>Channels</b> — e-mail, Telegram chat id, phone, and switches for digests.</li>

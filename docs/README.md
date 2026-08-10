@@ -101,8 +101,9 @@ zaškrtnuté všechny tři. Je to popis toho, kde nastupuje — se známkování
 
 **Funkce / poznámka** je volný text vedle pozic, třeba „Kapitán". Tiskne se na list.
 
-**Šablona os** je jen výchozí volba do formuláře. Kterou šesticí os hráče oznámkuješ,
-vybíráš až u konkrétního hodnocení.
+**Zaškrtnuté šablony rozhodují, čím se hráč vůbec dá oznámkovat.** Ve formuláři hodnocení
+i v hromadném hodnocení se nabízí jen ty, které tu má zaškrtnuté — hráči v poli aplikace
+brankářskou šesticí os nedovolí známkovat. První zaškrtnutá je ve formuláři předvolená.
 
 - **role hráč** — hodnotí se, tiskne se mu list
 - **role trenér** — nehodnotí se; je v seznamu proto, aby šlo u hodnocení vybrat, kdo ho pořídil
@@ -154,8 +155,9 @@ Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tř
 
 Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
 
-**Šestice os** se vybírá nahoře ve formuláři; předvolená je první, kterou má hráč v Lidech
-zaškrtnutou, a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli
+**Šestice os** se vybírá nahoře ve formuláři, ale **jen z těch, které má hráč v Lidech
+zaškrtnuté** — cizí šablona v nabídce vůbec není a při jediné přiřazené je výběr zamčený.
+Předvolená je první zaškrtnutá a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli
 i vede mužstvo, se vyplňuje tolikrát, kolik má šablon — po uložení nabídne aplikace rovnou
 *Ohodnotit: brankář* a další. Dostane pak list na každou z nich a každá řada v čase žije
 samostatně; do jednoho grafu se sloučit nedají, protože jiných šest os má jiný tvar.

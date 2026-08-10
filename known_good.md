@@ -5,6 +5,30 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-10 (24) — cizí šablonu server odmítne
+
+Ověřeno proti **lokálnímu `wrangler dev`** (`--local`, D1 se schématem po migraci 013),
+přihlášeno společným heslem, testovací hráči: *Test Polar* = `["pole","leader"]`,
+*Test Hráč* = `["pole","brankar","leader"]`.
+
+| Volání `POST /api/evaluations` | Výsledek |
+|---|---|
+| Test Polar jako `brankar` | **HTTP 400** — „Hráč nemá přiřazenou šablonu brankar — zaškrtává se u něj v Lidech." |
+| Test Polar jako `leader` | HTTP 201, záznam uložen |
+| Test Hráč jako `brankar` (má ji) | HTTP 201, záznam uložen |
+| oprava staršího brankářského záznamu Test Polara (`uprava_id`) | HTTP 201 — výjimka pro úpravu funguje |
+| `uprava_id` ukazující na záznam jiného hráče | HTTP 400 — starší pojistka drží dál |
+
+Šablona os v ostré databázi po hromadném zásahu (`SELECT role, sablony, COUNT(*)`):
+19 hráčů, z toho 16 `["pole","leader"]`, 2 `["pole","brankar","leader"]`,
+1 neaktivní `["pole","leader"]` — **žádný duplicitní `leader`**, sloupec `sablona`
+zůstal `pole` (zrcadlí první ze seznamu).
+
+Build workeru prošel (`wrangler deploy --dry-run`), `node --check` na `web/app.js`
+i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
+
+---
+
 ## 2026-08-09 (23) — křivky rozlišené tvarem (černobílý tisk)
 
 **NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.

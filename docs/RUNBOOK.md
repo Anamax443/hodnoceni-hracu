@@ -74,6 +74,9 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | aplikace je celá anglicky | jazyk prohlížeče nebo dřívější volba | tlačítko **Čeština** v horní liště, nebo adresa s `?lang=cs` |
 | po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
 | hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
+| ve formuláři nejde vybrat brankář (nebo leader) | hráč tu šesticí os nemá zaškrtnutou; nabízejí se jen přiřazené | Lidé → hráč → zaškrtnout šablonu → Uložit |
+| v hromadném hodnocení chybí půlka kádru | seznam ukazuje jen ty, kdo mají zvolenou šesticí os | přepnout šablonu, nebo ji hráčům zaškrtnout v Lidech |
+| API vrátí „Hráč nemá přiřazenou šablonu…" | formulář zůstal otevřený z doby, kdy šablonu ještě měl | obnovit stránku; opravit starší záznam v té šabloně jde dál přes *Upravit ho* |
 | „Tenhle účet ještě nemá nastavené heslo" | trenér má login, ale heslo si nenastavil | Lidé → *Poslat odkaz na nastavení hesla* |
 | souhrn nechodí | vypnutý, nikdo nemá kanál, nebo neuplynul interval | Nastavení → stav rozesílky to napíše; *Poslat souhrn teď* obejde interval |
 | Telegram: „chat not found" | trenér botovi nikdy nenapsal, nebo špatné chat id | ať napíše `@skricmanice_bot`, pak Lidé → *Dotáhnout chat id* |

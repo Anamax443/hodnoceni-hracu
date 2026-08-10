@@ -1083,9 +1083,9 @@ function formularHromadny(kam) {
 
     const vykresli = (sablona) => {
         const seznamOs = osy(sablona);
-        // Nabízejí se jen hráči, kteří tuhle šablonu dávají smysl — brankářskou
-        // šablonu nemá cenu nabízet celému kádru.
-        const hraci = hraciAktivni();
+        // Nabízejí se jen hráči, kterým tahle šablona dává smysl — brankářskou
+        // šestici nemá cenu nabízet celému kádru.
+        const hraci = hraciAktivni().filter(h => sablonyOsoby(h).includes(sablona));
 
         kam.innerHTML = `
             <div class="pole" style="max-width:320px;margin-top:12px">
@@ -1114,7 +1114,7 @@ function formularHromadny(kam) {
             <div class="pozice-vyber">
                 ${hraci.map(h => `
                     <label class="volba"><input type="checkbox" class="hr-hrac" value="${h.id}"> ${esc(jmenoText(h))}</label>
-                `).join('') || `<span class="popis">${t('lide.prazdno')}</span>`}
+                `).join('') || `<span class="popis">${t('hromadne.hraci.zadny')}</span>`}
             </div>
 
             <p style="margin-top:14px">
@@ -1184,6 +1184,14 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
     if (!hracId) { kam.innerHTML = ''; return; }
     const hrac = stav.lide.find(o => o.id === hracId);
     const vybranaSablona = sablona ?? sablonyOsoby(hrac)[0];
+    // Vybírat jde jen z toho, co má hráč zaškrtnuté v Lidech. Brankářská
+    // šestice u hráče v poli není jen zbytečná volba — vznikla by z ní řada
+    // a tiskový list, které nikdo nečeká a v Listech pak chybí u nich hodnocení.
+    // Šablona načtené starší verze v nabídce zůstane i tehdy, když ji hráč
+    // mezitím ztratil: opravit už pořízený záznam musí jít.
+    const prirazene = sablonyOsoby(hrac);
+    const nabidkaSablon = [...new Set([...prirazene, vybranaSablona])];
+    const sablonaMimoNabidku = !prirazene.includes(vybranaSablona);
     const seznamOs = osy(vybranaSablona);
     const pozice = (hrac.pozice ?? []).map(p => t('pozice.' + p)).join(' · ');
     const obdobiZapisu = uprava?.obdobi || stav.nastaveni.obdobi;
@@ -1209,10 +1217,11 @@ function formularHodnoceni(kam, hracId, sablona = null, predvyplneno = null, upr
             <h2>${jmenoHtml(hrac)}${pozice ? ` <span class="popis">— ${esc(pozice)}</span>` : ''}</h2>
             <div class="pole" style="max-width:320px">
                 <label for="h-sablona">${t('hodnotit.sablona')}</label>
-                <select id="h-sablona">${Object.keys(SABLONY)
+                <select id="h-sablona"${nabidkaSablon.length > 1 ? '' : ' disabled'}>${nabidkaSablon
                     .map(s => `<option value="${s}"${s === vybranaSablona ? ' selected' : ''}>${t('sablona.' + s)}</option>`).join('')}</select>
                 <div class="popis">${t('hodnotit.sablona.prirazene', esc(nazvySablon(hrac)))}
-                    ${t('hodnotit.sablona.napoveda')}</div>
+                    ${nabidkaSablon.length > 1 ? t('hodnotit.sablona.napoveda') : t('hodnotit.sablona.jedina')}
+                    ${sablonaMimoNabidku ? t('hodnotit.sablona.mimoNabidku') : ''}</div>
             </div>
             ${kotvyHtml()}
             <div style="margin-top:10px">
