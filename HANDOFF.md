@@ -2,6 +2,47 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-12 (40) — jméno úrovně u čísla, vysvětlivky os (inspirace Marcet)
+
+Uživatel poslal **hodnoticí zprávu z kempu Marcet (Barcelona)** pro Bedřicha Grunda
+a chtěl ji probrat. Co z rozboru vzešlo:
+
+**Co se v té zprávě ukázalo.** Stupnice 0–10 je optická — všech 32 dovedností má známku
+4, 6 nebo 8, protože se zadává slovní úroveň (*Essential / Competent / Advanced*) a ta se
+teprve mapuje na číslo. Souhrn kapitoly je **useknutý** průměr, ne zaokrouhlený (6,89 se
+tiskne jako 6, tedy hůř, než jaká je skutečnost). Texty jsou šablonové: „video analysis"
+je návrh č. 2 nebo 3 skoro u každé dovednosti a kapitoly 5.4 a 5.6 mají prakticky totožný
+odstavec i všechny tři cíle. Překlad je místy rozbitý (*partidos* → „parties"). Nejnižší
+udělovaný stupeň se jmenuje *Essential* a leží na 4/10 — nikdo nedostane trojku, protože
+je to výstup placené služby, ne interní nástroj.
+
+**Co se z toho vzalo:**
+1. **Jméno úrovně u čísla.** Kotvy dostaly krátký název (`kotva.N.nazev`: začátek /
+   buduje se / spolehlivé / opora / nadstandard) a ten stojí u čísla v radaru
+   (*7/10 spolehlivé*) i jako tučný štítek v legendě. Pásma z legendy nezmizela — jméno
+   je zkratka k nim, ne náhrada. `uroven(n)` v `i18n.js` je jediné místo, kde se číslo
+   mapuje na pásmo, aby graf a legenda nemohly říkat každý něco jiného.
+2. **Vysvětlivky os** jako **samostatná stránka** (zaškrtávátko v Listech, výchozí vypnuto).
+   Marcet vysvětluje každou dovednost na vlastní stránce; nám by se to na list nevešlo
+   a nemá — *jeden hráč = jedna A4*. Stránka je proto jedna pro celou hromádku, sekce po
+   šablonách, u každé osy věta z pohledu hráče (tatáž, kterou vidí v sebehodnocení).
+
+**Co se vědomě NEpřevzalo:** známkování povahy číslem (jejich kapitola 5 dává čísla
+odpovědnosti a přístupu — naše zadání to zakazuje, od toho jsou slovní bloky), tři cíle
+ke každé ose (32 × 3 = 96 cílů nikdo nečte) a šablonové texty.
+
+**Co máme navíc a oni ne:** srovnání s předchozím obdobím a **sebehodnocení hráče** proti
+pohledu trenéra. V Marcetu hráč svůj pohled neříká vůbec.
+
+Ověřeno vyrenderováním obou stránek headless Edgem (`--headless=new --screenshot`) ze
+skutečných modulů. Doklad v `known_good.md` (27).
+
+**Zůstává otevřené** (probrané, nezadané): cíl označkovaný osou, které se týká, a externí
+posudek u hráče (Marcet apod.) — u toho je potřeba rozhodnout, jestli stačí odkaz a pár
+vět, nebo se má ukládat celé PDF.
+
+---
+
 ## 2026-08-10 (39) — úvodní stránka, preferované sestavy, mazání osoby
 
 **Commit:** `4660a43` · **NASAZENO** 2026-08-10, Version ID `62616f76-4b78-430f-9ec6-1f489d38cbe1`.

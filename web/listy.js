@@ -25,11 +25,12 @@ function popisky() {
 }
 
 const kumulovane = p.get('kumulovane') === '1';
+const sVysvetlivkami = p.get('vysvetlivky') === '1';
 
 function nakresli() {
     popisky();
     if (!data) return;
-    const pocet = vykresli(data.listy, data.nastaveni, $('#output'), kumulovane);
+    const pocet = vykresli(data.listy, data.nastaveni, $('#output'), kumulovane, sVysvetlivkami);
     const bez = data.listy.filter(h => !h.hodnoceni).length;
     $('#stav').textContent = t('tisk.stav', data.nastaveni.obdobi, pocet)
         + (bez ? t('tisk.bez', bez) : '')

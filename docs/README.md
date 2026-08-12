@@ -188,6 +188,11 @@ podepisuje se přihlášený účet. U společného hesla aplikace nepozná, kdo
 a trenér se musí vybrat. Sebehodnocení hráče je jiná věc — to podepisuje hráč sám tím,
 že přišel svým odkazem.
 
+**U každého čísla stojí jméno úrovně** — na obrazovce i na listu: *4/10 buduje se*,
+*7/10 spolehlivé*, *10/10 nadstandard*. Samotná sedmička nikomu nic neříká, dokud si
+nedohledá pásmo v legendě, a rodič, který list vidí jednou za půl roku, ho nedohledá.
+Pásma zůstávají v legendě pod grafem, jméno je jen zkratka k nim.
+
 **Šestice os** se vybírá nahoře ve formuláři, ale **jen z těch, které má hráč v Lidech
 zaškrtnuté** — cizí šablona v nabídce vůbec není a při jediné přiřazené je výběr zamčený.
 Předvolená je první zaškrtnutá a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli
@@ -289,6 +294,11 @@ v záhlaví označí a odznačí všechno.
 **Kumulovaný list** (zaškrtávátko nahoře) to složí na **jednu stránku**: radary za všechny
 šablony vedle sebe, každý podepsaný, slovní bloky a cíle poskládané ze všech (u každého
 kusu je napsáno, ze které šablony je). Bez zaškrtnutí má každá šablona vlastní stránku.
+
+**Vysvětlivky os** (druhé zaškrtávátko) přidají na konec **jednu stránku navíc**: co která
+osa měří a jak vypadá zvládnutá — větou z pohledu hráče, tou samou, kterou vidí ve svém
+sebehodnocení. Na list hráče se to nevejde a nemá: *jeden hráč = jedna A4* je pravidlo.
+Stránka je společná pro celou hromádku, takže se tiskne jednou, ne ke každému.
 
 #### Barva podle šablony
 

@@ -14,7 +14,7 @@
    ===================================================================== */
 
 import { radar, vzorekRady } from './radar.js';
-import { t, osy, kotvy, locale } from './i18n.js';
+import { t, osy, kotvy, ja, locale } from './i18n.js';
 
 /** Escapuje text z databáze, aby `&` nebo `<` v komentáři nerozbily HTML. */
 export function esc(hodnota) {
@@ -108,7 +108,7 @@ export function list(h, nas) {
 
         <div class="scale">
             <b>${t('list.jakCist')}</b>
-            ${kotvy().map(k => `<span><b>${k[0]}</b> &ndash; ${k[1]}</span>`).join('')}
+            ${kotvy().map(k => `<span><b>${k[0]} ${k[2]}</b> &ndash; ${k[1]}</span>`).join('')}
         </div>
 
         <div class="footer">
@@ -216,7 +216,7 @@ export function listKumulovany(hraci, nas) {
 
         <div class="scale">
             <b>${t('list.jakCist')}</b>
-            ${kotvy().map(k => `<span><b>${k[0]}</b> &ndash; ${k[1]}</span>`).join('')}
+            ${kotvy().map(k => `<span><b>${k[0]} ${k[2]}</b> &ndash; ${k[1]}</span>`).join('')}
         </div>
 
         <div class="footer">
@@ -227,12 +227,65 @@ export function listKumulovany(hraci, nas) {
 }
 
 /**
+ * Vysvětlivky os — samostatná stránka, ne dodatek k listu.
+ *
+ * Na listu je u každé osy číslo a jméno úrovně, ale ne to, co ta osa vlastně
+ * měří. Vejít se to tam nemá: jeden hráč = jedna A4 je pravidlo, ne zvyk.
+ * Kdo chce vysvětlivky (rodič, nový trenér), vytiskne si tuhle jednu stránku
+ * ke všem listům dohromady.
+ *
+ * U každé osy stojí věta z pohledu hráče — tatáž, kterou vidí ve svém
+ * sebehodnocení. Popisuje, jak vypadá zvládnutá osa, takže se z ní dá číst
+ * i to, k čemu se známka vztahuje.
+ */
+export function vysvetlivky(sablony, nas) {
+    return `
+    <div class="page vysvetlivky">
+        <div class="header">
+            <div>
+                <div class="club">${esc(nas.klub)}</div>
+                <h1>${t('list.vysvetlivky')}</h1>
+            </div>
+            <div class="meta">${esc(nas.kategorie)} &bull; ${esc(nas.obdobi)}</div>
+        </div>
+
+        <p class="popis-listu">${t('list.vysvetlivky.popis')}</p>
+
+        ${sablony.map(s => `
+            <div class="vysvetlivky-sablona sab-${esc(s)}">
+                <h4>${znacka(s)}</h4>
+                <table class="osy-tabulka">
+                    ${osy(s).map(o => `<tr>
+                        <th>${esc(o.popis)}</th>
+                        <td>${esc(ja(o.klic))}</td>
+                    </tr>`).join('')}
+                </table>
+            </div>`).join('')}
+
+        <div class="scale">
+            <b>${t('list.jakCist')}</b>
+            ${kotvy().map(k => `<span><b>${k[0]} ${k[2]}</b> &ndash; ${k[1]}</span>`).join('')}
+        </div>
+
+        <div class="footer">
+            <div>${t('list.paticka', esc(nas.latka))}</div>
+        </div>
+    </div>`;
+}
+
+/**
  * Vykreslí listy. Bez `kumulovane` platí jeden list = jedna stránka (hráč ×
  * šablona); s ním má hráč jednu stránku se všemi svými šablonami.
+ * `sVysvetlivkami` přidá na konec jednu stránku s významem os — nepočítá se
+ * do návratové hodnoty, není to ničí list.
  */
-export function vykresli(listy, nastaveni, cil, kumulovane = false) {
+export function vykresli(listy, nastaveni, cil, kumulovane = false, sVysvetlivkami = false) {
+    const dodatek = sVysvetlivkami && listy.length
+        ? vysvetlivky([...new Set(listy.map(h => h.sablona))], nastaveni)
+        : '';
+
     if (!kumulovane) {
-        cil.innerHTML = listy.map(h => list(h, nastaveni)).join('');
+        cil.innerHTML = listy.map(h => list(h, nastaveni)).join('') + dodatek;
         return listy.length;
     }
 
@@ -241,6 +294,6 @@ export function vykresli(listy, nastaveni, cil, kumulovane = false) {
         if (!podleHrace.has(h.player_id)) podleHrace.set(h.player_id, []);
         podleHrace.get(h.player_id).push(h);
     }
-    cil.innerHTML = [...podleHrace.values()].map(g => listKumulovany(g, nastaveni)).join('');
+    cil.innerHTML = [...podleHrace.values()].map(g => listKumulovany(g, nastaveni)).join('') + dodatek;
     return podleHrace.size;
 }

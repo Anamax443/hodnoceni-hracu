@@ -5,6 +5,23 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-12 (27) — jméno úrovně na listu a stránka vysvětlivek
+
+**Vyrenderováno headless Edgem** (`--headless=new --allow-file-access-from-files
+--screenshot`) ze skutečných modulů `list.js` + `radar.js` + `styl.css`, vzorový hráč
+se známkami 7, 4, 6, 8, 10, 3 a druhým polygonem sebehodnocení.
+
+| Kontrola | Výsledek |
+|---|---|
+| jméno úrovně u čísla v radaru | ✅ *7/10 spolehlivé*, *4/10 buduje se*, *3/10 začátek*, *10/10 nadstandard* |
+| kolize popisků os | ✅ žádná — jméno je menším řezem na témže řádku jako číslo, ne třetí řádek |
+| legenda „Jak číst čísla" | ✅ pásma nesou tučně i jméno: **1–3 začátek** – začínám, jen v klidu bez tlaku |
+| list se pořád vejde na jednu A4 | ✅ layout beze změny, jen delší popisky |
+| stránka vysvětlivek (2 šablony: pole + brankář) | ✅ 12 os v tabulce, značka šablony u sekce, legenda pásem, vejde se na jednu A4 |
+| mapování číslo → pásmo | jediné místo `uroven()` v `i18n.js`, pásma bere z týchž klíčů jako legenda |
+
+---
+
 ## 2026-08-10 (26) — úvodní stránka, sestavy, mazání osoby
 
 Ověřeno proti lokálnímu `wrangler dev` (`--local`):

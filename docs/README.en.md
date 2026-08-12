@@ -229,6 +229,17 @@ The **Combined sheet** tick box puts them on **one page**: the radars side by si
 captioned, with the written notes and goals merged from all templates (each part says which
 template it came from). Unticked, every template gets its own page.
 
+The second tick box, **Add a page explaining the axes**, appends **one extra page**: what
+each axis measures and what mastering it looks like, written from the player's point of
+view — the same sentence they see in their self-evaluation. It does not belong on the player
+sheet: *one player = one A4* is a rule. The page covers the whole stack, so it is printed
+once rather than per player.
+
+Next to every score stands **the name of its level** — on screen and on paper: *4/10
+building*, *7/10 reliable*, *10/10 exceptional*. A bare seven means nothing until the reader
+looks up the band in the legend, and a parent who sees the sheet twice a year will not look
+it up. The bands stay in the legend under the chart; the name is only a shortcut to them.
+
 #### Colour by template
 
 Every template has its own colour, so a stack of printed sheets can be told apart at a glance:

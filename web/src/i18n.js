@@ -388,6 +388,8 @@ const SLOVNIK = {
         'listy.polygon.zadne': 'žádný — jen aktuální',
         'listy.dva': 'Na listu jsou maximálně dva polygony. Tři jsou nečitelné.',
         'listy.kumulovane': 'Kumulovaný list — všechny šablony hráče na jedné stránce',
+        'listy.vysvetlivky': 'Přidat stránku s vysvětlivkami os',
+        'listy.vysvetlivky.napoveda': 'Jedna stránka navíc na konec: co která osa měří a jak vypadá zvládnutá. Na list hráče se to nevejde — jeden hráč zůstává jedna A4 — a stačí ji vytisknout jednou pro všechny.',
         'listy.kumulovane.napoveda': 'Ferda dostane jednu stránku, kde jsou vedle sebe radary za brankáře, hráče v poli i leadera. Slovní bloky a cíle se složí ze všech šablon a je u nich uvedeno, odkud jsou. Bez zaškrtnutí má každá šablona vlastní stránku.',
         'listy.kdo': 'Kdo se vytiskne',
         'listy.kdo.popis': 'Řádek na každou přiřazenou šablonu — je vidět, která ještě nemá hodnocení. Zaškrtává se po listech: kdo má tři šablony, může si nechat vytisknout jen jednu z nich. Klik na štítek šablony otevře hodnocení tou šesticí os — u řádku s pomlčkou je to nejbližší cesta, jak ji doplnit.',
@@ -628,6 +630,8 @@ const SLOVNIK = {
         'list.trener': 'trenér',
         'list.hracSeVidi': 'jak se vidí hráč',
         'list.jakCist': 'Jak číst čísla:',
+        'list.vysvetlivky': 'Vysvětlivky k listům',
+        'list.vysvetlivky.popis': 'Co která osa měří. Věta u osy je psaná z pohledu hráče a popisuje, jak vypadá zvládnutá — je to tatáž věta, kterou hráč vidí ve svém sebehodnocení. Známkuje se proti tomu, co má umět hráč této kategorie, ne proti spoluhráčům.',
         'list.paticka': 'Graf tě porovnává s tím, co má umět {0}. Ne se spoluhráči.<br>Tvary mezi sebou neporovnávejte, leváci a praváci mají zub na opačné straně.',
         'list.podpis': 'trenér',
         'list.neznamaSablona': 'Hráč „{0}" má neznámou šablonu: {1}',
@@ -687,12 +691,15 @@ const SLOVNIK = {
         'ja.podpora': 'Spoluhráče po chybě povzbudím místo abych ho seřval.',
         'ja.odpovednost': 'Chodím včas a co slíbím, to udělám.',
 
-        /* --- kotvy škály --- */
-        'kotva.1.rozsah': '1–3', 'kotva.1.text': 'začínám, jen v klidu bez tlaku',
-        'kotva.2.rozsah': '4–5', 'kotva.2.text': 'umím na tréninku, v zápase kolísá',
-        'kotva.3.rozsah': '6–7', 'kotva.3.text': 'spolehlivé i v zápase',
-        'kotva.4.rozsah': '8–9', 'kotva.4.text': 'silná stránka, opora týmu',
-        'kotva.5.rozsah': '10',  'kotva.5.text': 'nadstandard pro kategorii'
+        /* --- kotvy škály ---
+           `nazev` je jméno úrovně, které se tiskne k číslu na listu. Samotná
+           sedmička nikomu nic neříká, dokud si nenajde pásmo v legendě; jméno
+           to řekne rovnou. Musí být krátké — vejde se vedle čísla u osy grafu. */
+        'kotva.1.rozsah': '1–3', 'kotva.1.nazev': 'začátek',     'kotva.1.text': 'začínám, jen v klidu bez tlaku',
+        'kotva.2.rozsah': '4–5', 'kotva.2.nazev': 'buduje se',   'kotva.2.text': 'umím na tréninku, v zápase kolísá',
+        'kotva.3.rozsah': '6–7', 'kotva.3.nazev': 'spolehlivé',  'kotva.3.text': 'spolehlivé i v zápase',
+        'kotva.4.rozsah': '8–9', 'kotva.4.nazev': 'opora',       'kotva.4.text': 'silná stránka, opora týmu',
+        'kotva.5.rozsah': '10',  'kotva.5.nazev': 'nadstandard', 'kotva.5.text': 'nadstandard pro kategorii'
     },
 
     en: {
@@ -1055,6 +1062,8 @@ const SLOVNIK = {
         'listy.polygon.zadne': 'none — current only',
         'listy.dva': 'A sheet holds at most two polygons. Three are unreadable.',
         'listy.kumulovane': 'Combined sheet — all of the player’s templates on one page',
+        'listy.vysvetlivky': 'Add a page explaining the axes',
+        'listy.vysvetlivky.napoveda': 'One extra page at the end: what each axis measures and what mastering it looks like. It does not fit on the player sheet — one player stays one A4 — and printing it once for everybody is enough.',
         'listy.kumulovane.napoveda': 'Ferda gets one page with the goalkeeper, outfield and leader radars side by side. Written notes and goals are merged from all templates and say which one they came from. Unticked, each template gets its own page.',
         'listy.kdo': 'Who gets printed',
         'listy.kdo.popis': 'One row per assigned template, so you can see which one is still missing an evaluation. Tick boxes work per sheet: a player with three templates can have just one of them printed. Clicking a template chip opens the evaluation with that set of axes — on a row with a dash it is the shortest way to fill it in.',
@@ -1289,6 +1298,8 @@ const SLOVNIK = {
         'list.trener': 'coach',
         'list.hracSeVidi': 'the player’s own view',
         'list.jakCist': 'How to read the numbers:',
+        'list.vysvetlivky': 'Guide to the sheets',
+        'list.vysvetlivky.popis': 'What each axis measures. The sentence beside an axis is written from the player’s point of view and describes what mastering it looks like — the same sentence the player sees in their self-evaluation. Scoring is against what a player of this age group should be able to do, not against team-mates.',
         'list.paticka': 'The chart compares you with what {0} should be able to do. Not with your team-mates.<br>Do not compare the shapes with each other — left-footed and right-footed players have the notch on opposite sides.',
         'list.podpis': 'coach',
         'list.neznamaSablona': 'Player „{0}" has an unknown template: {1}',
@@ -1344,11 +1355,11 @@ const SLOVNIK = {
         'ja.podpora': 'After a mistake I pick a team-mate up instead of shouting at him.',
         'ja.odpovednost': 'I turn up on time and do what I promise.',
 
-        'kotva.1.rozsah': '1–3', 'kotva.1.text': 'starting out, only calm and unpressured',
-        'kotva.2.rozsah': '4–5', 'kotva.2.text': 'fine in training, patchy in a match',
-        'kotva.3.rozsah': '6–7', 'kotva.3.text': 'reliable in a match too',
-        'kotva.4.rozsah': '8–9', 'kotva.4.text': 'a strength, one the team leans on',
-        'kotva.5.rozsah': '10',  'kotva.5.text': 'above the level of this age group'
+        'kotva.1.rozsah': '1–3', 'kotva.1.nazev': 'starting',   'kotva.1.text': 'starting out, only calm and unpressured',
+        'kotva.2.rozsah': '4–5', 'kotva.2.nazev': 'building',   'kotva.2.text': 'fine in training, patchy in a match',
+        'kotva.3.rozsah': '6–7', 'kotva.3.nazev': 'reliable',   'kotva.3.text': 'reliable in a match too',
+        'kotva.4.rozsah': '8–9', 'kotva.4.nazev': 'mainstay',   'kotva.4.text': 'a strength, one the team leans on',
+        'kotva.5.rozsah': '10',  'kotva.5.nazev': 'exceptional', 'kotva.5.text': 'above the level of this age group'
     }
 };
 
@@ -1478,9 +1489,23 @@ export function osy(sablona) {
     return (SABLONY[sablona] ?? []).map(klic => ({ klic, popis: t('osa.' + klic) }));
 }
 
-/** Kotvy škály jako dvojice [rozsah, význam]. */
+/** Kotvy škály jako trojice [rozsah, význam, název úrovně]. */
 export function kotvy() {
-    return [1, 2, 3, 4, 5].map(i => [t(`kotva.${i}.rozsah`), t(`kotva.${i}.text`)]);
+    return [1, 2, 3, 4, 5].map(i => [t(`kotva.${i}.rozsah`), t(`kotva.${i}.text`), t(`kotva.${i}.nazev`)]);
+}
+
+/**
+ * Jméno úrovně pro konkrétní známku — „7" → „spolehlivé".
+ *
+ * Pásma drží `kotvy()`, ne tahle funkce: kdyby se rozešla, říkal by list
+ * u čísla něco jiného než legenda pod ním. Mimo rozsah vrací prázdno,
+ * ať se nikdy nevymyslí úroveň pro známku, která neexistuje.
+ */
+export function uroven(hodnota) {
+    const n = Number(hodnota);
+    if (!Number.isFinite(n)) return '';
+    const poradi = n <= 3 ? 1 : n <= 5 ? 2 : n <= 7 ? 3 : n <= 9 ? 4 : n === 10 ? 5 : 0;
+    return poradi ? t(`kotva.${poradi}.nazev`) : '';
 }
 
 /** Věta v první osobě pro osu — do formuláře hráče. */

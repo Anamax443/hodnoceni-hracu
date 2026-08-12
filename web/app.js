@@ -1161,7 +1161,7 @@ function stupnice(nazev) {
 }
 
 const kotvyHtml = () =>
-    `<div class="kotvy">${kotvy().map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>`;
+    `<div class="kotvy">${kotvy().map(k => `<span><b>${k[0]} ${k[2]}</b> – ${k[1]}</span>`).join('')}</div>`;
 
 /* Podpis pod hodnocením. Kdo je přihlášený svým účtem, podepisuje se sám —
    server bere identitu ze session, takže nabídka jiného trenéra by lhala
@@ -1749,9 +1749,10 @@ function stupniceMala(klic, predvyplneno) {
 /* ===================== záložka: Listy ===================== */
 
 function otevriListy({ ids = 'vse', porovnani = 'minule', obdobi = stav.nastaveni.obdobi,
-                       kumulovane = false } = {}) {
+                       kumulovane = false, vysvetlivky = false } = {}) {
     const p = new URLSearchParams({ obdobi, porovnani, ids });
     if (kumulovane) p.set('kumulovane', '1');
+    if (vysvetlivky) p.set('vysvetlivky', '1');
     window.open(`listy.html?${p}`, '_blank');
 }
 
@@ -1776,6 +1777,10 @@ async function listy(kam) {
             <div class="pole">
                 <label><input type="checkbox" id="l-kumulovane" style="width:auto"> ${t('listy.kumulovane')}</label>
                 <div class="popis">${t('listy.kumulovane.napoveda')}</div>
+            </div>
+            <div class="pole">
+                <label><input type="checkbox" id="l-vysvetlivky" style="width:auto"> ${t('listy.vysvetlivky')}</label>
+                <div class="popis">${t('listy.vysvetlivky.napoveda')}</div>
             </div>
         </div>
 
@@ -1823,7 +1828,8 @@ async function listy(kam) {
         if (!ids.length) { hlaska(kam, 'chyba', t('listy.nikdo')); return; }
         otevriListy({
             ids: ids.join(','), porovnani: $('#l-porovnani').value,
-            obdobi: $('#l-obdobi').value, kumulovane: $('#l-kumulovane').checked
+            obdobi: $('#l-obdobi').value, kumulovane: $('#l-kumulovane').checked,
+            vysvetlivky: $('#l-vysvetlivky').checked
         });
     };
 }

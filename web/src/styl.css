@@ -188,6 +188,20 @@ body {
 }
 .scale b { color: #333; }
 
+/* ===== VYSVĚTLIVKY (samostatná stránka na konci) =====
+   Není to ničí list, takže nemá jméno hráče ani podpisový řádek — je to
+   příloha k celé hromádce. Sazba je proto klidnější: žádné barevné bloky,
+   jen tabulka osa → co znamená. */
+.popis-listu { color: #555; font-size: .92em; margin: 0 0 10px; }
+.vysvetlivky-sablona { margin-bottom: 12px; }
+.vysvetlivky-sablona h4 { margin: 0 0 5px; }
+.osy-tabulka { width: 100%; border-collapse: collapse; }
+.osy-tabulka th {
+    text-align: left; width: 34%; padding: 4px 8px 4px 0; vertical-align: top;
+    font-weight: bold; color: var(--sab-tmava, #1565C0); border-bottom: 1px solid #e0e0e0;
+}
+.osy-tabulka td { padding: 4px 0; vertical-align: top; border-bottom: 1px solid #e0e0e0; color: #444; }
+
 /* ===== PATIČKA ===== */
 .footer {
     /* Sedne až na spodek listu; nad podpisem tak zůstane místo na poznámky

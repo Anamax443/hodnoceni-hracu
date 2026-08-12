@@ -42,6 +42,7 @@ export const STYLY_RAD = [
 ];
 
 import { MAX, KRUHY } from './sablony.js';
+import { uroven } from './i18n.js';
 
 /**
  * Značka bodu. Kreslí se bílou výplní s obrysem, aby zůstala čitelná i tam,
@@ -153,7 +154,13 @@ export function radar(osy, hodnoceni, porovnani) {
             svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + ri * 10).toFixed(1)}" text-anchor="${anchor}" font-size="9.5" font-family="Arial" fill="#444444">${r}</text>`;
         });
         if (hodnota !== null && hodnota !== undefined) {
-            svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + radky.length * 10 + 1).toFixed(1)}" text-anchor="${anchor}" font-size="11.5" font-weight="bold" font-family="Arial" style="fill:${OBRYS}">${hodnota}/10</text>`;
+            /* Vedle čísla stojí jméno úrovně. Samotná sedmička nikomu nic neříká,
+               dokud si nedohledá pásmo v legendě pod grafem — a rodič, který list
+               vidí jednou za půl roku, ho nedohledá. Jméno je proto rovnou u čísla;
+               pásma i tak zůstávají v legendě, tohle je zkratka, ne náhrada. */
+            const y = (yStart + radky.length * 10 + 1).toFixed(1);
+            svg += `<text x="${l.x.toFixed(1)}" y="${y}" text-anchor="${anchor}" font-size="11.5" font-weight="bold" font-family="Arial" style="fill:${OBRYS}">${hodnota}/10`
+                + `<tspan font-size="9" font-weight="normal" fill="#555555"> ${uroven(hodnota)}</tspan></text>`;
         }
     }
 
