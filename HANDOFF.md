@@ -4,6 +4,8 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-12 (40) — jméno úrovně u čísla, vysvětlivky os (inspirace Marcet)
 
+**Commit:** `9bf8004` · **NASAZENO** 2026-08-12, Version ID `4aaa792a-eda8-4140-a4aa-db7e8a0768f2`.
+
 Uživatel poslal **hodnoticí zprávu z kempu Marcet (Barcelona)** pro Bedřicha Grunda
 a chtěl ji probrat. Co z rozboru vzešlo:
 
