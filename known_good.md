@@ -5,6 +5,30 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-13 (28) — nabídka období v Listech a tisk celé historie
+
+Ověřeno proti lokálnímu `wrangler dev` (`--local`) na datech se **třemi obdobími**, která
+jsou schválně postavená proti abecedě: `2024/2025 podzim` (10/2024) → `2024/2025 jaro`
+(4/2025) → `2025/2026 zima` (8/2026). Abecedně by „jaro" bylo první.
+
+| Kontrola | Výsledek |
+|---|---|
+| `GET /api/obdobi` | ✅ 3 období v pořadí zima → jaro → podzim (podle `MIN(datum)`), u každého počet listů (5 / 2 / 2) |
+| období z Nastavení bez jediného hodnocení | ✅ v nabídce je taky, označené „zatím bez hodnocení" |
+| `GET /api/prehled?obdobi=vse` | ✅ ✓ napříč obdobími (Hráč: pole T+H, brankar T, leader nic) |
+| `GET /api/listy?obdobi=vse` | ✅ 10 listů, u hráče chronologicky podzim → jaro → zima |
+| polygon „minule" u historických listů | ✅ jaro→podzim, zima→jaro; **nejstarší list nemá s čím srovnávat a nic nemá** |
+| totéž při tisku **jednoho** staršího období | ✅ po opravě prázdné — dřív u podzimu stálo jako „minule" následující jaro |
+| výběr jednoho listu napříč historií (`ids=2:pole`) | ✅ 3 papíry, jen `pole` |
+| vykreslení `list.js` ze skutečné odpovědi API | ✅ 10 stránek + 1 vysvětlivky; **každá hlavička nese své období**, souhrnný popisek jen na vysvětlivkách |
+| kumulovaný list přes historii | ✅ 5 stránek — skupina je hráč **a období**, ne jen hráč |
+| proklik v headless Edge (CDP, lokální dev) | ✅ Období je `SELECT` se 4 volbami, výchozí je to z Nastavení; přepnutí na „vse" překreslí tabulku a přidá vysvětlení k ✓; 0 chybových hlášek |
+| Nastavení | ✅ `#n-obdobi` má `list="obdobi-nabidka"` a nabídka nese 3 období z dat |
+| i18n | ✅ 636 klíčů CS i EN, žádný chybí ani se neopakuje |
+| `wrangler deploy --dry-run` | ✅ přeloženo (TypeScript projde až tady, `node --check` ho nekontroluje) |
+
+---
+
 ## 2026-08-12 (27) — jméno úrovně na listu a stránka vysvětlivek
 
 **Vyrenderováno headless Edgem** (`--headless=new --allow-file-access-from-files

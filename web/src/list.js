@@ -47,8 +47,17 @@ function popisekPorovnani(h) {
 }
 
 /**
+ * Období do hlavičky. Nese ho list, ne nastavení: při tisku celé historie leží
+ * na hromádce papíry z několika období a každý musí říkat to své. Starší volání
+ * (a listy z doby před tím) `obdobi` neposílají — pak platí to z nastavení.
+ */
+function obdobiListu(h, nas) {
+    return h.obdobi || nas.obdobi;
+}
+
+/**
  * Vrátí HTML jedné A4 stránky.
- * @param {Object} h   {jmeno, prezdivka, post, sablona, hodnoceni, porovnani,
+ * @param {Object} h   {jmeno, prezdivka, post, obdobi, sablona, hodnoceni, porovnani,
  *                      porovnaniRezim, porovnaniObdobi, fyzicky, hlavou, parta, cile[]}
  * @param {Object} nas {klub, kategorie, sezona, obdobi, latka, cileNadpis}
  */
@@ -68,7 +77,7 @@ export function list(h, nas) {
             </div>
             <div class="meta">
                 ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
-                ${esc(nas.obdobi)}<br>
+                ${esc(obdobiListu(h, nas))}<br>
                 ${t('list.vystaveno')}: ${datum}
             </div>
         </div>
@@ -135,7 +144,7 @@ function slozeny(hraci, pole) {
 }
 
 /**
- * Kumulovaný list: jeden hráč, všechny jeho šablony na JEDNÉ stránce.
+ * Kumulovaný list: jeden hráč a jedno období, všechny jeho šablony na JEDNÉ stránce.
  * Radary zůstávají oddělené — brankářské a polní osy se do jednoho grafu
  * míchat nedají (jiný tvar, jiná řada). Slovní bloky a cíle se skládají
  * ze všech šablon, ať se nic neztratí.
@@ -160,7 +169,7 @@ export function listKumulovany(hraci, nas) {
             </div>
             <div class="meta">
                 ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
-                ${esc(nas.obdobi)}<br>
+                ${esc(obdobiListu(prvni, nas))}<br>
                 ${t('list.vystaveno')}: ${datum}
             </div>
         </div>
@@ -289,10 +298,13 @@ export function vykresli(listy, nastaveni, cil, kumulovane = false, sVysvetlivka
         return listy.length;
     }
 
+    // Skupina je hráč A OBDOBÍ, ne jen hráč: kumulovat brankářskou šestici
+    // z loňska s letošní polní na jednu stránku by udělalo z historie kaši.
     const podleHrace = new Map();
     for (const h of listy) {
-        if (!podleHrace.has(h.player_id)) podleHrace.set(h.player_id, []);
-        podleHrace.get(h.player_id).push(h);
+        const klic = `${h.player_id}|${h.obdobi ?? ''}`;
+        if (!podleHrace.has(klic)) podleHrace.set(klic, []);
+        podleHrace.get(klic).push(h);
     }
     cil.innerHTML = [...podleHrace.values()].map(g => listKumulovany(g, nastaveni)).join('') + dodatek;
     return podleHrace.size;

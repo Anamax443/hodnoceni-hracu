@@ -2,6 +2,50 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-13 (41) — období v Listech je nabídka z dat, ne volné pole
+
+**Uživatel zakroužkoval dvě pole „Období"** — jedno v Nastavení, druhé v Tiskových listech —
+a zeptal se: *„toto tam potřebujeme? na tiskových listech by měl být seznam období
+z uložených hodnocení, list s volbou všechno a nebo to co je v db."*
+
+**Co bylo špatně.** Období v Listech bylo volné textové pole předvyplněné z Nastavení.
+Překlep v něm se nechoval jako chyba: tisk prošel a vyjely samé prázdné listy, protože
+se hledalo období, které nikdo nikdy nezadal. Druhá, tišší vada: tabulka *Kdo se vytiskne*
+se plnila **vždycky za období z Nastavení** bez ohledu na to, co v poli stálo — ✓ a pomlčky
+tedy mohly platit pro něco jiného, než co se chystalo na papír.
+
+**Co se z toho stalo:**
+1. **Nabídka místo pole.** `GET /api/obdobi` vrací období, která jsou v `evaluations`,
+   plus to z Nastavení (do něj se právě hodnotí, i když je prázdné). U každého stojí, kolik
+   listů z něj vyjde — „zatím bez hodnocení" je poznat na první pohled. Tabulka *Kdo se
+   vytiskne* se překresluje s výběrem, takže platí pro to, co se tiskne.
+2. **„Všechna období — celá historie."** Hráč dostane papír za každé období, ve kterém
+   hodnocení má. Jednotkou listu je pak hráč × období × šablona a kumulovaný list se
+   skládá po hráči **a období** — jinak by se loňský brankářský radar slil s letošním
+   polním na jednu stránku. **Období nese každý list zvlášť**, ne nastavení: na hromádce
+   jich je několik a v hlavičce musí být to své.
+3. **Nastavení zůstalo volné pole** — nové kolo žádná nabídka dopředu nezná — ale
+   napovídá (`<datalist>`) období, která už v datech jsou. „Zima" místo „zima" totiž není
+   překlep, který by aplikace poznala: je to nové, prázdné období, do kterého se nespáruje
+   ani jedno starší hodnocení.
+
+**Chronologii nese datum, ne název.** „2026/2027 jaro" je abecedně před „2026/2027 zima",
+ale v sezoně je za ním. Období se proto řadí podle `MIN(datum)` svých záznamů — stejně,
+jako to už dělaly sloupce v `/api/porovnani-vice`.
+
+**Vada, kterou odhalil až test, a která tu byla i předtím:** polygon „minule" bral
+*nejnovější hodnocení z jiného období*. Dokud šlo tisknout jen aktuální období, vycházelo
+to; jakmile jde vybrat starší, stálo u podzimu jako „minule" **následující jaro** a vývoj
+ukazoval pozpátku. `predchoziObdobi()` má nově omezení `datum <` datum vlastního záznamu
+(u prázdného podkladu začátek jeho období), takže nejstarší list nemá s čím srovnávat —
+a správně nemá nic.
+
+Ověřeno proti lokálnímu `wrangler dev` na třech obdobích postavených proti abecedě,
+vykreslením listů skutečným `list.js` a proklikem v headless Edge (CDP). Doklad
+v `known_good.md` (28).
+
+---
+
 ## 2026-08-12 (40) — jméno úrovně u čísla, vysvětlivky os (inspirace Marcet)
 
 **Commit:** `9bf8004` · **NASAZENO** 2026-08-12, Version ID `4aaa792a-eda8-4140-a4aa-db7e8a0768f2`.

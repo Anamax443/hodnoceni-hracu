@@ -285,6 +285,18 @@ neporadí — a jen když `settings.aiPoskytovatel` není `vypnuto`.
 skutečný kádr na serveru, takže ID hráčů nevidí a vymyslet si je nemůže. Akci spouští
 aplikace.
 
+**Hlavní pravidlo (ZADANI §7.0): z cesty, kde je jazykový model, se nesmí nic zapsat,
+změnit ani smazat.** Všechny čtyři akce jen přepínají obrazovku — `odkaz` otevře záložku
+Odkazy, samotné vygenerování odkazu je až klik člověka v ní; `listy` otevře tisk, což je
+čtení. `/api/ai/analyza` jen čte podklady a vrací větu. Žádná hodnota z odpovědi modelu
+se nesmí dostat do `INSERT`, `UPDATE` ani `DELETE` — ani nepřímo jako parametr. Nová
+schopnost, která by to porušila, se nestaví, i kdyby model odpovídal spolehlivě: zápis
+bez vědomého kliknutí člověka nejde po půl roce nikomu vysvětlit a jde o data nezletilých.
+
+Jediný zápis, který na cestě modelu vzniká, je **řádek v `komunikace`** — záznam o tom,
+že se volalo a jak to dopadlo. Je append-only, týká se volání samotného, ne kádru,
+a je to naopak doklad, kdo se kdy modelu ptal.
+
 ### Model podle úkolu, poskytovatel společný
 
 Rozdělení vzniklo z otázky „nemá silný model dirigovat slabší?". **Dirigent by přidal
@@ -608,10 +620,20 @@ Důsledky, které musí platit všude:
   které známkoval trenér. Generuje se **jeden token na každou přiřazenou šablonu**; nevyplněný
   token na tutéž šablonu se nezakládá podruhé (vrací se v `preskoceno`).
 - `/api/listy` vrací **jeden list na kombinaci hráč × šablona** — Ferda dostane tři.
-  Kumulace na jednu stránku je až tisková volba ve frontendu.
+  Kumulace na jednu stránku je až tisková volba ve frontendu. Při `obdobi=vse` je
+  jednotkou **hráč × období × šablona** a kumuluje se po hráči **a období** (jinak by se
+  loňský brankářský radar slil s letošním polním na jednu stránku).
 - **Vybírá se po listech, ne po hráčích.** V záložce Listy má každý řádek (hráč × šablona)
   vlastní zaškrtávátko a do `ids` jde `id:sablona`. Dokud bylo zaškrtávátko na hráči, Ferdovy
   tři šablony se tiskly vždycky všechny najednou.
+- **Chronologii období nese datum, ne název.** „2026/2027 jaro" je abecedně před
+  „2026/2027 zima", ale v sezoně je za ním — období se proto řadí podle `MIN(datum)`
+  svých záznamů (`/api/obdobi`, pořadí listů při `obdobi=vse`, sloupce v
+  `/api/porovnani-vice`). Řetězec se na řazení nikde nepoužívá.
+- **Polygon „minule" se dívá jen dozadu.** `predchoziObdobi()` má omezení `datum <`
+  datum vlastního záznamu (u prázdného podkladu začátek jeho období). Dokud se tisklo jen
+  aktuální období, stačilo „nejnovější z jiného období" — jakmile jde vybrat starší
+  období, stálo by u podzimu jako „minule" následující jaro.
 - **slovní bloky a cíle jsou na hodnocení**, takže vycházejí na každou šablonu vlastní;
   formulář je při přepnutí šablony nepřenáší
 - `/api/porovnani` a `/api/trend` pracují vždy v rámci jedné šablony; když hráč vyplnil
@@ -851,7 +873,11 @@ GET    /api/sms/ucet                              admin — ověří klíče br�
 GET    /api/sms/kanaly                            admin — výpis kanálů (GoSMS v1 ho nemá → 404)
 POST   /api/sms/test       {telefon, nanecisto?}  admin — zkušební SMS, nanečisto zdarma
 
-GET    /api/prehled?obdobi=                       admin — stav po šablonách (`stavSablon[]`)
+GET    /api/obdobi                                admin — období, která jsou v datech
+                                                  (+ to z Nastavení), řazená podle
+                                                  MIN(datum), s počtem listů
+GET    /api/prehled?obdobi=                       admin — stav po šablonách (`stavSablon[]`);
+                                                  `obdobi=vse` = napříč všemi obdobími
 GET    /api/evaluations?player_id=&obdobi=        admin
 POST   /api/evaluations    {…, uprava_id?}        admin  (autor='trener'); uprava_id = nová verze
 GET    /api/evaluations/predloha?player_id=…      admin — vlastní hodnocení k úpravě, nebo null
@@ -865,7 +891,9 @@ GET    /api/ai/modely                             admin — nabídka pro Nastave
 GET    /api/analyzy?obdobi=                       admin — spočítané podklady, BEZ modelu
 POST   /api/ai/analyza    {otazka,obdobi,popisky} admin — otázka nad plnými daty (viz 3e)
 
-GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu
+GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu;
+                                                  `obdobi=vse` = celá historie, list nese
+                                                  vlastní `obdobi` a odpověď `vsechnaObdobi`
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč
 GET    /api/trend?player_id=                      admin — vývoj v čase
 GET    /api/zaznamy?sablona=                      admin — co jde porovnat (hráč×období×autor)

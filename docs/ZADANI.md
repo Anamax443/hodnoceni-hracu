@@ -170,6 +170,24 @@ Požadavky:
 
 Tato pravidla jsou podstatou nástroje, ne detailem UI. Implementovat je přesně.
 
+### 7.0 Jazykový model nesmí sáhnout na data — HLAVNÍ PRAVIDLO
+
+**Z příkazového řádku ani odjinud, kde je v cestě jazykový model, se nesmí nic zapsat,
+změnit ani smazat.** Model smí jen číst a navigovat: rozřadit povel, otevřít záložku,
+předvybrat hráče, odpovědět na otázku nad daty. Zápis vzniká výhradně z vědomé akce
+člověka — kliknutím na tlačítko v příslušném formuláři.
+
+Platí i pro každou budoucí funkci: pokud by nová schopnost znamenala, že model může
+uložit hodnocení, vygenerovat odkaz, smazat osobu nebo změnit nastavení, **nesmí se
+postavit**. Není to otázka kvality modelu; zápis, který nikdo neodklikl, nejde po půl
+roce nikomu vysvětlit — a jde o data nezletilých.
+
+Důsledky v kódu:
+- `/api/ai/prikaz` vrací jen `{akce, hraci}` z uzavřeného seznamu akcí (`hodnotit`,
+  `porovnat`, `listy`, `odkaz`, `nevim`) — všechny jen přepínají obrazovku,
+- `/api/ai/analyza` je čtení: dostane podklady, vrátí větu, nic neukládá,
+- žádná odpověď modelu se nesmí stát parametrem `INSERT`, `UPDATE` ani `DELETE`.
+
 ### 7.1 Zamčené pořadí
 
 Hráč nesmí vidět hodnocení trenéra dřív, než odešle své sebehodnocení. Kontrola musí být ve Workeru, ne skrytím v UI.

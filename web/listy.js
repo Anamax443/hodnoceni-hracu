@@ -1,5 +1,7 @@
 /* Tiskové listy sestavené z databáze. Parametry v URL:
-   ?obdobi=2025/2026 zima&porovnani=minule|hrac|zadne&ids=vse|1,2,3   */
+   ?obdobi=2025/2026 zima|vse&porovnani=minule|hrac|zadne&ids=vse|1,2,3
+   `obdobi=vse` vytiskne celou historii — hráč pak dostane papír za každé
+   období, ve kterém hodnocení má.                                        */
 
 import { vykresli, esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, locale } from './src/i18n.js';
@@ -30,9 +32,18 @@ const sVysvetlivkami = p.get('vysvetlivky') === '1';
 function nakresli() {
     popisky();
     if (!data) return;
-    const pocet = vykresli(data.listy, data.nastaveni, $('#output'), kumulovane, sVysvetlivkami);
+
+    // Období v hlavičce každého listu nese list sám. Tenhle popisek je pro
+    // stavový řádek a pro stránku vysvětlivek, která je jedna pro celou hromádku
+    // — a při tisku historie k žádnému jednomu období nepatří.
+    const nas = data.vsechnaObdobi
+        ? { ...data.nastaveni,
+            obdobi: t('tisk.vsechnaObdobi', new Set(data.listy.map(h => h.obdobi)).size) }
+        : data.nastaveni;
+
+    const pocet = vykresli(data.listy, nas, $('#output'), kumulovane, sVysvetlivkami);
     const bez = data.listy.filter(h => !h.hodnoceni).length;
-    $('#stav').textContent = t('tisk.stav', data.nastaveni.obdobi, pocet)
+    $('#stav').textContent = t('tisk.stav', nas.obdobi, pocet)
         + (bez ? t('tisk.bez', bez) : '')
         + (kumulovane ? t('tisk.kumulovane') : '');
 }

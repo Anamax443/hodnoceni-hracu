@@ -1756,8 +1756,31 @@ function otevriListy({ ids = 'vse', porovnani = 'minule', obdobi = stav.nastaven
     window.open(`listy.html?${p}`, '_blank');
 }
 
+/**
+ * Popisek období v nabídce. Vedle názvu je vidět, čím je v datech podložené —
+ * období bez jediného listu vypadá v holém seznamu stejně jako to letošní,
+ * a přitom by se z něj vytiskly samé prázdné papíry.
+ */
+function popisObdobi(o, aktualni) {
+    const znacky = [o.obdobi === aktualni ? t('listy.obdobi.aktualni') : null,
+                    o.listy ? t('listy.obdobi.pocet', o.listy) : t('listy.obdobi.prazdne')];
+    return `${o.obdobi} · ${znacky.filter(Boolean).join(' · ')}`;
+}
+
 async function listy(kam) {
-    const prehled = await api(`/api/prehled?obdobi=${encodeURIComponent(stav.nastaveni.obdobi)}`);
+    kam.innerHTML = `<div class="karta"><p class="popis">${t('shell.nacitam')}</p></div>`;
+
+    /* Období se vybírá z toho, co je v databázi. Volné pole svádělo k překlepu
+       a překlep se neprojevil jako chyba: tisk prošel a vyjely prázdné listy,
+       protože se hledalo období, které nikdo nikdy nezadal. */
+    let seznamObdobi;
+    try {
+        seznamObdobi = await api('/api/obdobi');
+    } catch (e) {
+        kam.innerHTML = `<div class="karta"><div class="hlaska chyba">${esc(e.message)}</div></div>`;
+        return;
+    }
+    let vybraneObdobi = stav.nastaveni.obdobi;
 
     kam.innerHTML = `
         <div class="karta">
@@ -1765,7 +1788,13 @@ async function listy(kam) {
             <p class="popis">${t('listy.popis')}</p>
             <div class="radek">
                 <div class="pole"><label for="l-obdobi">${t('listy.obdobi')}</label>
-                    <input type="text" id="l-obdobi" value="${esc(stav.nastaveni.obdobi)}"></div>
+                    <select id="l-obdobi" title="${t('listy.obdobi.tip')}">
+                        ${seznamObdobi.obdobi.map(o => `
+                            <option value="${esc(o.obdobi)}"${o.obdobi === vybraneObdobi ? ' selected' : ''}
+                                >${esc(popisObdobi(o, seznamObdobi.aktualni))}</option>`).join('')}
+                        <option value="vse">${t('listy.obdobi.vse')}</option>
+                    </select>
+                    <div class="popis">${t('listy.obdobi.napoveda')}</div></div>
                 <div class="pole"><label for="l-porovnani">${t('listy.polygon')}</label>
                     <select id="l-porovnani">
                         <option value="minule">${t('listy.polygon.minule')}</option>
@@ -1787,6 +1816,30 @@ async function listy(kam) {
         <div class="karta">
             <h2>${t('listy.kdo')}</h2>
             <p class="popis">${t('listy.kdo.popis')}</p>
+            <div id="l-kdo"><p class="popis">${t('shell.nacitam')}</p></div>
+            <p style="margin-top:14px">
+                <button class="hl" id="otevrit-listy" title="${t('listy.otevrit.tip')}">${t('listy.otevrit')}</button>
+            </p>
+        </div>`;
+
+    /* Tabulka platí pro vybrané období, ne pro to z Nastavení: ✓ a pomlčka
+       musí říkat stav toho, co se právě chystá na papír. Překreslí se proto
+       s každou změnou nabídky — a zaškrtnutí se vrací do výchozího „všechno",
+       protože jiné období může mít jiné řádky. */
+    const nactiKdo = async () => {
+        const cil = $('#l-kdo');
+        const zaVse = vybraneObdobi === 'vse';
+        cil.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
+        let prehled;
+        try {
+            prehled = await api(`/api/prehled?obdobi=${encodeURIComponent(vybraneObdobi)}`);
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+            return;
+        }
+
+        cil.innerHTML = `
+            ${zaVse ? `<div class="hlaska info">${t('listy.kdo.vse')}</div>` : ''}
             <table>
                 <thead><tr><th class="cisla"><input type="checkbox" id="vsichni" checked title="${t('listy.vsichni.tip')}"></th>
                     <th>${t('hodnotit.hrac')}</th><th>${t('lide.sablona')}</th>
@@ -1810,18 +1863,18 @@ async function listy(kam) {
                         <td class="cisla">${znacka(s.maHrac)}</td>
                     </tr>`).join('');
                 }).join('')}</tbody>
-            </table>
-            <p style="margin-top:14px">
-                <button class="hl" id="otevrit-listy" title="${t('listy.otevrit.tip')}">${t('listy.otevrit')}</button>
-            </p>
-        </div>`;
+            </table>`;
 
-    $('#vsichni').onchange = e =>
-        kam.querySelectorAll('.vyber').forEach(c => { c.checked = e.target.checked; });
+        $('#vsichni').onchange = e =>
+            cil.querySelectorAll('.vyber').forEach(c => { c.checked = e.target.checked; });
 
-    // Řádek s pomlčkou u trenéra říká, který list ještě nemá hodnocení —
-    // z téhle tabulky je proto nejblíž rovnou do formuláře té šablony.
-    zapojZkratkyNaHodnoceni(kam);
+        // Řádek s pomlčkou u trenéra říká, který list ještě nemá hodnocení —
+        // z téhle tabulky je proto nejblíž rovnou do formuláře té šablony.
+        zapojZkratkyNaHodnoceni(cil);
+    };
+
+    $('#l-obdobi').onchange = () => { vybraneObdobi = $('#l-obdobi').value; nactiKdo(); };
+    await nactiKdo();
 
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);
@@ -2445,15 +2498,26 @@ const KLICE_NASTAVENI = ['tolerance', 'obdobi', 'sezona', 'klub', 'kategorie', '
 const MA_NAPOVEDU = ['tolerance', 'obdobi', 'sezona', 'latka', 'cileNadpis', 'sestavy'];
 
 async function nastaveni(kam) {
+    /* Období zůstává volné pole — nové kolo se musí dát napsat, žádná nabídka
+       ho dopředu nezná. Napovídá ale to, co už v datech je: „2026/2027 Zima"
+       napsaná podruhé s velkým Z není překlep, který by aplikace poznala,
+       ale nové období, do kterého se nespáruje ani jedno starší hodnocení. */
+    let uzitaObdobi = [];
+    try { uzitaObdobi = (await api('/api/obdobi')).obdobi.map(o => o.obdobi); } catch { /* nabídka je pohodlí, ne podmínka */ }
+
     kam.innerHTML = `
         <div class="karta">
             <h2>${t('nastaveni.nadpis')}</h2>
             <p class="popis">${t('nastaveni.popis')}</p>
+            <datalist id="obdobi-nabidka">
+                ${uzitaObdobi.map(o => `<option value="${esc(o)}"></option>`).join('')}
+            </datalist>
             ${KLICE_NASTAVENI.map(klic => `
                 <div class="pole">
                     <label for="n-${klic}">${t('nastaveni.' + klic)}</label>
                     <input type="${klic === 'tolerance' ? 'number' : 'text'}" id="n-${klic}"
-                           value="${esc(stav.nastaveni[klic] ?? '')}"${klic === 'tolerance' ? ' min="0" max="9"' : ''}>
+                           value="${esc(stav.nastaveni[klic] ?? '')}"${klic === 'tolerance' ? ' min="0" max="9"' : ''}${
+                            klic === 'obdobi' ? ' list="obdobi-nabidka" autocomplete="off"' : ''}>
                     ${MA_NAPOVEDU.includes(klic) ? `<div class="popis">${t('nastaveni.' + klic + '.napoveda')}</div>` : ''}
                 </div>`).join('')}
             <button class="hl" id="ulozit-nastaveni" title="${t('nastaveni.ulozit.tip')}">${t('nastaveni.ulozit')}</button>

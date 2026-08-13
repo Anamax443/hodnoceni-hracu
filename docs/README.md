@@ -277,6 +277,16 @@ se tiše nesmíchaly dva pohledy — od toho je Shoda.
 
 Tiskové listy A4. Vybereš období, co má být druhý polygon v grafu, a koho tisknout.
 
+**Období je nabídka z uložených hodnocení, ne volné pole.** Je v ní každé období, ve kterém
+nějaké hodnocení leží, plus to z Nastavení (do toho se právě hodnotí, i když v něm zatím
+nic není) — u každého stojí, kolik listů z něj vyjde. Volným polem se dalo napsat období,
+které v databázi není, a tisk se nedal poznat od chyby: prošel a vyjely samé prázdné papíry.
+
+Poslední volba je **„všechna období — celá historie"**: hráč dostane papír za každé období,
+ve kterém hodnocení má. Tabulka *Kdo se vytiskne* pak platí napříč obdobími, takže ✓ v ní
+znamená „aspoň v jednom", ne „letos". Vývoj v grafu se u každého listu dívá jen dozadu —
+u podzimu se srovnává s tím, co bylo před ním, ne s následujícím jarem.
+
 Druhý polygon:
 
 - **trenér minule** — vývoj proti předchozímu období
@@ -404,7 +414,11 @@ Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 
 - **Tolerance** — o kolik se smí lišit tvoje známka a hráčova, aniž by se osa řešila
 - **Období** — například „2025/2026 zima". Podle něj se páruje tvoje hodnocení
-  se sebehodnocením hráče. Před novým kolem ho přepiš.
+  se sebehodnocením hráče. Před novým kolem ho přepiš. Pole zůstává volné (nové kolo
+  žádná nabídka dopředu nezná), ale **napovídá období, která už v datech jsou** — vyber
+  z nabídky, když píšeš to stávající. „Zima" místo „zima" totiž není překlep, který by
+  aplikace poznala: je to nové, prázdné období, do kterého se nespáruje ani jedno
+  starší hodnocení.
 - **Sezóna, klub, kategorie, laťka, nadpis nad cíli** — text do hlavičky a patičky listu
 - **Preferované sestavy** — rozestavení, která tým hraje, oddělená čárkou („1-4-4-2,
   1-4-3-3"). Známkování to nemění, osy jsou pro každou sestavu stejné. Je to společná

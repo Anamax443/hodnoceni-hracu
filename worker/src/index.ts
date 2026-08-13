@@ -787,6 +787,14 @@ function sablonyOsoby(r: any): string[] {
 }
 
 /**
+ * Hodnota parametru `obdobi`, která znamená „napříč všemi". Stejné slovo jako
+ * u `ids=vse`, ať se to nemusí pamatovat dvakrát. Období, které by se doopravdy
+ * jmenovalo „vse", by tím zmizelo z tisku — v nabídce se proto pozná podle
+ * popisku, ne podle hodnoty, a tohle je jediné místo, kde to slovo stojí.
+ */
+const VSECHNA_OBDOBI = 'vse';
+
+/**
  * Rozebere parametr `ids` na výběr hráčů, případně i jejich šablon.
  *
  * Položka je buď samotné číslo hráče (= všechny jeho šablony; tak to fungovalo
@@ -828,13 +836,23 @@ function osobaVen(r: any) {
     return { ...r, pozice, sablony, sablona: sablony[0], aktivni: !!r.aktivni };
 }
 
-/** Poslední trenérské hodnocení z JINÉHO (dřívějšího) období, stejnou šablonou. */
-async function predchoziObdobi(env: Env, playerId: number, obdobi: string, sablona: string) {
+/**
+ * Poslední trenérské hodnocení z JINÉHO (dřívějšího) období, stejnou šablonou.
+ *
+ * `predDatem` omezí hledání na to, co vzniklo dřív. Při tisku aktuálního období
+ * to není potřeba (nic novějšího neexistuje), ale při tisku celé historie ano:
+ * u listu za loňskou zimu by se jinak jako „minule" nabídlo letošní jaro
+ * a šipka vývoje by ukazovala pozpátku.
+ */
+async function predchoziObdobi(env: Env, playerId: number, obdobi: string, sablona: string,
+                               predDatem?: string | null) {
     const r = await env.DB.prepare(
         `SELECT * FROM evaluations
           WHERE player_id = ? AND obdobi <> ? AND autor = 'trener' AND sablona = ?
+                ${predDatem ? 'AND datum < ?' : ''}
           ORDER BY id DESC LIMIT 1`
-    ).bind(playerId, obdobi, sablona).first<RadekHodnoceni>();
+    ).bind(...[playerId, obdobi, sablona, ...(predDatem ? [predDatem] : [])])
+     .first<RadekHodnoceni>();
     return r ? rozbal(r) : null;
 }
 
@@ -2733,35 +2751,78 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         return json({ smazano: true, jmeno: osoba.jmeno });
     }
 
+    /* ---------- období, která v datech opravdu jsou ----------
+       Nabídka místo volného pole. Překlep ve volném poli nevypadá jako chyba:
+       tisk projde a vyjedou prázdné listy, protože se hledalo období, které
+       nikdo nikdy nezadal.
+
+       Chronologii nese datum, ne řetězec. „2026/2027 jaro" je abecedně PŘED
+       „2026/2027 zima", ale v sezoně je až za ním — řadí se proto podle
+       nejstaršího záznamu v období, stejně jako sloupce v /api/porovnani-vice.
+
+       V nabídce je i období z Nastavení, i když v něm ještě žádné hodnocení
+       není: právě do něj se teď hodnotí a jeho prázdné listy jsou legitimní
+       podklad k vyplnění rukou.                                              */
+    if (cesta === '/api/obdobi' && metoda === 'GET') {
+        const nas = await nastaveni(env);
+        const { results } = await env.DB.prepare(
+            `SELECT obdobi,
+                    COUNT(DISTINCT CASE WHEN autor IN ('trener', 'shoda')
+                                        THEN player_id || '|' || sablona END) AS listy,
+                    COUNT(DISTINCT CASE WHEN autor = 'hrac'
+                                        THEN player_id || '|' || sablona END) AS odHracu,
+                    COUNT(*) AS zaznamu, MIN(datum) AS prvni, MAX(datum) AS posledni
+               FROM evaluations
+              GROUP BY obdobi
+              ORDER BY MIN(datum) DESC`
+        ).all<{ obdobi: string; listy: number; odHracu: number; zaznamu: number;
+                prvni: string; posledni: string }>();
+
+        const obdobi = results ?? [];
+        if (!obdobi.some(o => o.obdobi === nas.obdobi)) {
+            obdobi.unshift({ obdobi: nas.obdobi, listy: 0, odHracu: 0, zaznamu: 0,
+                             prvni: '', posledni: '' });
+        }
+        return json({ aktualni: nas.obdobi, obdobi });
+    }
+
     /* ---------- přehled stavu za období ----------
        Hráč může mít víc šablon a každá je vlastní list, vlastní odkaz a vlastní
        řada. Přehled proto říká stav **po šablonách**; souhrnné `ma_trener`
-       a `ma_hrac` zůstávají (platí, když je hotová aspoň jedna šablona).       */
+       a `ma_hrac` zůstávají (platí, když je hotová aspoň jedna šablona).
+
+       `obdobi=vse` = napříč všemi obdobími; ✓ pak znamená „aspoň v jednom",
+       ne „letos". Používají to Listy, když se tisknou celé dějiny hráče.     */
     if (cesta === '/api/prehled' && metoda === 'GET') {
         const obdobi = q.get('obdobi') || (await nastaveni(env)).obdobi;
+        const vse = obdobi === VSECHNA_OBDOBI;
+        const kdeE = vse ? '' : 'AND e.obdobi = ?';
+        const kdeT = vse ? '' : 'AND t.obdobi = ?';
+
         const { results } = await env.DB.prepare(
             `SELECT p.id, p.jmeno, p.prezdivka, p.post, p.role, p.sablona, p.sablony, p.aktivni,
                     EXISTS(SELECT 1 FROM evaluations e
-                            WHERE e.player_id = p.id AND e.obdobi = ? AND e.autor = 'trener') AS ma_trener,
+                            WHERE e.player_id = p.id ${kdeE} AND e.autor = 'trener') AS ma_trener,
                     EXISTS(SELECT 1 FROM evaluations e
-                            WHERE e.player_id = p.id AND e.obdobi = ? AND e.autor = 'hrac')   AS ma_hrac,
+                            WHERE e.player_id = p.id ${kdeE} AND e.autor = 'hrac')   AS ma_hrac,
                     EXISTS(SELECT 1 FROM tokens t
-                            WHERE t.player_id = p.id AND t.obdobi = ? AND t.pouzit = 0)       AS ma_odkaz
+                            WHERE t.player_id = p.id ${kdeT} AND t.pouzit = 0)       AS ma_odkaz
                FROM players p
               WHERE p.role = 'hrac'
               ORDER BY p.aktivni DESC, p.jmeno`
-        ).bind(obdobi, obdobi, obdobi).all();
+        ).bind(...(vse ? [] : [obdobi, obdobi, obdobi])).all();
 
         const { results: hotove } = await env.DB.prepare(
             `SELECT player_id, sablona, autor FROM evaluations
-              WHERE obdobi = ? AND autor IN ('trener', 'hrac')
+              WHERE autor IN ('trener', 'hrac') ${vse ? '' : 'AND obdobi = ?'}
               GROUP BY player_id, sablona, autor`
-        ).bind(obdobi).all<{ player_id: number; sablona: string; autor: string }>();
+        ).bind(...(vse ? [] : [obdobi])).all<{ player_id: number; sablona: string; autor: string }>();
 
         const { results: cekajiciOdkazy } = await env.DB.prepare(
             `SELECT player_id, sablona FROM tokens
-              WHERE obdobi = ? AND pouzit = 0 GROUP BY player_id, sablona`
-        ).bind(obdobi).all<{ player_id: number; sablona: string }>();
+              WHERE pouzit = 0 ${vse ? '' : 'AND obdobi = ?'}
+              GROUP BY player_id, sablona`
+        ).bind(...(vse ? [] : [obdobi])).all<{ player_id: number; sablona: string }>();
 
         const hraci = (results ?? []).map((h: any) => ({
             ...osobaVen(h),
@@ -3061,6 +3122,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
     if (cesta === '/api/listy' && metoda === 'GET') {
         const nas = await nastaveni(env);
         const obdobi = q.get('obdobi') || nas.obdobi;
+        const vseObdobi = obdobi === VSECHNA_OBDOBI;   // tisk celé historie
         const rezim = q.get('porovnani') || 'minule';   // 'minule' | 'hrac' | 'zadne'
         const ids = q.get('ids');
 
@@ -3080,7 +3142,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 listy: [{
                     player_id: r.player_id, jmeno: r.jmeno, prezdivka: r.prezdivka,
                     post: r.post, pozice: JSON.parse(r.pozice ?? '[]'),
-                    sablona: v.sablona, hodnoceni: v.hodnoty,
+                    obdobi: v.obdobi, sablona: v.sablona, hodnoceni: v.hodnoty,
                     porovnani: null, porovnaniRezim: null, porovnaniObdobi: '',
                     fyzicky: v.fyzicky ?? '', hlavou: v.hlavou ?? '', parta: v.parta ?? '',
                     cile: v.cile ?? []
@@ -3101,14 +3163,29 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         const vybrani = (hraci ?? []).filter(h => !vyber || vyber.some(v => v.id === h.id));
         const listy = [];
 
+        /* Chronologie období. Bere se z dat (nejstarší záznam v období), protože
+           z názvu ji přečíst nejde — „jaro" je abecedně před „zima", ale v sezoně
+           je za ním. Potřebuje ji řazení hromádky při tisku historie i polygon
+           „minule": ten se smí dívat jen dozadu. */
+        const zacatekObdobi = new Map<string, string>();
+        {
+            const { results: o } = await env.DB.prepare(
+                `SELECT obdobi, MIN(datum) AS prvni FROM evaluations GROUP BY obdobi`
+            ).all<{ obdobi: string; prvni: string }>();
+            for (const r of o ?? []) zacatekObdobi.set(r.obdobi, r.prvni);
+        }
+
         for (const h of vybrani) {
             // Hráč může mít v jednom období hodnocení víc šablonami (brankář
             // i hráč v poli). Každá dostane vlastní list — do jednoho grafu
-            // se brankářské a polní osy míchat nedají.
+            // se brankářské a polní osy míchat nedají. Při `obdobi=vse` je
+            // jednotkou listu dvojice období × šablona, takže hráč se dvěma
+            // sezonami dostane papír za každou z nich.
             const { results: sablony } = await env.DB.prepare(
-                `SELECT DISTINCT sablona FROM evaluations
-                  WHERE player_id = ? AND obdobi = ? AND autor = 'trener'`
-            ).bind(h.id, obdobi).all<{ sablona: string }>();
+                `SELECT DISTINCT obdobi, sablona FROM evaluations
+                  WHERE player_id = ? AND autor = 'trener' ${vseObdobi ? '' : 'AND obdobi = ?'}`
+            ).bind(...[h.id, ...(vseObdobi ? [] : [obdobi])])
+             .all<{ obdobi: string; sablona: string }>();
 
             // Co se vykreslí: šablony, které v období hodnocení mají, PLUS ty,
             // které má hráč přiřazené v kartotéce. Přiřazená šablona bez hodnocení
@@ -3117,25 +3194,47 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             // Když si trenér vybral konkrétní listy (`id:sablona`), vytisknou se jen ty.
             const jenTyto = sablonyZVyberu(vyber, h.id);
 
-            const kVykresleni = [...new Set([
-                ...(sablony ?? []).map(s => s.sablona),
-                ...sablonyOsoby(h)
-            ])].filter(s => !jenTyto || jenTyto.has(s));
+            const kVykresleni: { obdobi: string; sablona: string }[] = [];
+            const pridej = (o: string, s: string) => {
+                if (jenTyto && !jenTyto.has(s)) return;
+                if (!kVykresleni.some(x => x.obdobi === o && x.sablona === s)) {
+                    kVykresleni.push({ obdobi: o, sablona: s });
+                }
+            };
+            for (const s of sablony ?? []) pridej(s.obdobi, s.sablona);
+            // Prázdný podklad se dělá jen do období, do kterého se právě hodnotí.
+            // U historie by z toho byly papíry za sezony, kdy hráč tu šablonu
+            // ještě neměl — a vypadaly by jako nevyplněné hodnocení.
+            for (const s of sablonyOsoby(h)) pridej(vseObdobi ? nas.obdobi : obdobi, s);
 
-            for (const sablona of kVykresleni) {
+            if (vseObdobi) {
+                kVykresleni.sort((a, b) =>
+                    (zacatekObdobi.get(a.obdobi) ?? '9999').localeCompare(zacatekObdobi.get(b.obdobi) ?? '9999')
+                    || a.sablona.localeCompare(b.sablona));
+            }
+
+            for (const { obdobi: obdobiListu, sablona } of kVykresleni) {
                 // Na list jde uzavřená shoda trenérů, když existuje. Teprve když
                 // není, bere se poslední hodnocení trenéra — jinak by při dvou
                 // trenérech tiše vyhrál ten, kdo uložil později.
-                const trener = await posledni(env, h.id, obdobi, 'shoda', sablona)
-                    ?? await posledni(env, h.id, obdobi, 'trener', sablona);
+                const trener = await posledni(env, h.id, obdobiListu, 'shoda', sablona)
+                    ?? await posledni(env, h.id, obdobiListu, 'trener', sablona);
                 let porovnani: Record<string, number> | null = null;
                 let popisek = '';
 
                 if (rezim === 'hrac') {
-                    const hrac = await posledni(env, h.id, obdobi, 'hrac', sablona);
+                    const hrac = await posledni(env, h.id, obdobiListu, 'hrac', sablona);
                     if (hrac) { porovnani = hrac.hodnoty; popisek = ''; }
                 } else if (rezim === 'minule') {
-                    const driv = await predchoziObdobi(env, h.id, obdobi, sablona);
+                    /* „Minule" se musí dívat dozadu od tohohle listu, ne od dneška.
+                       Dřív se brávalo nejnovější hodnocení z jiného období — u tisku
+                       aktuálního období to vycházelo správně, ale jakmile jde vybrat
+                       starší období (nebo se tisknou všechna), stálo by u podzimu
+                       jako „minule" následující jaro a vývoj by ukazoval pozpátku.
+                       Kotva je datum vlastního záznamu; u prázdného podkladu, který
+                       žádné nemá, začátek jeho období. */
+                    const driv = await predchoziObdobi(env, h.id, obdobiListu, sablona,
+                        trener?.datum ?? zacatekObdobi.get(obdobiListu) ?? null);
                     if (driv) { porovnani = driv.hodnoty; popisek = driv.obdobi; }
                 }
 
@@ -3145,6 +3244,9 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     prezdivka: h.prezdivka,
                     post: h.post,
                     pozice: JSON.parse(h.pozice ?? '[]'),
+                    // Období nese každý list zvlášť: při tisku historie jich je
+                    // na hromádce několik a v hlavičce musí být to své.
+                    obdobi: obdobiListu,
                     sablona,
                     hodnoceni: trener?.hodnoty ?? null,
                     porovnani,
@@ -3158,7 +3260,14 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             }
         }
 
-        return json({ nastaveni: { ...nas, obdobi }, listy });
+        return json({
+            // `nastaveni.obdobi` je popisek do hlavičky vysvětlivek a do stavového
+            // řádku. U tisku historie žádné jedno období není, proto se posílá
+            // příznak a text si složí prohlížeč (server nevrací texty).
+            nastaveni: { ...nas, obdobi: vseObdobi ? nas.obdobi : obdobi },
+            vsechnaObdobi: vseObdobi,
+            listy
+        });
     }
 
     /* ---------- porovnání trenér vs. hráč (§7.3) ---------- */

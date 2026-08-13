@@ -252,6 +252,13 @@ dostanou jen informaci, že se čeká na něj.</p>
 trenéra, sebehodnocení hráče, nebo žádný. Vytisknout jde i konkrétní starší
 verze — v Porovnání je historie všech verzí s datem a autorem a dá se mezi
 dvěma vybranými posouvat šipkami.</p>
+<p><b>Období se vybírá z nabídky</b>, ne psaním. Jsou v ní období, ve kterých
+nějaké hodnocení opravdu leží, plus to z Nastavení — u každého stojí, kolik
+listů z něj vyjde. Poslední volba je <b>všechna období</b>: hráč pak dostane
+papír za každé období, ve kterém hodnocení má, a tabulka <i>Kdo se vytiskne</i>
+platí napříč historií (✓ znamená „aspoň v jednom"). Vývoj v grafu se u každého
+listu dívá jen dozadu — u podzimu se srovnává s tím, co bylo před ním, ne
+s následujícím jarem.</p>
 <p><b>Hráč s víc šablonami dostane list na každou z nich</b> — brankářský,
 polní i leader zvlášť. V tabulce <i>Kdo se vytiskne</i> je proto řádek na
 každou šablonu a je v něm vidět, která ještě hodnocení nemá; prázdná se

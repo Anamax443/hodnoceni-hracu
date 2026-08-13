@@ -217,6 +217,18 @@ evaluations only.
 Printable A4 sheets. Pick the period, the second polygon (coach's previous evaluation,
 the player's self-evaluation, or none) and who to print.
 
+**The period is a list built from saved evaluations, not a free-text box.** It holds every
+period that has an evaluation in it, plus the one from Settings (that is where evaluations
+go now, even if it is still empty), and says how many sheets each one yields. A free-text
+box let you type a period that is not in the database, and the result did not look like an
+error: printing went through and out came blank pages.
+
+The last option is **“all periods — the whole history”**: a player gets a sheet for every
+period they have an evaluation in. The *Who gets printed* table then spans all periods, so
+✓ means “in at least one”, not “this season”. Progress in the chart only ever looks
+backwards — an autumn sheet is compared with what came before it, not with the spring
+that followed.
+
 A player with several templates gets **a sheet for each of them**. The *Who gets printed*
 table therefore has a row per template and shows which one still has no evaluation; an empty
 one is printed as a blank form so it does not drop out of sight.
@@ -326,6 +338,11 @@ are configured for coaches only and carry just who did what, never content.
 
 Tolerance, period, season, club, category, the bar, the goals heading, **preferred
 formations**, your own password, digest notifications, the SMS switch and the language model.
+
+**Period** stays a free-text field — no list can know a new round in advance — but it
+suggests the periods already in the data. Pick from the suggestions when you mean the
+current one: “Winter” instead of “winter” is not a typo the application can catch, it is
+a new, empty period that no earlier evaluation pairs with.
 
 **Preferred formations** are the ones the team plays, separated by commas (“1-4-4-2,
 1-4-3-3”). They do not change the scoring — the axes are the same for every formation.
