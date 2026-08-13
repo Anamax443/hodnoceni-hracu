@@ -4,6 +4,11 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-13 (41) — období v Listech je nabídka z dat, ne volné pole
 
+**Commit:** `77d7274` · **NASAZENO** 2026-08-13, Version ID `ca14b268-b138-47c0-8da7-976a4e8c0bba`.
+Ověřeno živě: `/api/version` = `77d7274`, `cisto: true` na obou adresách; servírovaný
+`app.js` nese `l-obdobi`, `nactiKdo`, `popisObdobi` i `obdobi-nabidka`; `/api/obdobi`
+bez přihlášení `401`.
+
 **Uživatel zakroužkoval dvě pole „Období"** — jedno v Nastavení, druhé v Tiskových listech —
 a zeptal se: *„toto tam potřebujeme? na tiskových listech by měl být seznam období
 z uložených hodnocení, list s volbou všechno a nebo to co je v db."*
