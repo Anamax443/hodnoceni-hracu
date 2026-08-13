@@ -2,6 +2,35 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-13 (42) — všechna období sjednocena na „2026/2027 léto" (zásah do dat)
+
+Bez změny kódu. Na přání uživatele („u tiskových listů nech prozatím pouze 2026/2027 léto,
+respektive všechny zavedené období změň na toto") se v **ostré** D1 přepsala všechna období
+na jedno.
+
+Nová nabídka v Listech ukázala to, co dřív nebylo vidět: v datech byla **dvě** období —
+`2025/2026 zima` (24 hodnocení) a `2026/2027 zima` (1 hodnocení, Peša Robin), přičemž
+hodnotilo se do toho druhého. Dokud bylo období volné pole, nic to nehlásilo.
+
+**Před během ověřeno, že se sloučením nic neschová:** ten jediný záznam z „2026/2027 zima"
+je kombinace hráč × šablona × autor, která v druhém období není. Kdyby byla, starší řádek
+by se po sloučení stal „předchozí verzí" a z tisku by zmizel.
+
+**Záloha** ostré databáze těsně před zásahem: `npm run db:export` → `zaloha.sql`
+(v repozitáři gitignorováno, je to osobní údaje kádru). To je jediná cesta zpátky.
+
+Přepsáno jedním souborem (`--file`, ne `--command` — escapování uvozovek v PowerShellu
+rozbilo dávku v zápisu 32): `evaluations`, `tokens`, `udalosti` a `settings.obdobi`.
+Po běhu: 56 změn, jedno období, **25 hodnocení = 21 listů**, 4 odkazy, `settings.obdobi`
+= `2026/2027 léto`. Diakritika přežila.
+
+**Co to znamená provozně:** dokud existuje jediné období, nemá polygon **„trenér minule"**
+s čím srovnávat a na listech nic druhého nebude — je to správně, ne chyba. Vývoj se objeví
+až po dalším kole. Nevyplněné odkazy na sebehodnocení se přesunuly s daty, takže hráčovo
+vyplnění se spáruje s tímhle obdobím.
+
+---
+
 ## 2026-08-13 (41) — období v Listech je nabídka z dat, ne volné pole
 
 **Commit:** `77d7274` · **NASAZENO** 2026-08-13, Version ID `ca14b268-b138-47c0-8da7-976a4e8c0bba`.
