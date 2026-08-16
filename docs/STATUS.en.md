@@ -35,6 +35,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
 | Notifications — SMS | ✅ | **confirmed for real on 9 Aug 2026** — dry run plus a delivered message; channel on (`smsAktivni = 1`), cap 50/day |
 | SMS header | ✅ | editable in Settings, preview with segment count and a warning for characters outside GSM-7; empty = club name |
+| Renaming applies backwards | ✅ | fixing a name or nickname also shows on older evaluations; the template is frozen at the time of recording (by design) |
 | Physical condition as a 7th axis | ✅ | on every template; older six-axis evaluations still draw as a hexagon, and a difference is computed only where both sides scored |
 | Bulk export/import of evaluations | ✅ | CSV for Excel; the import is append-only, requires a coach signature and refuses self-evaluations |
 | Curves distinguishable in B&W | ✅ | coach solid line + filled dot, second view dashed + hollow square; the legend draws the real line, not a coloured chip |

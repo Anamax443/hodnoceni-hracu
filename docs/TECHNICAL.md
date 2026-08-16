@@ -783,6 +783,27 @@ Hodnocení se **nikdy nepřepisuje**. Každé uložení je nový řádek s datem
 vždy s nejnovějším záznamem daného autora a období (`ORDER BY id DESC LIMIT 1`). Historie
 vzniká sama, zvláštní tabulka pro verzování není potřeba.
 
+### Přejmenování se propíše zpětně, šablona ne
+
+**Jméno ani přezdívka se nikam nekopírují.** `evaluations` i `tokens` drží jen `player_id`
+a každá čtecí cesta si jméno bere joinem na `players` — tiskový list, historie verzí,
+shoda mezi trenéry, odkazy, log komunikace i CSV export. Oprava překlepu nebo doplnění
+přezdívky se proto **promítne i do hodnocení pořízených dřív**, bez migrace a bez zásahu
+do dat. Ověřeno 16. 8. 2026: v celém Workeru není `INSERT`, který by jméno zapsal jinam
+než do `players`.
+
+**Šablona se naopak kopíruje** (`evaluations.sablona`) a nemění se zpětně. Rozdíl stojí
+za zapamatování, protože vypadá nedůsledně, a není:
+
+| | Chování | Proč |
+|---|---|---|
+| jméno, přezdívka, pozice | **aktualizuje se** zpětně | je to popis člověka; starý překlep na novém výtisku nikoho netěší |
+| šablona (sada os) | **mrzne** v okamžiku pořízení | je součástí měření — hodnocení se musí vykreslit tou sadou, se kterou vzniklo, i když hráč šablonu později ztratí nebo osa přibude (viz `osyZaznamu`) |
+
+Praktický důsledek pro CSV: **už stažený soubor** má jméno zamrzlé v okamžiku exportu.
+Import ale páruje **podle `hrac_id`**, ne podle jména, takže i starší soubor po přejmenování
+sedne na správnou osobu a nezaloží duplicitu.
+
 ### players drží hráče i trenéry
 
 Sloupec `role` (`hrac` / `trener`). Trenér se nehodnotí a netiskne se mu list — je v seznamu

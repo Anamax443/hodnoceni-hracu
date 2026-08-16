@@ -63,7 +63,10 @@ nebo za rodiči.</p>
 <i>Upravit</i> na konci řádku dělá totéž. U každého člověka se vede:</p>
 <ul>
   <li><b>Jméno a přezdívka</b> — přezdívka se ukazuje všude, kde se jméno
-      vypisuje. Hodí se, když jsou v kádru tři stejná příjmení.</li>
+      vypisuje. Hodí se, když jsou v kádru tři stejná příjmení.
+      <b>Oprava se propíše zpětně</b>: doplněná přezdívka nebo opravený překlep
+      se objeví i u hodnocení a sebehodnocení pořízených dřív, protože ta drží
+      odkaz na osobu, ne opsané jméno. Nic se kvůli tomu nepředělává.</li>
   <li><b>Role</b> — hráč, nebo trenér. Trenér se přihlašuje, hráč ne.</li>
   <li><b>Pozice</b> — může jich být víc (brankář i střední záložník).
       Tisknou se na list.</li>
@@ -556,7 +559,10 @@ Where the coach and the player disagree, there is something to talk about.</p>
 <i>Edit</i> button at the end of the row does the same. For each person the app keeps:</p>
 <ul>
   <li><b>Name and nickname</b> — the nickname appears wherever names are shown,
-      which helps when three players share a surname.</li>
+      which helps when three players share a surname. <b>A correction applies
+      backwards</b>: a nickname you add or a typo you fix also shows up on
+      evaluations and self-evaluations recorded earlier, because those hold a
+      reference to the person, not a copied-out name. Nothing has to be redone.</li>
   <li><b>Role</b> — player or coach. Coaches sign in, players do not.</li>
   <li><b>Positions</b> — there can be several (goalkeeper and midfielder).</li>
   <li><b>Function</b> — free text, e.g. “Captain”.</li>

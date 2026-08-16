@@ -2,6 +2,35 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (47) — přejmenování se propisuje zpětně (ověřeno, nic se nestavělo)
+
+**Dotaz uživatele:** když se opraví jméno nebo doplní přezdívka, má se to promítnout i do
+už zavedených hodnocení a sebehodnocení.
+
+**Nestavělo se nic — funguje to tak od začátku** a stálo za to si to ověřit místo hádání:
+
+- `evaluations` má sloupce `id · player_id · datum · obdobi · autor · autor_id · sablona ·
+  hodnoty · fyzicky · hlavou · parta · cile · poznamka · uprava_id` — **žádné jméno**.
+  Totéž `tokens`.
+- V celém Workeru **není jediný `INSERT`, který by jméno zapsal mimo `players`**.
+- Každá čtecí cesta si ho bere joinem: tiskový list, historie verzí, shoda, odkazy, log
+  komunikace i CSV export.
+
+Oprava jména se tedy propíše všude, včetně listů vytištěných znovu, bez migrace.
+
+**Rozdíl, který vypadá nedůsledně a není:** `sablona` se do hodnocení **kopíruje** a zpětně
+se nemění. Jméno je popis člověka, šablona je součást měření — hodnocení se musí vykreslit
+tou sadou os, se kterou vzniklo, i když hráč šablonu později ztratí nebo osa přibude. Přesně
+tenhle rozdíl drží i to, že po přidání kondice zůstala starší hodnocení šestiosá.
+
+**Praktický důsledek pro CSV:** už stažený soubor má jméno zamrzlé, ale import páruje podle
+`hrac_id`, ne podle jména — starší soubor po přejmenování sedne na správnou osobu.
+
+Zapsáno do `docs/TECHNICAL.md` (tabulka „aktualizuje se / mrzne") a do příručky v aplikaci
+(CS i EN) k položce *Jméno a přezdívka*. Je to otázka, která se za půl roku zeptá znovu.
+
+---
+
 ## 2026-08-16 (46) — osobní PIN pozná trenéra sám; všichni tři mají heslo
 
 **Na přání uživatele:** každý trenér dostal svůj PIN a **zadání PINu má rovnou určit, kdo

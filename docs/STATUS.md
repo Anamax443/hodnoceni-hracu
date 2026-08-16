@@ -27,6 +27,7 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Tiskové listy A4 | ✅ | 1 list = 1 stránka, ověřeno headless tiskem do PDF |
 | Kumulovaný list | ✅ | volitelně všechny šablony hráče na jedné A4, ověřeno tiskem do PDF |
 | Barva podle šablony | ✅ | hráč v poli modrá, brankář petrolejová, leader vínová; název šablony v hlavičce listu, štítky i v aplikaci |
+| Přejmenování se propíše zpětně | ✅ | oprava jména/přezdívky se objeví i u starších hodnocení; šablona se naopak zamrazí v okamžiku pořízení (záměr) |
 | Fyzická kondice jako 7. osa | ✅ | u všech šablon; starší šestiosá hodnocení se dál kreslí šesticí, rozdíl se počítá jen tam, kde známku dali oba |
 | Hromadný export/import hodnocení | ✅ | CSV pro Excel; import je append-only, vyžaduje podpis trenéra a sebehodnocení nepřijímá |
 | Rozlišení křivek na ČB tisk | ✅ | trenér plná čára + plné kolečko, druhý pohled čárkovaná + prázdný čtvereček; legenda kreslí skutečnou čáru, ne barevný čtvereček |
