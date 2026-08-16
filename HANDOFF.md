@@ -32,6 +32,19 @@ s funkcí `pozice` i tlačítko v liště opravdu servírují. **Neověřeno:** 
 
 **NASAZENO** 2026-08-16, Version ID `b1322329-91ae-41bf-9328-e52244c35710`.
 
+**Doplněk: dokumentace se rozešla na dvou místech**, našlo se to při kontrole po nasazení.
+
+1. **Záložka Pozice chyběla v samostatných příručkách** (`docs/README.md`, `README.en.md`),
+   i když v aplikační dokumentaci byla. A protože se ty příručky servírují na
+   `/dok/prirucka`, chybělo by to i tam. Rozdíl vznikl tím, že jsem psal jen do
+   `dokumentace.js` — příručky mají vlastní strukturu záložek a musí se doplnit zvlášť.
+2. **Příručky pořád mluvily o „šesti osách"**, přestože kondicí je jich sedm. Zbytek
+   z doby před 16. 8. Opraveno na sedm tam, kde jde o počet, a na „sada os" tam, kde na
+   počtu nezáleží — druhá formulace nezestárne, až se osy zase změní.
+
+Poučení: **po každé změně počtu os projít `grep "šest os\|six axes"`.** Formulace vázaná
+na konkrétní číslo zestárne tiše a člověk ji najde, až když podle ní někdo něco udělá.
+
 ---
 
 ## 2026-08-16 (47) — přejmenování se propisuje zpětně (ověřeno, nic se nestavělo)

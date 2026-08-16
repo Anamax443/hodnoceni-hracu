@@ -556,7 +556,7 @@ Dřív se to pletlo do jedné kolonky `post`. Rozděleno:
   Klíče v seznamu `POZICE` v `sablony.js`, názvy se překládají (`pozice.*` v i18n).
 - **`post`** zůstal jako volný text pro funkci nebo poznámku — „Kapitán", „Hlavní trenér".
   Na listu se tiskne za pozicemi.
-- **šablona os** — kterých šest os se známkuje. Sedí na **hodnocení**, ne na osobě.
+- **šablona os** — která sada os se známkuje. Sedí na **hodnocení**, ne na osobě.
 
 **Proč je šablona na hodnocení:** hráč, který chytá i hraje v poli, potřebuje obojí. Ferda
 může mít v jednom období hodnocení brankářskou i polní šablonou a každá řada žije samostatně —
@@ -646,15 +646,15 @@ Důsledky, které musí platit všude:
 
 Definované v `web/src/sablony.js`, sdílené frontendem i Workerem.
 
-**`pole`** — hráč v poli, 6 os:
+**`pole`** — hráč v poli, 7 os (kondice přibyla 16. 8. 2026):
 `prava` Technika pravá noha · `leva` Technika levá noha · `hlavicky` Hlavičkování ·
 `prihravka` Přihrávka a první dotek · `braneni` Bránění 1v1 · `skenovani` Skenování a poziční hra
 
-**`brankar`** — 6 os:
+**`brankar`** — 7 os:
 `chytani` Chytání a zákroky · `misto` Výběr místa a postavení · `nohama` Hra nohama (rozehrávka) ·
 `vykopy` Výkopy a dlouhá rozehrávka · `mimo` Hra mimo bránu a centry · `organizace` Organizace a komunikace
 
-**`leader`** — vůdcovství, 6 os (od 2026-08-07):
+**`leader`** — vůdcovství, 7 os (od 2026-08-07, kondice od 16. 8. 2026):
 `vedeni` Vedení na hřišti · `priklad` Příklad v tréninku · `tlak` Reakce na chybu a tlak ·
 `fairplay` Fair play a respekt · `podpora` Podpora spoluhráčů · `odpovednost` Spolehlivost a odpovědnost
 
@@ -1371,7 +1371,7 @@ Rozhodnuto 2026-08-06:
 
 - admin auth = heslo v secretu + podepsaná session cookie (§14/1)
 - doména = nakonec vlastní pod `maxferit.cz`, do té doby `*.workers.dev` (§14/2)
-- sebehodnocení má **6 os + jednu nepovinnou otevřenou otázku** „Na čem chceš pracovat?"
+- sebehodnocení má **tytéž osy jako trenér + jednu nepovinnou otevřenou otázku** „Na čem chceš pracovat?"
   (§14/4) — odpověď vidí trenér v Porovnání, na tištěný list se nedostane
 - osobní data (jména i posudky) zůstávají v repu a v databázi → **repozitář musí zůstat private**
 

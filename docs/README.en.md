@@ -129,9 +129,27 @@ matched by `id`, then sign-in name, then name and role. **Passwords and evaluati
 never touched.** Values are written as ordinary words (`coach`, `outfield`, `centre
 midfielder`, `yes` / `no`) in the language you have switched on.
 
+### Positions
+
+**The reverse view of People.** There you pick a player and tick their positions; here you
+pick a **position** and tick who belongs there. Putting a line-up together, you think "who
+can play right back for me", not "what is Vilém good at" — and clicking through eighteen
+cards for that is a chore.
+
+The selector shows **how many people hold each position** and opens on the emptiest one.
+Next to every player you see their **other positions**, so it is clear who you are pulling
+away from elsewhere.
+
+**Only the selected position is saved.** The others a player has set stay untouched — this
+form knows nothing about them and must not wipe them. If the ticks match what is already
+stored, the app says so and writes nothing.
+
+It is the same field as in People, just from the other side: what you tick here shows up
+there on the player. Positions are printed on the sheet.
+
 ### Evaluate
 
-Pick a player; the form appears below: six axes with ten scores each, three written blocks
+Pick a player; the form appears below: seven axes with ten scores each, three written blocks
 and the goals. Nothing is pre-filled and previous values are not shown — that is deliberate.
 
 **Who is evaluating must be filled in.** Without a signature the evaluation is not saved —
@@ -148,7 +166,7 @@ have assigned is listed under the selector. A player
 who keeps goal, plays outfield and leads the team is filled in as many times as they have
 templates — after saving, the app offers *Score: goalkeeper* and the rest straight away.
 They then get a sheet for each, and each series lives on its own; the sets cannot be merged
-into one chart, because a different set of six axes has a different shape.
+into one chart, because a different set of axes has a different shape.
 
 **Leader** is one of those sets — leading on the pitch, example in training, response to
 mistakes and pressure, fair play, supporting team-mates, reliability. It is a *sheet of its
@@ -333,7 +351,7 @@ Single-use self-evaluation links for the active players in the period, with *Cop
 *Invalidate* and the state (waiting / filled in). Send the link **to the individual player**,
 not to a team group: whoever has it can fill the self-evaluation in for them.
 
-**A link carries one set of six axes**, so a player with several templates gets one link per
+**A link carries one set of axes**, so a player with several templates gets one link per
 template — the *Template* column says which is which. An unused link for the same template is
 not created twice; how many were skipped is reported after generating.
 
