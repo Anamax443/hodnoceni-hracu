@@ -1940,26 +1940,36 @@ async function listy(kam) {
             // Nejdřív nanečisto — u hodnocení o to víc: zápis se nedá vzít zpět,
             // append-only znamená, že omylem nahraný řádek už v historii zůstane.
             const zkouska = await api('/api/evaluations/import', { telo: { csv, nanecisto: true } });
-            const vypisChyb = zkouska.chyby.length
-                ? `<br><b>${t('davky.chyby')}:</b><br>${zkouska.chyby.map(esc).join('<br>')}` : '';
 
-            if (!zkouska.pridano) {
-                cil.innerHTML = `<div class="hlaska pozor">${t('davky.nicKZapisu')}${vypisChyb}</div>`;
+            /* Přeskočené řádky nejsou chyba — sebehodnocení v souboru být má,
+               jen se nedá měnit. Vypisují se zvlášť, ať se v tom neztratí to,
+               co se opravdu nepovedlo. */
+            const seznam = (klic, polozky) => polozky.length
+                ? `<br><b>${t(klic)}:</b><br>${polozky.map(esc).join('<br>')}` : '';
+            const vypis = seznam('davky.chyby', zkouska.chyby) + seznam('davky.preskoceno', zkouska.preskoceno);
+            const celkem = zkouska.pridano + zkouska.upraveno;
+
+            if (!celkem) {
+                const hlaska = zkouska.bezeZmeny
+                    ? t('davky.bezeZmeny', zkouska.bezeZmeny)   // kolotoč export→import beze změn
+                    : t('davky.nicKZapisu');
+                cil.innerHTML = `<div class="hlaska ${zkouska.chyby.length ? 'pozor' : 'info'}">${hlaska}${vypis}</div>`;
                 e.target.value = '';
                 return;
             }
-            if (!confirm(`${t('davky.potvrdit', zkouska.pridano)}\n\n`
-                + (zkouska.chyby.length ? t('davky.chybStrucne', zkouska.chyby.length) + '\n\n' : '')
-                + zkouska.nahled.join('\n'))) {
-                cil.innerHTML = `<div class="hlaska pozor">${t('davky.zruseno')}${vypisChyb}</div>`;
+            if (!confirm(`${t('davky.potvrdit', zkouska.pridano, zkouska.upraveno)}\n\n`
+                + (zkouska.bezeZmeny ? t('davky.bezeZmeny', zkouska.bezeZmeny) + '\n' : '')
+                + (zkouska.chyby.length ? t('davky.chybStrucne', zkouska.chyby.length) + '\n' : '')
+                + '\n' + zkouska.nahled.join('\n'))) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('davky.zruseno')}${vypis}</div>`;
                 e.target.value = '';
                 return;
             }
 
             const r = await api('/api/evaluations/import', { telo: { csv } });
             cil.innerHTML = `<div class="hlaska ${r.chyby.length ? 'pozor' : 'ok'}">`
-                + t('davky.hotovo', r.pridano)
-                + (r.chyby.length ? `<br><b>${t('davky.chyby')}:</b><br>${r.chyby.map(esc).join('<br>')}` : '')
+                + t('davky.hotovo', r.pridano, r.upraveno)
+                + seznam('davky.chyby', r.chyby) + seznam('davky.preskoceno', r.preskoceno)
                 + '</div>';
             await nactiKdo();          // fajfky musí ukázat nový stav
         } catch (chyba) {

@@ -1202,14 +1202,23 @@ dal. Bez `obdobi` se veze celý archiv. Popisky sloupců jdou z `POPISKY.osa` v 
 `POST /api/evaluations/import` s `{csv, nanecisto}` — stejný dvoukrokový vzorec jako import
 kádru: nanečisto vrátí, co by se zapsalo, teprve druhé volání zapisuje. Drží tři pravidla:
 
+**Import je editace, ne jen zakládání.** Řádek s vyplněným `id` je **úprava** toho
+hodnocení a uloží se jako **nová verze s `uprava_id`** — přesně jako oprava ve formuláři.
+Řádek bez `id` zakládá nové hodnocení.
+
 | Pravidlo | Proč |
 |---|---|
-| **Append-only** — každý řádek je `INSERT`, nikdy `UPDATE`; sloupec `id` se při zápisu ignoruje | totéž co formulář, historie se nepřepisuje |
-| **Podpis povinný** — `hodnotil` musí sedět na trenéra v kartotéce | stejná kontrola jako u formuláře; bez ní by za půl roku nikdo nedohledal autora |
-| **Sebehodnocení nelze importovat** — řádky s `autor = hráč` se odmítnou | nástroj stojí na dvou **nezávislých** pohledech; kdyby hráčův pohled mohl nahrát trenér, přestal by být hráčův |
+| **Append-only** — každý řádek je `INSERT`, nikdy `UPDATE`; u úpravy se navíc vyplní `uprava_id` | historie se nepřepisuje, ale je v ní vidět nit oprav |
+| **Prázdná buňka u osy = neměnit**, ne nula | jinak by neprošel ani **nezměněný export** staršího hodnocení, které novou osu (kondici) vůbec nemá — a přesně na tom to poprvé spadlo |
+| **Nezměněný řádek se nezapisuje** (`bezeZmeny`) | bez toho by kolotoč export → import při každém průchodu založil kopii celé historie |
+| **Podpis povinný** — `hodnotil`, jinak podpis předlohy, jinak přihlášený trenér | stejné pořadí jako ve formuláři, který přihlášeného předvyplní |
+| **Sebehodnocení nelze měnit** — řádky s `autor = hráč` se **přeskočí** (ne chyba) | nástroj stojí na dvou **nezávislých** pohledech; export je obsahuje schválně, aby byla vidět, ale měnit je smí jen hráč přes svůj odkaz |
 
-Dál se kontroluje, že hráč tu šablonu přiřazenou má (`sablonyOsoby`) a že známky projdou
-`zkontrolujHodnoty` — tedy i to, že jsou **všechny** osy šablony vyplněné.
+Nové hodnocení musí projít `zkontrolujHodnoty` — tedy mít **všechny** osy šablony.
+U úpravy se vychází z původních známek a přepíšou se jen vyplněné buňky, takže starší
+šestiosý záznam zůstane šestiosý, dokud mu někdo kondici nedoplní.
+
+`id` cizího hráče se odmítne: sloupec `id` se nikdy nepřepisuje na jiný záznam.
 
 Hlavička se čte v obou jazycích i v holých klíčích (`klicZPopisu`), takže ručně upravený
 nebo starší soubor projde. Cíle jsou v jedné buňce oddělené `|`.

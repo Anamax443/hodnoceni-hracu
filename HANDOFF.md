@@ -2,6 +2,44 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (45) — import je editace, ne zakládání (oprava návrhu)
+
+**Uživatel to vyzkoušel a našel chybu v návrhu, ne v kódu.** Vyexportoval a hned
+naimportoval **beze změny** — a půlka řádků spadla na „Osa kondice musí být celé číslo
+1 až 10 (přišlo: undefined)". Kolotoč export → import přitom musí projít bez jediné chyby.
+
+**Kde jsem to rozmyslel špatně.** Postavil jsem import jako *zakládání nových záznamů*
+a vzal na něj validaci pro nové hodnocení: musí mít **všechny** osy šablony. Jenže starší
+hodnocení kondici nemají, export je tedy vyveze s prázdnou buňkou a ta pak neprošla.
+K tomu měl každý řádek zakládat nezávislý záznam, takže by kolotoč při každém průchodu
+naklonoval celou historii.
+
+**Uživatel to shrnul přesně:** „editace je nastejno, jako bych editoval záznam v systému,
+takže import by se měl chovat stejně." Přepsáno podle toho:
+
+- **Řádek s `id` je úprava** — uloží se jako nová verze s `uprava_id`, původní zůstává
+  v historii. Přesně to, co dělá oprava ve formuláři. Řádek bez `id` zakládá nové.
+- **Prázdná buňka u osy znamená „neměnit"**, ne nulu. Úprava vychází z původních známek
+  a přepíše jen vyplněné buňky, takže starší šestiosý záznam zůstane šestiosý.
+- **Nezměněný řádek se nezapisuje** a počítá se zvlášť (`bezeZmeny`). Bez toho by
+  stažení a nahrazení beze změny nafouklo databázi o kopii všeho.
+- **Podpis** se bere ze sloupce, jinak z opravovaného hodnocení, jinak z přihlášeného
+  trenéra — stejné pořadí jako ve formuláři. Tím zmizela i chyba u řádku, kde starší
+  hodnocení podpis nemá.
+- **`id` cizího hráče se odmítne**, aby se sloupec nedal přepsat na jiný záznam.
+
+**Sebehodnocení zůstává nedotknutelné** — uživatel to výslovně schválil. Nově se ale
+hlásí jako **přeskočeno**, ne jako chyba: v exportu je schválně, aby bylo vidět, takže
+červený výpis u nezměněného kolotoče děsil zbytečně.
+
+**NASAZENO** 2026-08-16, Version ID `49e01b05-b882-4eee-8f2e-c9d6486fd650`.
+
+**Poučení k zapsání:** u kolotočových funkcí (export → úprava → import) je **nezměněný
+průchod první test, který má projít**. Napsal jsem ho do dokumentace jako chování, ne jen
+do kódu.
+
+---
+
 ## 2026-08-16 (44) — hromadný export a import hodnocení do CSV
 
 **Na přání uživatele:** stáhnout hodnocení do CSV, otevřít v Excelu a nahrát zpátky.
