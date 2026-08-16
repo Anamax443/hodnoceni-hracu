@@ -2,6 +2,44 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (44) — hromadný export a import hodnocení do CSV
+
+**Na přání uživatele:** stáhnout hodnocení do CSV, otevřít v Excelu a nahrát zpátky.
+Export kádru už existoval, tohle je totéž pro hodnocení.
+
+**Export** `GET /api/evaluations/export.csv?obdobi=&lang=` je jeden plochý soubor: řádek
+= jedno hodnocení, sloupec na **každou osu napříč šablonami** (dnes 19). Osa cizí šablony
+zůstane **prázdná, ne nula** — nula je platná známka a znamenala by, že ji někdo dal.
+Bez `obdobi` se veze celý archiv; v Listech se bere období z nabídky nahoře.
+
+**Import** `POST /api/evaluations/import` jede stejným dvoukrokovým vzorcem jako import
+kádru: nanečisto ukáže, co by se zapsalo, teprve druhé volání zapisuje. Tři pravidla,
+u kterých bylo potřeba rozhodnout, ne jen naprogramovat:
+
+1. **Append-only.** Každý řádek je `INSERT`, nikdy `UPDATE`; sloupec `id` se při zápisu
+   ignoruje a je tam jen k orientaci v Excelu. Důsledek se říká nahlas i v potvrzovacím
+   dialogu: **zápis se nedá vzít zpět**, omylem nahraný řádek zůstane v historii.
+2. **Podpis povinný**, stejně jako ve formuláři — `hodnotil` musí sedět na trenéra
+   v kartotéce. Bez toho by za půl roku nikdo nedohledal autora a Shoda mezi trenéry by
+   neměla co porovnávat.
+3. **Sebehodnocení se importovat nedá.** Řádky s `autor = hráč` se odmítnou i s důvodem.
+   Tohle bylo jediné skutečné rozhodnutí: technicky by to šlo, ale celý nástroj stojí na
+   dvou **nezávislých** pohledech. Kdyby hráčův pohled mohl nahrát trenér, přestal by být
+   hráčův a porovnání dvou pohledů by ztratilo smysl.
+
+Hlavička se čte česky, anglicky i v holých klíčích, takže ručně upravený nebo starší
+soubor projde. Popisky os přibyly do `POPISKY.osa` v `sablony.js` — server jinak texty
+nevrací, ale CSV čte člověk, ne aplikace, a `prihravka` by mu nic neřeklo.
+
+**Ověřeno:** okružní cesta popisků (`Fyzická kondice` → `kondice` a zpátky), 19 sloupců
+os, `node --check`, nasazení. **Neověřeno:** skutečný export a import proti ostrým datům
+— vyžaduje přihlášení, které nemám. **Než to pustíš na celý kádr, zkus to na jednom
+řádku:** import je append-only, takže omyl se maže hůř, než vznikne.
+
+**NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`.
+
+---
+
 ## 2026-08-16 (43) — kondice jako sedmá osa, klikací fajfka v Listech
 
 **Klik na fajfku otevře list.** V tabulce *Kdo se vytiskne* byla fajfka jen informace.

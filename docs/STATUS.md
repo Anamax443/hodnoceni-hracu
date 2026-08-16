@@ -1,6 +1,6 @@
 # STATUS — kde projekt stojí
 
-Snímek k **9. 8. 2026**. Odpovídá na tři otázky: co běží, co je ověřené a co chybí.
+Snímek k **16. 8. 2026**. Odpovídá na tři otázky: co běží, co je ověřené a co chybí.
 Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, nejnovější nahoře).
 
 **Živě:** https://hodnoceni.maxferit.cz · záloha `hodnoceni-hracu.bass443.workers.dev`
@@ -15,7 +15,7 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Kádr a kartotéka (Lidé) | ✅ | 22 osob (18 aktivních hráčů + 3 trenéři), pozice, přezdívky, role; klik na jméno = úprava |
 | Víc šablon u hráče | ✅ | brankář i hráč v poli i leader; každá vlastní řada, odkaz i list |
 | Export / import kádru | ✅ | `.xlsx` s formátem Text, CSV, import nanečisto |
-| Hodnocení trenérem | ✅ | 6 os 1–10, append-only, šablony `pole` / `brankar` / `leader` |
+| Hodnocení trenérem | ✅ | **7 os** 1–10, append-only, šablony `pole` / `brankar` / `leader` |
 | Hromadné hodnocení | ✅ | jedna známka pro víc hráčů, doplní se k poslednímu záznamu |
 | Úprava hodnocení | ✅ | načíst, opravit, uložit = **nová verze**; jen vlastní, naslepo platí dál |
 | Sebehodnocení hráče | ✅ | jednorázový odkaz, blind guard ověřený naostro |
@@ -27,6 +27,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Tiskové listy A4 | ✅ | 1 list = 1 stránka, ověřeno headless tiskem do PDF |
 | Kumulovaný list | ✅ | volitelně všechny šablony hráče na jedné A4, ověřeno tiskem do PDF |
 | Barva podle šablony | ✅ | hráč v poli modrá, brankář petrolejová, leader vínová; název šablony v hlavičce listu, štítky i v aplikaci |
+| Fyzická kondice jako 7. osa | ✅ | u všech šablon; starší šestiosá hodnocení se dál kreslí šesticí, rozdíl se počítá jen tam, kde známku dali oba |
+| Hromadný export/import hodnocení | ✅ | CSV pro Excel; import je append-only, vyžaduje podpis trenéra a sebehodnocení nepřijímá |
 | Rozlišení křivek na ČB tisk | ✅ | trenér plná čára + plné kolečko, druhý pohled čárkovaná + prázdný čtvereček; legenda kreslí skutečnou čáru, ne barevný čtvereček |
 | Stav kanálů v horní liště | ✅ | Model / SMS / Telegram / E-mail se značkou ● ○ ✕; TG, SMS a e-mail ověřené doopravdy a zdarma, model jen hlásí nastavení (dotaz by ujídal limit) |
 | Dokumentace na vlastních stránkách | ✅ | `/dok/<klíč>` za přihlášením — 10 dokumentů převedených z Markdownu, rozcestník i seznam kapitol; žádné odkazy na (soukromý) GitHub |
@@ -54,7 +56,7 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 > už vyplnil. **Živá čísla jsou v aplikaci** — záložka 📖, kapitola *Stav projektu*, kde
 > se čtou přímo z databáze přes `/api/stav-dat`. Tady je jen otisk k datu.
 
-Otisk z ostré databáze k **9. 8. 2026, 12:50** (jen počty, žádná jména ani známky):
+Otisk z ostré databáze k **16. 8. 2026** (jen počty, žádná jména ani známky):
 
 | | |
 |---|---|

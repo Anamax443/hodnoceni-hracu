@@ -114,6 +114,38 @@ i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
 
 ---
 
+## 2026-08-16 (24) — kondice jako sedmá osa, export/import hodnocení
+
+**NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`, commit viz
+`/api/version`. Ověřeno spuštěním funkcí a nasazením, **ne proklikáním za přihlášením**.
+
+**Sedmá osa nerozbila starší záznamy** — spuštěno nad skutečným tvarem dat z ostré DB:
+
+| Kontrola | Výsledek |
+|---|---|
+| šablona `pole` má os | 7 (`…, skenovani, kondice`) |
+| starý záznam (bez `kondice`) se vykreslí osami | **6** — kondice se nepřidá jako nula |
+| nový záznam se vykreslí osami | 7 |
+| validace nového | OK |
+| render | starý = šestiúhelník, nový = sedmiúhelník; ověřeno obrázkem vedle sebe |
+
+**Rozdíl trenér × hráč u nesouhlasných šestic**: `rozdil = null`, v tabulce `—`
+a „nezměřeno u obou". Bez toho by nové sedmiosé sebehodnocení proti starému šestiosému
+hodnocení trenéra spočítalo u kondice `7 − 0 = +7` a označilo to za velký rozpor.
+
+**Export/import hodnocení:**
+
+| Kontrola | Výsledek |
+|---|---|
+| sloupců os v exportu | 19 (sjednocení všech tří šablon) |
+| popisek osy tam a zpět | `kondice` → „Fyzická kondice" → `kondice` |
+| `node --check` nad změněnými soubory | prošel |
+
+**Neověřeno:** skutečný export a import proti ostrým datům. Import je append-only —
+před prvním použitím na celý kádr zkusit jeden řádek.
+
+---
+
 ## 2026-08-09 (23) — křivky rozlišené tvarem (černobílý tisk)
 
 **NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.

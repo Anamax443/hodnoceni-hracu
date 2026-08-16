@@ -11,7 +11,7 @@
 
 /* Texty (popisy os, kotvy škály) sem nepatří — server vrací klíče
    a překládá až prohlížeč podle zvoleného jazyka (web/src/i18n.js). */
-import { SABLONY, POZICE, MAX, klice, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
+import { SABLONY, POZICE, MAX, klice, vsechnyOsy, zkontrolujHodnoty, zkontrolujPozice, popis, klicZPopisu } from '../../web/src/sablony.js';
 /* Generuje scripts/gen-version.mjs při každém `npm run deploy` i `npm run dev`. */
 import { VERZE } from './version';
 import { DOKUMENTY } from './dokumenty';
@@ -2507,6 +2507,178 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                 'content-disposition': `attachment; filename="lide-${datum}.csv"`,
                 'cache-control': 'no-store'
             }
+        });
+    }
+
+    /* ---------- export hodnocení do CSV ----------
+       Jeden plochý soubor pro Excel: řádek = jedno hodnocení, sloupec na každou
+       osu napříč šablonami (u cizí šablony zůstane prázdný). Sloupce `id`
+       a `hrac_id` slouží k párování při importu zpátky. */
+    if (cesta === '/api/evaluations/export.csv' && metoda === 'GET') {
+        const jazyk = q.get('lang') === 'en' ? 'en' : 'cs';
+        const obdobi = q.get('obdobi');
+
+        const { results } = obdobi
+            ? await env.DB.prepare(
+                `SELECT e.*, p.jmeno AS hrac, a.jmeno AS hodnotil
+                   FROM evaluations e
+                   JOIN players p ON p.id = e.player_id
+              LEFT JOIN players a ON a.id = e.autor_id
+                  WHERE e.obdobi = ? ORDER BY p.jmeno, e.id`).bind(obdobi).all<any>()
+            : await env.DB.prepare(
+                `SELECT e.*, p.jmeno AS hrac, a.jmeno AS hodnotil
+                   FROM evaluations e
+                   JOIN players p ON p.id = e.player_id
+              LEFT JOIN players a ON a.id = e.autor_id
+                  ORDER BY e.obdobi, p.jmeno, e.id`).all<any>();
+
+        const osyKlice = vsechnyOsy();
+        const p = (skupina: string, klic: string) => popis(skupina, klic, jazyk);
+        const hlavicka = jazyk === 'en'
+            ? ['id', 'player_id', 'player', 'period', 'author', 'signed by', 'template']
+            : ['id', 'hrac_id', 'hráč', 'období', 'autor', 'hodnotil', 'šablona'];
+        const konec = jazyk === 'en'
+            ? ['Physical', 'Head', 'In the group', 'Goals', 'Player note', 'date']
+            : ['Fyzicky', 'Hlavou', 'V partě', 'Cíle', 'Poznámka hráče', 'datum'];
+
+        const radky: string[][] = [[...hlavicka, ...osyKlice.map(k => p('osa', k)), ...konec]];
+        for (const e of results ?? []) {
+            let hodnoty: Record<string, unknown> = {};
+            try { hodnoty = JSON.parse(String(e.hodnoty ?? '{}')); } catch { /* rozbitý JSON = prázdno */ }
+            let cile: string[] = [];
+            try { cile = JSON.parse(String(e.cile ?? '[]')); } catch { /* dtto */ }
+
+            radky.push([
+                String(e.id), String(e.player_id), String(e.hrac ?? ''), String(e.obdobi ?? ''),
+                p('role', String(e.autor ?? '')), String(e.hodnotil ?? ''),
+                p('sablona', String(e.sablona ?? '')),
+                // Osa, kterou tahle šablona nemá, zůstane prázdná — ne nula.
+                ...osyKlice.map(k => hodnoty[k] === undefined || hodnoty[k] === null ? '' : String(hodnoty[k])),
+                String(e.fyzicky ?? ''), String(e.hlavou ?? ''), String(e.parta ?? ''),
+                (Array.isArray(cile) ? cile : []).join(' | '),
+                String(e.poznamka ?? ''), String(e.datum ?? '')
+            ]);
+        }
+
+        const datum = new Date().toISOString().slice(0, 10);
+        return new Response(csvSoubor(radky), {
+            headers: {
+                'content-type': 'text/csv; charset=utf-8',
+                'content-disposition': `attachment; filename="hodnoceni-${datum}.csv"`,
+                'cache-control': 'no-store'
+            }
+        });
+    }
+
+    /* ---------- import hodnocení z CSV ----------
+       Append-only jako všude jinde: importovaný řádek je NOVÉ hodnocení, nikdy
+       přepis. Sloupec `id` se proto při zápisu ignoruje, slouží jen k tomu, aby
+       trenér v Excelu poznal, co je co. */
+    if (cesta === '/api/evaluations/import' && metoda === 'POST') {
+        const { csv, nanecisto } = await request.json<{ csv?: string; nanecisto?: boolean }>();
+        if (!csv || !csv.trim()) return chyba('Soubor je prázdný.', 400);
+
+        const tabulka = csvRozeber(csv);
+        if (tabulka.length < 2) return chyba('Soubor nemá žádné řádky s daty.', 400);
+
+        // Hlavička může být v obou jazycích i v klíčích — mapuje se na klíče.
+        const najdi = (radek: string[], varianty: string[]) =>
+            radek.findIndex(b => varianty.some(v => holyText(b) === holyText(v)));
+        const hlavicka = tabulka[0];
+        const sl = {
+            hracId: najdi(hlavicka, ['hrac_id', 'player_id']),
+            hrac: najdi(hlavicka, ['hráč', 'hrac', 'player']),
+            obdobi: najdi(hlavicka, ['období', 'obdobi', 'period']),
+            autor: najdi(hlavicka, ['autor', 'author']),
+            hodnotil: najdi(hlavicka, ['hodnotil', 'signed by']),
+            sablona: najdi(hlavicka, ['šablona', 'sablona', 'template']),
+            fyzicky: najdi(hlavicka, ['fyzicky', 'physical']),
+            hlavou: najdi(hlavicka, ['hlavou', 'head']),
+            parta: najdi(hlavicka, ['v partě', 'parta', 'in the group']),
+            cile: najdi(hlavicka, ['cíle', 'cile', 'goals'])
+        };
+        if (sl.sablona < 0) return chyba('V hlavičce chybí sloupec „šablona".', 400);
+
+        // Sloupec osy se pozná podle popisku i podle klíče, v obou jazycích.
+        const osaSloupce = new Map<string, number>();
+        for (const klic of vsechnyOsy()) {
+            const i = najdi(hlavicka, [klic, popis('osa', klic, 'cs'), popis('osa', klic, 'en')]);
+            if (i >= 0) osaSloupce.set(klic, i);
+        }
+
+        const { results: lide } = await env.DB.prepare(
+            'SELECT id, jmeno, login, role, aktivni, sablona, sablony FROM players').all<any>();
+        const podleId = new Map((lide ?? []).map((o: any) => [Number(o.id), o]));
+        const podleJmena = new Map((lide ?? []).map((o: any) => [holyText(o.jmeno), o]));
+
+        const chyby: string[] = [];
+        const kZapisu: any[] = [];
+
+        for (let r = 1; r < tabulka.length; r++) {
+            const radek = tabulka[r];
+            if (!radek.some(b => b.trim())) continue;          // prázdný řádek se přeskočí
+            const cislo = r + 1;                                // číslo řádku, jak ho vidí Excel
+            const vezmi = (i: number) => (i >= 0 ? (radek[i] ?? '').trim() : '');
+
+            /* Sebehodnocení se importovat nedá. Celý nástroj stojí na tom, že
+               jsou to DVA nezávislé pohledy; kdyby trenér mohl nahrát hráčův
+               pohled, přestal by být hráčův. */
+            const autor = klicZPopisu('role', vezmi(sl.autor) || 'trener');
+            if (autor === 'hrac') {
+                chyby.push(`řádek ${cislo}: sebehodnocení hráče se importovat nedá — vyplňuje ho hráč přes svůj odkaz`);
+                continue;
+            }
+
+            const hrac = podleId.get(Number(vezmi(sl.hracId))) ?? podleJmena.get(holyText(vezmi(sl.hrac)));
+            if (!hrac) { chyby.push(`řádek ${cislo}: hráč nenalezen (${vezmi(sl.hrac) || vezmi(sl.hracId) || '—'})`); continue; }
+            if (hrac.role !== 'hrac') { chyby.push(`řádek ${cislo}: ${hrac.jmeno} není hráč`); continue; }
+
+            const sablona = klicZPopisu('sablona', vezmi(sl.sablona));
+            if (!sablonyOsoby(hrac).includes(sablona)) {
+                chyby.push(`řádek ${cislo}: ${hrac.jmeno} nemá přiřazenou šablonu ${sablona}`);
+                continue;
+            }
+
+            // Podpis je povinný stejně jako ve formuláři.
+            const podpis = podleJmena.get(holyText(vezmi(sl.hodnotil)));
+            if (!podpis || podpis.role !== 'trener') {
+                chyby.push(`řádek ${cislo}: sloupec „hodnotil" musí obsahovat jméno trenéra (je „${vezmi(sl.hodnotil) || '—'}")`);
+                continue;
+            }
+
+            const hodnoty: Record<string, number> = {};
+            for (const klic of klice(sablona)) {
+                const i = osaSloupce.get(klic);
+                const cislovka = Number(String(i !== undefined ? radek[i] ?? '' : '').replace(',', '.'));
+                if (Number.isInteger(cislovka) && cislovka >= 1 && cislovka <= MAX) hodnoty[klic] = cislovka;
+            }
+            const problem = zkontrolujHodnoty(sablona, hodnoty);
+            if (problem) { chyby.push(`řádek ${cislo}: ${problem}`); continue; }
+
+            const obdobi = vezmi(sl.obdobi) || (await nastaveni(env)).obdobi;
+            kZapisu.push({
+                player_id: hrac.id, obdobi, autor: 'trener', autor_id: podpis.id, sablona,
+                hodnoty: JSON.stringify(hodnoty),
+                fyzicky: vezmi(sl.fyzicky) || null,
+                hlavou: vezmi(sl.hlavou) || null,
+                parta: vezmi(sl.parta) || null,
+                cile: JSON.stringify(vezmi(sl.cile).split('|').map(c => c.trim()).filter(Boolean).slice(0, 5)),
+                popis: `${hrac.jmeno} — ${popis('sablona', sablona, 'cs')}, ${obdobi}`
+            });
+        }
+
+        if (!nanecisto && kZapisu.length) {
+            await env.DB.batch(kZapisu.map(z => env.DB.prepare(
+                `INSERT INTO evaluations (player_id, obdobi, autor, autor_id, sablona, hodnoty, fyzicky, hlavou, parta, cile)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(z.player_id, z.obdobi, z.autor, z.autor_id, z.sablona, z.hodnoty, z.fyzicky, z.hlavou, z.parta, z.cile)));
+        }
+
+        return json({
+            nanecisto: !!nanecisto,
+            pridano: kZapisu.length,
+            chyby,
+            nahled: kZapisu.slice(0, 10).map(z => z.popis)
         });
     }
 

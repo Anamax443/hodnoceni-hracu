@@ -73,6 +73,21 @@ export const POPISKY = {
             ofenzivni_zaloznik: 'ofenzivní záložník', prave_kridlo: 'pravé křídlo',
             leve_kridlo: 'levé křídlo', hrotovy_utocnik: 'hrotový útočník'
         },
+        /* Popisky os pro export hodnocení. V hlavičce CSV musí stát to, co zná
+           trenér z formuláře — `prihravka` mu nic neřekne. Import bere obojí,
+           popisek i klíč, takže ručně upravený i starší soubor projde. */
+        osa: {
+            prava: 'Technika pravá noha', leva: 'Technika levá noha',
+            hlavicky: 'Hlavičkování', prihravka: 'Přihrávka a první dotek',
+            braneni: 'Bránění 1v1', skenovani: 'Skenování a poziční hra',
+            chytani: 'Chytání a zákroky', misto: 'Výběr místa a postavení',
+            nohama: 'Hra nohama (rozehrávka)', vykopy: 'Výkopy a dlouhá rozehrávka',
+            mimo: 'Hra mimo bránu a centry', organizace: 'Organizace a komunikace',
+            vedeni: 'Vedení na hřišti', priklad: 'Příklad v tréninku',
+            tlak: 'Reakce na chybu a tlak', fairplay: 'Fair play a respekt',
+            podpora: 'Podpora spoluhráčů', odpovednost: 'Spolehlivost a odpovědnost',
+            kondice: 'Fyzická kondice'
+        },
         ano: 'ano', ne: 'ne'
     },
     en: {
@@ -84,9 +99,30 @@ export const POPISKY = {
             stredni_zaloznik: 'centre midfielder', ofenzivni_zaloznik: 'attacking midfielder',
             prave_kridlo: 'right winger', leve_kridlo: 'left winger', hrotovy_utocnik: 'striker'
         },
+        osa: {
+            prava: 'Technique right foot', leva: 'Technique left foot',
+            hlavicky: 'Heading', prihravka: 'Passing and first touch',
+            braneni: 'Defending 1v1', skenovani: 'Scanning and positioning',
+            chytani: 'Shot stopping', misto: 'Positioning and starting position',
+            nohama: 'Playing with the feet', vykopy: 'Goal kicks and long distribution',
+            mimo: 'Off the line and crosses', organizace: 'Organisation and communication',
+            vedeni: 'Leading on the pitch', priklad: 'Example in training',
+            tlak: 'Response to mistakes and pressure', fairplay: 'Fair play and respect',
+            podpora: 'Supporting team-mates', odpovednost: 'Reliability and responsibility',
+            kondice: 'Physical condition'
+        },
         ano: 'yes', ne: 'no'
     }
 };
+
+/**
+ * Všechny osy napříč šablonami, bez opakování a v pořadí šablon.
+ * Export hodnocení je jeden plochý soubor pro Excel, takže musí mít sloupec
+ * na každou osu, která se kde vyskytuje; u řádku jiné šablony zůstane prázdný.
+ */
+export function vsechnyOsy() {
+    return [...new Set(Object.values(SABLONY).flat())];
+}
 
 /** Popisek klíče pro export. Neznámý klíč se vrátí, jak přišel. */
 export function popis(skupina, klic, jazyk = 'cs') {

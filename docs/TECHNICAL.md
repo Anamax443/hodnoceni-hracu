@@ -1191,6 +1191,29 @@ takové ukázky vyskytují. Úvodní `# Nadpis` se zahazuje, stránka svůj titu
 Cena: bundle vyrostl ze 116 na ~242 KiB gzip. Limit Workeru je řádově vyšší, ale je dobré
 vědět, že se dokumentace veze s každým nasazením.
 
+### Hromadný export a import hodnocení (postaveno)
+
+`GET /api/evaluations/export.csv?obdobi=&lang=` — jeden plochý soubor: řádek = jedno
+hodnocení, sloupec na **každou osu napříč šablonami** (`vsechnyOsy()`, dnes 19). Osa cizí
+šablony zůstane **prázdná, ne nula** — nula je platná známka a znamenala by, že ji někdo
+dal. Bez `obdobi` se veze celý archiv. Popisky sloupců jdou z `POPISKY.osa` v `sablony.js`
+(server texty jinak nevrací; tady jde o soubor pro člověka, ne pro aplikaci).
+
+`POST /api/evaluations/import` s `{csv, nanecisto}` — stejný dvoukrokový vzorec jako import
+kádru: nanečisto vrátí, co by se zapsalo, teprve druhé volání zapisuje. Drží tři pravidla:
+
+| Pravidlo | Proč |
+|---|---|
+| **Append-only** — každý řádek je `INSERT`, nikdy `UPDATE`; sloupec `id` se při zápisu ignoruje | totéž co formulář, historie se nepřepisuje |
+| **Podpis povinný** — `hodnotil` musí sedět na trenéra v kartotéce | stejná kontrola jako u formuláře; bez ní by za půl roku nikdo nedohledal autora |
+| **Sebehodnocení nelze importovat** — řádky s `autor = hráč` se odmítnou | nástroj stojí na dvou **nezávislých** pohledech; kdyby hráčův pohled mohl nahrát trenér, přestal by být hráčův |
+
+Dál se kontroluje, že hráč tu šablonu přiřazenou má (`sablonyOsoby`) a že známky projdou
+`zkontrolujHodnoty` — tedy i to, že jsou **všechny** osy šablony vyplněné.
+
+Hlavička se čte v obou jazycích i v holých klíčích (`klicZPopisu`), takže ručně upravený
+nebo starší soubor projde. Cíle jsou v jedné buňce oddělené `|`.
+
 ### Stav kanálů v liště (postaveno)
 
 `GET /api/stav` vrací čtyři položky (`ai`, `sms`, `telegram`, `email`), každou jako

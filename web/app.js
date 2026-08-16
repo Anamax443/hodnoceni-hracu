@@ -1820,6 +1820,18 @@ async function listy(kam) {
             <p style="margin-top:14px">
                 <button class="hl" id="otevrit-listy" title="${t('listy.otevrit.tip')}">${t('listy.otevrit')}</button>
             </p>
+        </div>
+
+        <div class="karta">
+            <h2>${t('davky.nadpis')}</h2>
+            <p class="popis">${t('davky.popis')}</p>
+            <p>
+                <button class="vedlejsi" id="export-hodnoceni" title="${t('davky.export.tip')}">${t('davky.export')}</button>
+                <button class="vedlejsi" id="import-hodnoceni" title="${t('davky.import.tip')}">${t('davky.import')}</button>
+                <input type="file" id="import-hodnoceni-soubor" accept=".xlsx,.csv,text/csv" hidden>
+            </p>
+            <div id="davky-vysledek"></div>
+            <p class="popis">${t('davky.pravidla')}</p>
         </div>`;
 
     /* Tabulka platí pro vybrané období, ne pro to z Nastavení: ✓ a pomlčka
@@ -1895,6 +1907,57 @@ async function listy(kam) {
 
     $('#l-obdobi').onchange = () => { vybraneObdobi = $('#l-obdobi').value; nactiKdo(); };
     await nactiKdo();
+
+    /* Export bere období z nabídky nahoře — „všechna" znamená celý archiv.
+       Stažení přes odkaz, ne fetch: cookie se pošle sama a soubor skončí
+       rovnou ve Staženém, bez blobů v paměti. */
+    $('#export-hodnoceni').onclick = () => {
+        const obdobi = vybraneObdobi && vybraneObdobi !== 'vse'
+            ? `&obdobi=${encodeURIComponent(vybraneObdobi)}` : '';
+        location.href = `/api/evaluations/export.csv?lang=${jazyk()}${obdobi}`;
+    };
+
+    $('#import-hodnoceni').onclick = () => $('#import-hodnoceni-soubor').click();
+
+    $('#import-hodnoceni-soubor').onchange = async (e) => {
+        const soubor = e.target.files?.[0];
+        if (!soubor) return;
+        const cil = $('#davky-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const jeXlsx = /\.xlsx$/i.test(soubor.name);
+            const csv = jeXlsx ? radkyNaCsv(await xlsxNaRadky(soubor)) : await textSouboru(soubor);
+
+            // Nejdřív nanečisto — u hodnocení o to víc: zápis se nedá vzít zpět,
+            // append-only znamená, že omylem nahraný řádek už v historii zůstane.
+            const zkouska = await api('/api/evaluations/import', { telo: { csv, nanecisto: true } });
+            const vypisChyb = zkouska.chyby.length
+                ? `<br><b>${t('davky.chyby')}:</b><br>${zkouska.chyby.map(esc).join('<br>')}` : '';
+
+            if (!zkouska.pridano) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('davky.nicKZapisu')}${vypisChyb}</div>`;
+                e.target.value = '';
+                return;
+            }
+            if (!confirm(`${t('davky.potvrdit', zkouska.pridano)}\n\n`
+                + (zkouska.chyby.length ? t('davky.chybStrucne', zkouska.chyby.length) + '\n\n' : '')
+                + zkouska.nahled.join('\n'))) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('davky.zruseno')}${vypisChyb}</div>`;
+                e.target.value = '';
+                return;
+            }
+
+            const r = await api('/api/evaluations/import', { telo: { csv } });
+            cil.innerHTML = `<div class="hlaska ${r.chyby.length ? 'pozor' : 'ok'}">`
+                + t('davky.hotovo', r.pridano)
+                + (r.chyby.length ? `<br><b>${t('davky.chyby')}:</b><br>${r.chyby.map(esc).join('<br>')}` : '')
+                + '</div>';
+            await nactiKdo();          // fajfky musí ukázat nový stav
+        } catch (chyba) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(chyba.message)}</div>`;
+        }
+        e.target.value = '';
+    };
 
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);

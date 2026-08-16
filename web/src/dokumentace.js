@@ -284,6 +284,29 @@ s plnými kolečky a lehkou výplň, druhý pohled čárkovanou čáru s prázdn
 typ čáry a tvar značky přežijí i kopírku. Ze stejného důvodu je ve <b>vzorku
 v legendě</b> kousek skutečné čáry se značkou, ne barevný obdélníček.</p>
 
+<h3>Hromadný export a import hodnocení</h3>
+<p>Dole v Listech je <b>Export hodnocení do CSV</b> — soubor, který otevře Excel.
+Řádek je jedno hodnocení, sloupec je jedna osa; osy cizí šablony zůstanou
+prázdné. Export bere <b>období vybrané nahoře</b>, volba „všechna období"
+stáhne celý archiv.</p>
+<p>Vyplněný soubor jde nahrát zpátky tlačítkem <b>Import hodnocení z CSV</b>.
+Hodí se, když se známkuje mimo aplikaci nebo se doplňuje víc hráčů najednou.
+Nejdřív se ukáže, co by se zapsalo, a teprve po potvrzení se zapisuje.</p>
+<p>Tři pravidla, která import dodržuje stejně jako formulář:</p>
+<ul>
+  <li><b>Nikdy nepřepisuje.</b> Každý řádek je nové hodnocení, staré zůstává
+      v historii. Zápis se proto nedá vzít zpět — omylem nahraný řádek už tam
+      zůstane, byť se dá přebít novější verzí.</li>
+  <li><b>Podpis je povinný.</b> Sloupec <i>hodnotil</i> musí obsahovat jméno
+      trenéra, jinak se řádek nezapíše a řekne se proč.</li>
+  <li><b>Sebehodnocení hráče se importovat nedá.</b> Vyplňuje ho hráč přes svůj
+      odkaz — kdyby ho mohl nahrát trenér, přestal by to být hráčův pohled
+      a celé porovnání dvou pohledů by ztratilo smysl.</li>
+</ul>
+<p>Sloupce <code>id</code> a <code>hrac_id</code> jsou k orientaci a k párování
+hráče; při zápisu se <code>id</code> ignoruje. Hlavička může být česky, anglicky
+i v klíčích, takže ručně upravený soubor projde.</p>
+
 <h2>Analýzy</h2>
 <p>Souhrny za celý kádr: <b>kde je mužstvo nejslabší</b> (průměr osy přes všechny hodnocené,
 od nejnižší) a <b>kde se nejvíc rozchází pohled trenéra a hráče</b>. Počítá to aplikace,
@@ -736,6 +759,29 @@ a dashed line with hollow squares and no fill. On a black-and-white printer the
 shades of grey would merge, whereas a line type and a marker shape survive even
 a photocopier. For the same reason the <b>legend swatch</b> is a piece of the
 real line with its marker, not a coloured rectangle.</p>
+
+<h3>Bulk export and import of evaluations</h3>
+<p>At the bottom of Sheets there is <b>Export evaluations to CSV</b> — a file that
+opens in Excel. A row is one evaluation, a column is one axis; axes belonging to
+another template stay empty. The export uses the <b>period selected above</b>, and
+"all periods" downloads the whole archive.</p>
+<p>The filled-in file goes back with <b>Import evaluations from CSV</b>. It helps
+when scoring happens outside the app or several players are filled in at once.
+What would be written is shown first; writing happens only after you confirm.</p>
+<p>Three rules the import keeps, exactly like the form:</p>
+<ul>
+  <li><b>It never overwrites.</b> Every row is a new evaluation and the old one
+      stays in the history. So it cannot be undone — a row uploaded by mistake
+      stays there, though a newer version can supersede it.</li>
+  <li><b>A signature is required.</b> The <i>signed by</i> column must hold a
+      coach's name, otherwise the row is skipped and the reason is given.</li>
+  <li><b>Player self-evaluations cannot be imported.</b> The player fills those in
+      through their own link — if a coach could upload them, they would stop
+      being the player's view and comparing the two views would lose its point.</li>
+</ul>
+<p>The <code>id</code> and <code>hrac_id</code> columns are there for orientation
+and for matching the player; <code>id</code> is ignored on write. The header may
+be in Czech, English or raw keys, so a hand-edited file still works.</p>
 
 <h2>Analyses</h2>
 <p>Squad-wide summaries: <b>where the team is weakest</b> (average of an axis across all
