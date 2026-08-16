@@ -38,6 +38,18 @@ os, `node --check`, nasazení. **Neověřeno:** skutečný export a import proti
 
 **NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`.
 
+**Oprava hned po nasazení: `textSouboru is not defined`.** Import hodnocení spadl na první
+kliknutí. Čtení nahraného souboru (`zeZipu`, `xlsxNaRadky`, `radkyNaCsv`, `textSouboru`)
+bydlelo **uvnitř funkce záložky Lidé**, takže z Listů nebylo vidět. Přesunuto na modulovou
+úroveň — soubor nahrávají dvě záložky, pomocník tedy nepatří do útrob jedné z nich.
+
+**Je to podruhé, co mě dostala tatáž mezera v kontrolách** — poprvé „ai is not defined"
+v záznamu (27). `node --check` ověří **syntaxi**, ne existenci volaných jmen: volání
+nedefinované funkce je syntakticky v pořádku a spadne až za běhu, po kliknutí. Nic
+z toho, co mám k dispozici bez přihlášení, tuhle třídu chyb nechytí; **jediná spolehlivá
+kontrola je proklikat to v prohlížeči.** Opraveno v Version ID
+`728ff8e2-41cc-4214-bcfe-93b10d0f0c8f`.
+
 ---
 
 ## 2026-08-16 (43) — kondice jako sedmá osa, klikací fajfka v Listech

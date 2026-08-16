@@ -439,6 +439,116 @@ function schovejChybejiciZnak(prvek) {
     if (prvek.complete && !prvek.naturalWidth) prvek.hidden = true;
 }
 
+/* ===================== čtení nahraného souboru =====================
+
+   Sešit .xlsx se rozbalí a převede na CSV už tady v prohlížeči: má
+   DecompressionStream i DOMParser, takže server zůstává jednoduchý
+   a umí pořád jen jeden formát.
+
+   Modulová úroveň je tu schválně: soubor nahrávají DVĚ záložky — Lidé
+   (kádr) a Listy (hodnocení). Dokud tyhle funkce bydlely uvnitř funkce
+   záložky Lidé, spadl import hodnocení hned po kliknutí na chybu
+   "textSouboru is not defined". Kontrola syntaxe to nechytí: volání
+   nedefinované funkce je syntakticky v pořádku a projeví se až za běhu.
+   Pomocník potřebný ve dvou záložkách nepatří do útrob jedné z nich.
+   ===================================================================== */
+
+/** Vyzobne ze ZIPu jmenovaný soubor. XLSX je ZIP, položky bývají deflate. */
+const zeZipu = async (bajty, jmenoSouboru) => {
+    const dv = new DataView(bajty.buffer, bajty.byteOffset, bajty.byteLength);
+    // Konec centrálního adresáře se hledá od konce — může za ním být komentář.
+    let konec = -1;
+    for (let i = bajty.length - 22; i >= 0 && i > bajty.length - 65558; i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { konec = i; break; }
+    }
+    if (konec < 0) throw new Error(t('lide.import.nenizip'));
+
+    const pocet = dv.getUint16(konec + 10, true);
+    let pos = dv.getUint32(konec + 16, true);
+    const dekoder = new TextDecoder('utf-8');
+
+    for (let i = 0; i < pocet; i++) {
+        const delkaJmena = dv.getUint16(pos + 28, true);
+        const delkaExtra = dv.getUint16(pos + 30, true);
+        const delkaKomentare = dv.getUint16(pos + 32, true);
+        const metoda = dv.getUint16(pos + 10, true);
+        const velikost = dv.getUint32(pos + 20, true);
+        const posunHlavicky = dv.getUint32(pos + 42, true);
+        const jmeno = dekoder.decode(bajty.subarray(pos + 46, pos + 46 + delkaJmena));
+
+        if (jmeno === jmenoSouboru) {
+            // Lokální hlavička má vlastní délky jména a extra pole.
+            const lokJmeno = dv.getUint16(posunHlavicky + 26, true);
+            const lokExtra = dv.getUint16(posunHlavicky + 28, true);
+            const zacatek = posunHlavicky + 30 + lokJmeno + lokExtra;
+            const data = bajty.subarray(zacatek, zacatek + velikost);
+            if (metoda === 0) return dekoder.decode(data);
+            const proud = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            return dekoder.decode(new Uint8Array(await new Response(proud).arrayBuffer()));
+        }
+        pos += 46 + delkaJmena + delkaExtra + delkaKomentare;
+    }
+    return null;
+};
+
+/** Sešit → řádky textů. Bere sdílené i vložené řetězce, díry doplní prázdnem. */
+const xlsxNaRadky = async (soubor) => {
+    const bajty = new Uint8Array(await soubor.arrayBuffer());
+    const listXml = await zeZipu(bajty, 'xl/worksheets/sheet1.xml');
+    if (!listXml) throw new Error(t('lide.import.nenilist'));
+    const sdileneXml = await zeZipu(bajty, 'xl/sharedStrings.xml');
+
+    const parser = new DOMParser();
+    const sdilene = sdileneXml
+        ? [...parser.parseFromString(sdileneXml, 'application/xml').getElementsByTagName('si')]
+            .map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''))
+        : [];
+
+    const cisloSloupce = (adresa) => {
+        const pismena = (adresa.match(/^[A-Z]+/) ?? [''])[0];
+        let n = 0;
+        for (const z of pismena) n = n * 26 + (z.charCodeAt(0) - 64);
+        return n - 1;
+    };
+
+    const list = parser.parseFromString(listXml, 'application/xml');
+    return [...list.getElementsByTagName('row')].map(radek => {
+        const bunky = [];
+        for (const c of radek.getElementsByTagName('c')) {
+            const i = cisloSloupce(c.getAttribute('r') ?? '');
+            const typ = c.getAttribute('t');
+            let hodnota = '';
+            if (typ === 's') {
+                hodnota = sdilene[Number(c.getElementsByTagName('v')[0]?.textContent ?? -1)] ?? '';
+            } else if (typ === 'inlineStr') {
+                hodnota = [...c.getElementsByTagName('t')].map(t => t.textContent).join('');
+            } else {
+                hodnota = c.getElementsByTagName('v')[0]?.textContent ?? '';
+            }
+            while (bunky.length < i) bunky.push('');
+            bunky[i] = hodnota ?? '';
+        }
+        return bunky;
+    });
+};
+
+/** Řádky → CSV, protože import na serveru čte jediný formát. */
+const radkyNaCsv = (radky) => radky
+    .map(r => r.map(b => /[";\r\n]/.test(b) ? `"${b.replace(/"/g, '""')}"` : b).join(';'))
+    .join('\r\n');
+
+/* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
+   Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
+   Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
+const textSouboru = async (soubor) => {
+    const bajty = new Uint8Array(await soubor.arrayBuffer());
+    if (bajty[0] === 0xEF && bajty[1] === 0xBB && bajty[2] === 0xBF) {
+        return new TextDecoder('utf-8').decode(bajty.subarray(3));
+    }
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(bajty); }
+    catch { return new TextDecoder('windows-1250').decode(bajty); }
+};
+
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
@@ -549,107 +659,6 @@ async function lide(kam) {
             <button class="vedlejsi" id="zavrit-osobu" title="${t('lide.zavrit.tip')}">${t('lide.zavrit')}</button>
             <button class="vedlejsi zrusit" id="smazat-osobu" title="${t('lide.smazat.tip')}" hidden>${t('lide.smazat')}</button>
         </div>`;
-
-    /* ===== čtení nahraného souboru =====
-       Sešit .xlsx se rozbalí a převede na CSV už tady v prohlížeči: má
-       DecompressionStream i DOMParser, takže server zůstává jednoduchý
-       a umí pořád jen jeden formát.                                       */
-
-    /** Vyzobne ze ZIPu jmenovaný soubor. XLSX je ZIP, položky bývají deflate. */
-    const zeZipu = async (bajty, jmenoSouboru) => {
-        const dv = new DataView(bajty.buffer, bajty.byteOffset, bajty.byteLength);
-        // Konec centrálního adresáře se hledá od konce — může za ním být komentář.
-        let konec = -1;
-        for (let i = bajty.length - 22; i >= 0 && i > bajty.length - 65558; i--) {
-            if (dv.getUint32(i, true) === 0x06054b50) { konec = i; break; }
-        }
-        if (konec < 0) throw new Error(t('lide.import.nenizip'));
-
-        const pocet = dv.getUint16(konec + 10, true);
-        let pos = dv.getUint32(konec + 16, true);
-        const dekoder = new TextDecoder('utf-8');
-
-        for (let i = 0; i < pocet; i++) {
-            const delkaJmena = dv.getUint16(pos + 28, true);
-            const delkaExtra = dv.getUint16(pos + 30, true);
-            const delkaKomentare = dv.getUint16(pos + 32, true);
-            const metoda = dv.getUint16(pos + 10, true);
-            const velikost = dv.getUint32(pos + 20, true);
-            const posunHlavicky = dv.getUint32(pos + 42, true);
-            const jmeno = dekoder.decode(bajty.subarray(pos + 46, pos + 46 + delkaJmena));
-
-            if (jmeno === jmenoSouboru) {
-                // Lokální hlavička má vlastní délky jména a extra pole.
-                const lokJmeno = dv.getUint16(posunHlavicky + 26, true);
-                const lokExtra = dv.getUint16(posunHlavicky + 28, true);
-                const zacatek = posunHlavicky + 30 + lokJmeno + lokExtra;
-                const data = bajty.subarray(zacatek, zacatek + velikost);
-                if (metoda === 0) return dekoder.decode(data);
-                const proud = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-                return dekoder.decode(new Uint8Array(await new Response(proud).arrayBuffer()));
-            }
-            pos += 46 + delkaJmena + delkaExtra + delkaKomentare;
-        }
-        return null;
-    };
-
-    /** Sešit → řádky textů. Bere sdílené i vložené řetězce, díry doplní prázdnem. */
-    const xlsxNaRadky = async (soubor) => {
-        const bajty = new Uint8Array(await soubor.arrayBuffer());
-        const listXml = await zeZipu(bajty, 'xl/worksheets/sheet1.xml');
-        if (!listXml) throw new Error(t('lide.import.nenilist'));
-        const sdileneXml = await zeZipu(bajty, 'xl/sharedStrings.xml');
-
-        const parser = new DOMParser();
-        const sdilene = sdileneXml
-            ? [...parser.parseFromString(sdileneXml, 'application/xml').getElementsByTagName('si')]
-                .map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''))
-            : [];
-
-        const cisloSloupce = (adresa) => {
-            const pismena = (adresa.match(/^[A-Z]+/) ?? [''])[0];
-            let n = 0;
-            for (const z of pismena) n = n * 26 + (z.charCodeAt(0) - 64);
-            return n - 1;
-        };
-
-        const list = parser.parseFromString(listXml, 'application/xml');
-        return [...list.getElementsByTagName('row')].map(radek => {
-            const bunky = [];
-            for (const c of radek.getElementsByTagName('c')) {
-                const i = cisloSloupce(c.getAttribute('r') ?? '');
-                const typ = c.getAttribute('t');
-                let hodnota = '';
-                if (typ === 's') {
-                    hodnota = sdilene[Number(c.getElementsByTagName('v')[0]?.textContent ?? -1)] ?? '';
-                } else if (typ === 'inlineStr') {
-                    hodnota = [...c.getElementsByTagName('t')].map(t => t.textContent).join('');
-                } else {
-                    hodnota = c.getElementsByTagName('v')[0]?.textContent ?? '';
-                }
-                while (bunky.length < i) bunky.push('');
-                bunky[i] = hodnota ?? '';
-            }
-            return bunky;
-        });
-    };
-
-    /** Řádky → CSV, protože import na serveru čte jediný formát. */
-    const radkyNaCsv = (radky) => radky
-        .map(r => r.map(b => /[";\r\n]/.test(b) ? `"${b.replace(/"/g, '""')}"` : b).join(';'))
-        .join('\r\n');
-
-    /* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
-       Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
-       Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
-    const textSouboru = async (soubor) => {
-        const bajty = new Uint8Array(await soubor.arrayBuffer());
-        if (bajty[0] === 0xEF && bajty[1] === 0xBB && bajty[2] === 0xBF) {
-            return new TextDecoder('utf-8').decode(bajty.subarray(3));
-        }
-        try { return new TextDecoder('utf-8', { fatal: true }).decode(bajty); }
-        catch { return new TextDecoder('windows-1250').decode(bajty); }
-    };
 
     // Stažení přes odkaz, ne fetch — session cookie se pošle sama a soubor
     // skončí rovnou ve Staženém, bez blobů v paměti.
