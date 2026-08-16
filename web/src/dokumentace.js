@@ -102,6 +102,21 @@ jinak by z každé opravy vznikl nový člověk. Vadné řádky se přeskočí a
 s číslem řádku tak, jak ho vidíš v Excelu.</p>
 <p><b>Import nikdy nemění hesla ani hodnocení.</b> Jde výhradně o kartotéku lidí.</p>
 
+<h2>Pozice</h2>
+<p><b>Opačný pohled než Lidé.</b> Tam se vybírá hráč a k němu se zaškrtávají
+pozice; tady se vybere <b>pozice</b> a zaškrtá se, kdo na ni patří. Když
+skládáš sestavu, přemýšlíš „kdo mi může hrát pravého beka", ne „co všechno
+umí Vilém" — a proklikat kvůli tomu osmnáct karet je otrava.</p>
+<p>V nabídce je u každé pozice vidět, <b>kolik lidí ji zatím má</b>, a otevře se
+rovnou ta nejprázdnější — tam je nejspíš práce. U každého hráče je vpravo
+seznam jeho <b>dalších pozic</b>, ať je vidět, koho odjinud přetahuješ.</p>
+<p><b>Ukládá se jen ta jedna vybraná pozice.</b> Ostatní, které má hráč
+nastavené, zůstávají — tenhle formulář o nich nic neví a nesmí je smazat.
+Když zaškrtnutí odpovídá tomu, co už je uložené, aplikace to řekne a nic
+nezapíše.</p>
+<p>Je to totéž pole jako v Lidech, jen z druhé strany: co zaškrtneš tady, uvidíš
+tam u hráče, a naopak. Pozice se tisknou na list.</p>
+
 <h2>Příkazový řádek</h2>
 <p>Pruh nad obsahem. Napiš jméno hráče a aplikace nabídne, co s ním: <b>Hodnotit</b>,
 <b>Porovnat</b>, <b>Listy</b>. Napiš dvě jména a nabídne srovnání. Povel se dá
@@ -594,6 +609,21 @@ A row is matched to a person by <code>id</code>, else by sign-in name, else by
 name and role — otherwise every correction would create a new person. Invalid
 rows are skipped and listed with the row number as Excel shows it.</p>
 <p><b>Import never touches passwords or evaluations.</b></p>
+
+<h2>Positions</h2>
+<p><b>The reverse view of People.</b> There you pick a player and tick their
+positions; here you pick a <b>position</b> and tick who belongs there. Putting a
+line-up together, you think "who can play right back for me", not "what is Vilém
+good at" — and clicking through eighteen cards for that is a chore.</p>
+<p>The selector shows <b>how many people hold each position</b> and opens on the
+emptiest one, where the work most likely is. Next to every player you see their
+<b>other positions</b>, so it is clear who you are pulling away from elsewhere.</p>
+<p><b>Only the selected position is saved.</b> The others a player has set stay
+untouched — this form knows nothing about them and must not wipe them. If the
+ticks match what is already stored, the app says so and writes nothing.</p>
+<p>It is the same field as in People, just from the other side: what you tick here
+shows up there on the player, and the other way round. Positions are printed on
+the sheet.</p>
 
 <h2>Command bar</h2>
 <p>The strip above the content. Type a player's name and the app offers what to do:

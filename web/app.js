@@ -265,7 +265,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { uvod, lide, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
+        const kresli = { uvod, lide, pozice, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -1156,6 +1156,94 @@ function dokumentace(kam) {
             ? t('dokCisla.mameRozhovor')
             : t('dokCisla.chybiRozhovor')}</p>`;
     }).catch(() => { /* informativní — bez čísel se dokumentace čte dál */ });
+}
+
+/* ===================== záložka: Pozice =====================
+
+   Opačný pohled než Lidé: nevybírá se hráč a k němu pozice, ale pozice a k ní
+   hráči. Když trenér obsazuje sestavu, přemýšlí „kdo mi může hrát pravého beka",
+   ne „co všechno umí Vilém" — a proklikat kvůli tomu osmnáct karet je otrava.
+
+   Ukládá se **jen ta jedna vybraná pozice**; ostatní, které má hráč nastavené,
+   zůstávají. Kdyby se zapisovalo celé pole, tenhle formulář by hráči smazal
+   všechno, co v něm zrovna není vidět.                                        */
+
+async function pozice(kam) {
+    const hraci = hraciAktivni();
+    // Předvybraná je ta, kterou má nejmíň lidí — tam je nejspíš práce.
+    const kolikMa = p => hraci.filter(h => (h.pozice ?? []).includes(p)).length;
+    let vybrana = POZICE.slice().sort((a, b) => kolikMa(a) - kolikMa(b))[0] ?? POZICE[0];
+
+    kam.innerHTML = `
+        <div class="karta">
+            <h2>${t('pozice.nadpis')}</h2>
+            <p class="popis">${t('pozice.popis')}</p>
+            <div class="pole">
+                <label for="p-pozice">${t('pozice.vyber')}</label>
+                <select id="p-pozice">
+                    ${POZICE.map(p => `<option value="${p}"${p === vybrana ? ' selected' : ''}>`
+                        + `${t('pozice.' + p)} — ${t('pozice.kolik', kolikMa(p))}</option>`).join('')}
+                </select>
+            </div>
+            <div id="p-seznam"></div>
+            <p style="margin-top:14px">
+                <button class="hl" id="p-ulozit" title="${t('pozice.ulozit.tip')}">${t('pozice.ulozit')}</button>
+            </p>
+            <div id="p-vysledek"></div>
+        </div>`;
+
+    /* Seznam se překresluje při každé změně pozice. Zaškrtnutí se bere vždycky
+       z dat, ne z toho, co bylo zaškrtané předtím — jinak by se rozdělaná
+       a neuložená volba tiše přenesla na jinou pozici. */
+    const vykresli = () => {
+        $('#p-seznam').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th class="cisla"><input type="checkbox" id="p-vsichni" title="${t('pozice.vsichni.tip')}"></th>
+                    <th>${t('hodnotit.hrac')}</th>
+                    <th>${t('pozice.dalsi')}</th>
+                </tr></thead>
+                <tbody>${hraci.map(h => {
+                    const ma = (h.pozice ?? []).includes(vybrana);
+                    const ostatni = (h.pozice ?? []).filter(p => p !== vybrana);
+                    return `
+                    <tr class="${ma ? 'ano-radek' : ''}">
+                        <td class="cisla"><input type="checkbox" class="p-hrac" value="${h.id}"${ma ? ' checked' : ''}></td>
+                        <td>${jmenoHtml(h)}</td>
+                        <td class="popis">${ostatni.length
+                            ? ostatni.map(p => esc(t('pozice.' + p))).join(' · ')
+                            : '&mdash;'}</td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+
+        $('#p-vsichni').onchange = e =>
+            kam.querySelectorAll('.p-hrac').forEach(c => { c.checked = e.target.checked; });
+    };
+
+    $('#p-pozice').onchange = () => {
+        vybrana = $('#p-pozice').value;
+        $('#p-vysledek').innerHTML = '';
+        vykresli();
+    };
+    vykresli();
+
+    $('#p-ulozit').onclick = async () => {
+        const ids = [...kam.querySelectorAll('.p-hrac:checked')].map(c => Number(c.value));
+        const cil = $('#p-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const r = await api('/api/pozice', { telo: { pozice: vybrana, ids }, method: 'PUT' });
+            stav.lide = await api('/api/players');      // ať nabídka i sloupec „další pozice" sedí
+            await prekresli();
+            $('#p-vysledek').innerHTML = `<div class="hlaska ${r.zmeneno ? 'ok' : 'info'}">`
+                + (r.zmeneno ? t('pozice.ulozeno', r.zmeneno, t('pozice.' + vybrana))
+                             : t('pozice.bezeZmeny'))
+                + '</div>';
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
 }
 
 /* ===================== záložka: Hodnotit ===================== */

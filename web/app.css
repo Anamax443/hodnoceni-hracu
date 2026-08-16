@@ -277,6 +277,9 @@ details.sbalene > summary:hover { color: var(--modra-tmava); }
 .jakoodkaz:focus-visible { outline: 2px solid var(--modra-tmava); outline-offset: 2px; }
 .ne { color: var(--seda); opacity: .6; }
 .resit td { background: var(--pozor-poz); }
+/* Kdo tu pozici má — jemné podbarvení, ať jde seznam přelétnout očima.
+   Zaškrtávátko nese stav samo, tohle je jen druhý signál. */
+.ano-radek td { background: var(--ano-poz, rgba(46,125,50,.08)); }
 .rozdil-plus { color: var(--cervena); font-weight: bold; }
 .rozdil-minus { color: var(--modra-tmava); font-weight: bold; }
 

@@ -2943,6 +2943,45 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         });
     }
 
+    /* ---------- hromadné obsazení jedné pozice ----------
+       Opačný směr než formulář v Lidech: nevybírá se hráč a k němu pozice, ale
+       pozice a k ní hráči. Zapisuje se **jen ta jedna pozice** — ostatní, které
+       má hráč nastavené, se nechají být. Kdyby se ukládalo celé pole, vyřadil
+       by tenhle formulář všechno, co v něm zrovna není vidět. */
+    if (cesta === '/api/pozice' && metoda === 'PUT') {
+        const { pozice, ids } = await request.json<{ pozice?: string; ids?: unknown[] }>();
+        if (!pozice || !POZICE.includes(pozice)) return chyba('Neznámá pozice.', 400);
+
+        const vybrani = new Set((Array.isArray(ids) ? ids : []).map(Number).filter(Number.isInteger));
+
+        const { results } = await env.DB.prepare(
+            `SELECT id, pozice FROM players WHERE role = 'hrac'`
+        ).all<{ id: number; pozice: string }>();
+
+        const zmeny: { id: number; pozice: string[] }[] = [];
+        for (const o of results ?? []) {
+            let ma: string[] = [];
+            try { ma = JSON.parse(String(o.pozice ?? '[]')); } catch { ma = []; }
+            const melBy = vybrani.has(Number(o.id));
+            const maTed = ma.includes(pozice);
+            if (melBy === maTed) continue;                    // beze změny, nešahat
+
+            // Pořadí ostatních pozic zůstává; přidaná jde na konec.
+            const nove = melBy ? [...ma, pozice] : ma.filter(p => p !== pozice);
+            const problem = zkontrolujPozice(nove);
+            if (problem) return chyba(problem, 400);
+            zmeny.push({ id: Number(o.id), pozice: nove });
+        }
+
+        if (zmeny.length) {
+            await env.DB.batch(zmeny.map(z => env.DB.prepare(
+                'UPDATE players SET pozice = ? WHERE id = ?'
+            ).bind(JSON.stringify(z.pozice), z.id)));
+        }
+
+        return json({ pozice, zmeneno: zmeny.length, obsazeno: vybrani.size });
+    }
+
     if (cesta === '/api/players') {
         if (metoda === 'GET') {
             const { results } = await env.DB.prepare(

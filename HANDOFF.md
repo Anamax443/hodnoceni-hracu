@@ -2,6 +2,38 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (48) — záložka Pozice: obsazení postu místo proklikávání hráčů
+
+**Zadání uživatele:** vidět to i obráceně — vybrat post (třeba pravého beka) a dostat
+seznam všech hráčů se zaškrtávátky, předvyplněnými podle toho, co už mají nastavené.
+
+**Proč to dává smysl:** pozice má vyplněné jen 4 z 18 hráčů, protože se dnes zadávají
+po jednom v Lidech. Jenže když trenér skládá sestavu, přemýšlí „kdo mi může hrát pravého
+beka", ne „co všechno umí Vilém" — a proklikat kvůli tomu osmnáct karet nikdo nechce.
+
+**Nejdůležitější rozhodnutí je v tom, co se ukládá.** Zapisuje se **jen ta jedna vybraná
+pozice**: `PUT /api/pozice` projde hráče, porovná „má být" proti „má teď" a sáhne jen na
+ty, kde se to liší — přidá pozici do pole, nebo ji z něj vyhodí. Kdyby se ukládalo celé
+pole pozic, jak ho formulář zrovna zobrazuje, **smazal by hráčům všechny ostatní pozice**,
+o kterých tenhle pohled nic neví. To je přesně ta chyba, kterou by nikdo neodhalil dřív
+než u tisku listů.
+
+Drobnosti, které to dělají použitelným:
+- v nabídce je u každé pozice **kolik lidí ji zatím má** a otevře se ta nejprázdnější,
+  protože tam je nejspíš práce;
+- u každého hráče je vidět **jeho další pozice**, ať je poznat, koho odjinud přetahuješ;
+- **beze změny se nic nezapisuje** a aplikace to řekne;
+- zaškrtnutí se po přepnutí pozice bere vždycky z dat, ne z předchozí volby — jinak by se
+  rozdělaná a neuložená volba tiše přenesla na jiný post.
+
+**Ověřeno:** klíče i18n v obou jazycích, `node --check`, nasazení a to, že se `app.js`
+s funkcí `pozice` i tlačítko v liště opravdu servírují. **Neověřeno:** proklik v prohlížeči
+— zápis do kartotéky si zaslouží, abys to zkusil nejdřív na jedné pozici.
+
+**NASAZENO** 2026-08-16, Version ID `b1322329-91ae-41bf-9328-e52244c35710`.
+
+---
+
 ## 2026-08-16 (47) — přejmenování se propisuje zpětně (ověřeno, nic se nestavělo)
 
 **Dotaz uživatele:** když se opraví jméno nebo doplní přezdívka, má se to promítnout i do
