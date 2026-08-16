@@ -114,6 +114,18 @@ i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
 
 ---
 
+## 2026-08-16 (27) — záložka Pozice ověřená uživatelem
+
+**NASAZENO** 2026-08-16, commit `5381f5b`. **Ověřil uživatel v prohlížeči proti ostrým
+datům** — obsazení pozice se uloží a hráčům nezmizí pozice, které mají nastavené jinde.
+
+To je u tohohle formuláře ta podstatná kontrola: zobrazuje vždy jen jednu pozici, takže
+kdyby se ukládalo celé pole pozic, smazal by hráčům všechno ostatní — a nikdo by si toho
+nevšiml dřív než u tisku listů. `PUT /api/pozice` proto porovnává „má být" proti „má teď"
+a sahá jen na rozdíl.
+
+---
+
 ## 2026-08-16 (26) — osobní PIN pozná trenéra (ověřeno proti ostrému API)
 
 **NASAZENO** 2026-08-16, Version ID `f620c1f7-5552-4f67-8c78-2ea6ecceb1ba`.
