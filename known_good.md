@@ -114,6 +114,29 @@ i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
 
 ---
 
+## 2026-08-16 (25) — kolotoč export → import ověřený uživatelem
+
+**NASAZENO** 2026-08-16, commit `0d79d33`, Version ID `f038e90e-0bcf-427a-bc27-349b8e578f93`.
+**Ověřil uživatel v prohlížeči proti ostrým datům** — ne jen nasazeno.
+
+| Kontrola | Výsledek |
+|---|---|
+| export hodnocení do CSV, otevření v Excelu | funguje |
+| import nezměněného exportu | **projde bez chyby**, nic se nezapíše (`bezeZmeny`) |
+| starší šestiosá hodnocení bez kondice | prázdná buňka = neměnit, řádek neshoří |
+| sebehodnocení v souboru | přeskočeno s vysvětlením, ne hlášeno jako chyba |
+
+Předchozí pokus (verze `2632352c`) na tomhle **spadl**: import byl postavený jako
+zakládání nových záznamů a vyžadoval všechny osy šablony, takže nezměněný export starších
+hodnocení skončil na „Osa kondice … přišlo: undefined". Opraveno tím, že řádek s `id` je
+úprava (nová verze s `uprava_id`), prázdná buňka znamená „neměnit" a nezměněný řádek se
+nezapisuje.
+
+**Poučení, které z toho platí dál:** u kolotočových funkcí (export → úprava → import) je
+**nezměněný průchod první test, který má projít**.
+
+---
+
 ## 2026-08-16 (24) — kondice jako sedmá osa, export/import hodnocení
 
 **NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`, commit viz
