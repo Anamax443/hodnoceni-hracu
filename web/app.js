@@ -1848,7 +1848,12 @@ async function listy(kam) {
                     // Řádek na každou přiřazenou šablonu: každá je vlastní list,
                     // takže musí být vidět, která z nich ještě chybí.
                     const stavy = h.stavSablon ?? [{ sablona: h.sablona, maTrener: h.ma_trener, maHrac: h.ma_hrac }];
-                    const znacka = ano => ano ? '<span class="ano">✓</span>' : '<span class="ne">—</span>';
+                    // Fajfka není jen informace, ale i cesta k listu: co je hotové,
+                    // to jde rovnou vytisknout. Pomlčka nikam nevede — není co ukázat.
+                    const znacka = (ano, sablona, cim) => ano
+                        ? `<button class="jakoodkaz ano" data-list="${h.id}:${esc(sablona)}" data-porovnani="${cim}"`
+                          + ` title="${t('listy.otevritJeden.tip')}">✓</button>`
+                        : '<span class="ne">—</span>';
                     // Zaškrtávátko je na KAŽDÉM řádku, ne na hráči: co list, to
                     // vlastní volba. Ferda má tři šablony a nemá smysl, aby se
                     // pokaždé tisklo všechno, když chce trenér jen brankářský list.
@@ -1859,8 +1864,8 @@ async function listy(kam) {
                                    title="${t('listy.vyber.tip')}" checked></td>
                         ${i === 0 ? `<td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
                         <td>${stitekSablonyKlik(h.id, s.sablona)}</td>
-                        <td class="cisla">${znacka(s.maTrener)}</td>
-                        <td class="cisla">${znacka(s.maHrac)}</td>
+                        <td class="cisla">${znacka(s.maTrener, s.sablona, 'minule')}</td>
+                        <td class="cisla">${znacka(s.maHrac, s.sablona, 'hrac')}</td>
                     </tr>`).join('');
                 }).join('')}</tbody>
             </table>`;
@@ -1871,6 +1876,21 @@ async function listy(kam) {
         // Řádek s pomlčkou u trenéra říká, který list ještě nemá hodnocení —
         // z téhle tabulky je proto nejblíž rovnou do formuláře té šablony.
         zapojZkratkyNaHodnoceni(cil);
+
+        /* Klik na fajfku otevře ten jeden list — nejnovější hodnocení té šestice.
+           Sloupec rozhoduje, co bude druhým polygonem: u hráčovy fajfky má smysl
+           ukázat právě jeho sebehodnocení.
+
+           Zapojuje se TADY, ne po `nactiKdo()`: tabulka se překresluje při každé
+           změně období, takže jednorázové zapojení by po přepnutí přestalo platit. */
+        cil.querySelectorAll('[data-list]').forEach(b => b.onclick = () => {
+            otevriListy({
+                ids: b.dataset.list,
+                porovnani: b.dataset.porovnani,
+                obdobi: vybraneObdobi,
+                kumulovane: false   // jeden řádek = jedna šablona, není co kumulovat
+            });
+        });
     };
 
     $('#l-obdobi').onchange = () => { vybraneObdobi = $('#l-obdobi').value; nactiKdo(); };
@@ -2211,16 +2231,22 @@ function tabulkaPorovnani(p) {
 
     const popisky = Object.fromEntries(osy(p.sablona || sablonaZOs(p.osy)).map(o => [o.klic, o.popis]));
 
+    /* `rozdil === null` znamená, že známku nedal jeden z nich — typicky osa,
+       která v době staršího hodnocení ještě neexistovala. Není to shoda ani
+       rozpor, je to nezměřeno, a tak se to musí i napsat. */
     const radky = p.osy.map(o => `
         <tr class="${o.resit ? 'resit' : ''}">
             <td>${esc(popisky[o.klic] || o.klic)}</td>
-            <td class="cisla">${o.trener}</td>
-            <td class="cisla">${o.hrac}</td>
-            <td class="cisla">${o.rozdil > 0 ? `<span class="rozdil-plus">+${o.rozdil}</span>`
+            <td class="cisla">${o.trener ?? '—'}</td>
+            <td class="cisla">${o.hrac ?? '—'}</td>
+            <td class="cisla">${o.rozdil === null ? '—'
+                              : o.rozdil > 0 ? `<span class="rozdil-plus">+${o.rozdil}</span>`
                               : o.rozdil < 0 ? `<span class="rozdil-minus">${o.rozdil}</span>` : '0'}</td>
-            <td>${o.resit
-                    ? (o.rozdil > 0 ? t('porovnani.slepeMisto') : t('porovnani.sebeduvera'))
-                    : `<span class="ne">${t('porovnani.vToleranci')}</span>`}</td>
+            <td>${o.rozdil === null
+                    ? `<span class="ne">${t('porovnani.neporovnatelne')}</span>`
+                    : o.resit
+                        ? (o.rozdil > 0 ? t('porovnani.slepeMisto') : t('porovnani.sebeduvera'))
+                        : `<span class="ne">${t('porovnani.vToleranci')}</span>`}</td>
         </tr>`).join('');
 
     return `

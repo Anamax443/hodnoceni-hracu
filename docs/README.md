@@ -24,8 +24,11 @@ Dva hráči vedle sebe můžou mít oba sedmičku a být jinak dobří. To je v 
 1. **Známkuje se naslepo.** Aplikace schválně neukazuje loňské hodnoty ani hodnocení hráče,
    dokud neuložíš svoje. Viditelné loňské číslo přitáhne nové k sobě a datová řada přestane
    cokoliv říkat.
-2. **Kondice a rychlost se neznámkují.** U téhle věkové kategorie měří biologický věk, ne
-   odvedenou práci. Patří do slovního bloku *Fyzicky*.
+2. **Fyzická kondice se od 9. 8. 2026 známkuje** — je to sedmá osa u všech šablon.
+   Pozor u ní o to víc: u téhle věkové kategorie měří i biologický věk, ne jen odvedenou
+   práci. Kdo přes léto povyrostl, může mít lepší číslo než ten, co dřel. **Napiš proto
+   ke kondici slovy, co za tím číslem stojí** — slovní blok *Fyzicky* zůstává a je u ní
+   důležitější než jinde. Rychlost mezi osami dál není, ze stejného důvodu.
 3. **Povaha se neznámkuje nikdy.** Spolehlivost, snaha, parta — jen slovy.
 
 ### Škála 1–10

@@ -3784,14 +3784,23 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         }
 
         const osy = klice(trener.sablona).map(klic => {
+            const zTrenera = trener.hodnoty[klic];
+            const zHrace = hrac.hodnoty[klic];
+
+            /* Rozdíl jen tam, kde známku dali OBA. Chybějící hodnotu nelze brát
+               jako nulu: hodnocení pořízené dřív, než osa přibyla, ji prostě
+               nemá, a `7 − 0 = +7` by vyrobilo velký rozpor, o kterém by pak
+               trenér s hráčem vedl rozhovor o něčem, co se nikdy nestalo. */
+            const obaDali = Number.isFinite(Number(zTrenera)) && Number.isFinite(Number(zHrace));
             // znaménko, ne absolutní hodnota: + = hráč si dal víc než trenér
-            const rozdil = (hrac.hodnoty[klic] ?? 0) - (trener.hodnoty[klic] ?? 0);
+            const rozdil = obaDali ? Number(zHrace) - Number(zTrenera) : null;
+
             return {
                 klic,
-                trener: trener.hodnoty[klic] ?? null,
-                hrac: hrac.hodnoty[klic] ?? null,
+                trener: zTrenera ?? null,
+                hrac: zHrace ?? null,
                 rozdil,
-                resit: Math.abs(rozdil) > tolerance
+                resit: rozdil !== null && Math.abs(rozdil) > tolerance
             };
         });
 

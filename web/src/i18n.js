@@ -8,7 +8,7 @@
    Překládají se jen jejich popisy.
    ===================================================================== */
 
-import { SABLONY } from './sablony.js';
+import { SABLONY, osyZaznamu } from './sablony.js';
 
 const ULOZISTE = 'hodnoceni.lang';
 
@@ -436,6 +436,7 @@ const SLOVNIK = {
         'porovnani.rozdil': 'rozdíl',
         'porovnani.kRozhovoru': 'k rozhovoru',
         'porovnani.vToleranci': 'v toleranci',
+        'porovnani.neporovnatelne': 'nezměřeno u obou',
         'porovnani.slepeMisto': 'slepé místo — chybí zpětná vazba',
         'porovnani.sebeduvera': 'sebedůvěra — může jít o něco mimo fotbal',
         'porovnani.upozorneni': 'Toleranci překračuje {0} os. Na jeden rozhovor je to moc — vyber 2 až 3 témata.',
@@ -575,6 +576,7 @@ const SLOVNIK = {
         'konektivita.sms': 'SMS',
         'konektivita.telegram': 'Telegram',
         'konektivita.email': 'E-mail',
+        'listy.otevritJeden.tip': 'Otevře tenhle jeden list s nejnovějším hodnocením',
         'dokCisla.osob': 'Osob v kartotéce',
         'dokCisla.aktivnichHracu': 'aktivních hráčů',
         'dokCisla.trenerskych': 'Hodnocení od trenéra',
@@ -632,6 +634,7 @@ const SLOVNIK = {
         'list.sezona': 'sezóna',
         'list.vystaveno': 'Vystaveno',
         'list.nevyplneno': '⚠ Hodnocení za tohle období zatím není vyplněné.',
+        'list.jinaSestice': '⚠ Druhý pohled vznikl s jinou sadou os, takže se do grafu nekreslí — porovnat je nejde.',
         'list.ted': 'teď',
         'list.minule': 'minule',
         'list.trener': 'trenér',
@@ -678,6 +681,7 @@ const SLOVNIK = {
         'osa.fairplay': 'Fair play a respekt',
         'osa.podpora': 'Podpora spoluhráčů',
         'osa.odpovednost': 'Spolehlivost a odpovědnost',
+        'osa.kondice': 'Fyzická kondice',
 
         /* --- osy v první osobě (formulář hráče) --- */
         'ja.prava': 'Pravou nohou trefím, co chci — i pod tlakem.',
@@ -698,6 +702,7 @@ const SLOVNIK = {
         'ja.fairplay': 'Na soupeře ani na rozhodčího nenadávám, i když se mi křivdí.',
         'ja.podpora': 'Spoluhráče po chybě povzbudím místo abych ho seřval.',
         'ja.odpovednost': 'Chodím včas a co slíbím, to udělám.',
+        'ja.kondice': 'Vydržím běhat celý zápas a ke konci mi síly neubývají.',
 
         /* --- kotvy škály ---
            `nazev` je jméno úrovně, které se tiskne k číslu na listu. Samotná
@@ -1117,6 +1122,7 @@ const SLOVNIK = {
         'porovnani.rozdil': 'difference',
         'porovnani.kRozhovoru': 'to discuss',
         'porovnani.vToleranci': 'within tolerance',
+        'porovnani.neporovnatelne': 'not scored by both',
         'porovnani.slepeMisto': 'blind spot — feedback is missing',
         'porovnani.sebeduvera': 'confidence — may be about something outside football',
         'porovnani.upozorneni': '{0} axes exceed the tolerance. That is too much for one talk — pick 2 or 3 topics.',
@@ -1253,6 +1259,7 @@ const SLOVNIK = {
         'konektivita.sms': 'SMS',
         'konektivita.telegram': 'Telegram',
         'konektivita.email': 'E-mail',
+        'listy.otevritJeden.tip': 'Opens this one sheet with the most recent evaluation',
         'dokCisla.osob': 'People in the register',
         'dokCisla.aktivnichHracu': 'active players',
         'dokCisla.trenerskych': 'Coach evaluations',
@@ -1308,6 +1315,7 @@ const SLOVNIK = {
         'list.sezona': 'season',
         'list.vystaveno': 'Issued',
         'list.nevyplneno': '⚠ No evaluation for this period yet.',
+        'list.jinaSestice': '⚠ The second view was recorded with a different set of axes, so it is not drawn — the two cannot be compared.',
         'list.ted': 'now',
         'list.minule': 'previous',
         'list.trener': 'coach',
@@ -1351,6 +1359,7 @@ const SLOVNIK = {
         'osa.fairplay': 'Fair play and respect',
         'osa.podpora': 'Supporting team-mates',
         'osa.odpovednost': 'Reliability and responsibility',
+        'osa.kondice': 'Physical condition',
 
         'ja.prava': 'With my right foot I hit what I aim for — even under pressure.',
         'ja.leva': 'With my left foot I pass ten metres exactly where I want.',
@@ -1370,6 +1379,7 @@ const SLOVNIK = {
         'ja.fairplay': 'I do not abuse opponents or the referee, even when I feel wronged.',
         'ja.podpora': 'After a mistake I pick a team-mate up instead of shouting at him.',
         'ja.odpovednost': 'I turn up on time and do what I promise.',
+        'ja.kondice': 'I can run the whole match and I do not fade towards the end.',
 
         'kotva.1.rozsah': '1–3', 'kotva.1.nazev': 'starting',   'kotva.1.text': 'starting out, only calm and unpressured',
         'kotva.2.rozsah': '4–5', 'kotva.2.nazev': 'building',   'kotva.2.text': 'fine in training, patchy in a match',
@@ -1503,6 +1513,15 @@ export function t(klic, ...hodnoty) {
 /** Osy šablony i s přeloženými popisy — přesně to, co chce radar(). */
 export function osy(sablona) {
     return (SABLONY[sablona] ?? []).map(klic => ({ klic, popis: t('osa.' + klic) }));
+}
+
+/**
+ * Osy pro vykreslení konkrétního záznamu — s popisky. Starší hodnocení,
+ * pořízené před přidáním osy, se tak vykreslí tou šesticí, se kterou vzniklo,
+ * místo aby chybějící osa spadla na nulu. Viz `osyZaznamu` v sablony.js.
+ */
+export function osyProZaznam(sablona, hodnoty) {
+    return osyZaznamu(sablona, hodnoty).map(klic => ({ klic, popis: t('osa.' + klic) }));
 }
 
 /** Kotvy škály jako trojice [rozsah, význam, název úrovně]. */

@@ -2,6 +2,50 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (43) — kondice jako sedmá osa, klikací fajfka v Listech
+
+**Klik na fajfku otevře list.** V tabulce *Kdo se vytiskne* byla fajfka jen informace.
+Teď je to tlačítko: otevře ten jeden list s nejnovějším hodnocením. Sloupec rozhoduje,
+co bude druhým polygonem — u trenérovy fajfky minulé období, u hráčovy jeho sebehodnocení.
+Pomlčka zůstává nekliknutelná, není co ukázat.
+
+**Fyzická kondice je sedmá osa u všech šablon** — rozhodnutí uživatele. Nabídl jsem tři
+cesty (vlastní šablona jako u leadera / sedmá osa všude / číslo mimo radar) i s daněmi;
+vybral sedmou osu. Proti tomu v kódu stál výslovný zákaz na dvou místech, oba důvody ale
+platí dál a stojí za zapsání:
+
+1. **Kondice u téhle kategorie měří i biologický věk**, ne jen odvedenou práci. Kdo přes
+   léto povyrostl, dostane lepší číslo než ten, co dřel — a ten list si čtrnáctiletý
+   odnese domů. Slovní blok *Fyzicky* proto zůstává a u kondice je důležitější než jinde;
+   napsal jsem to do příručky, ne jen do kódu.
+2. **Sedm vrcholů mění tvar polygonu.** Přesně proto se kdysi vůdcovství stalo vlastní
+   šablonou místo sedmé osy.
+
+**Přidání osy uprostřed sezóny nesmělo přepsat minulost.** 16 hotových hodnocení kondici
+nemá a naivní vykreslení by jí dalo **nulu — nejhorší možnou známku na desetibodové
+škále**. To by na papíře nebyla nepřesnost, ale lež. Ošetřeno na třech místech:
+
+- `osyZaznamu()` vrací osy **podle uloženého záznamu**, ne podle aktuální šablony. Starší
+  hodnocení se vykreslí jako šestiúhelník, novější jako sedmiúhelník; radar je na počet
+  os generický, takže to nic nestálo. **Ověřeno vyrenderováním obou vedle sebe.**
+- **Druhý polygon se kreslí jen tehdy, když stojí na týchž osách.** Jinak se vynechá
+  a na listu je věta proč.
+- **Rozdíl trenér × hráč se počítá jen tam, kde známku dali oba.** Tohle byla nejtišší
+  past: nové sedmiosé sebehodnocení proti starému šestiosému hodnocení trenéra by
+  u kondice spočítalo `7 − 0 = +7`, označilo to za velký rozpor a poslalo trenéra vést
+  s hráčem rozhovor o něčem, co se nikdy nestalo. Teď je tam `—` a „nezměřeno u obou".
+
+**V zadání se původní odstavec nepřepsal**, jen se pod něj doplnilo, kdy a proč se
+rozhodnutí změnilo. Zadání je historický dokument; tvářit se, že to tak bylo vždycky, by
+bylo totéž provinění jako ta zestárlá čísla o den dřív.
+
+**NASAZENO** 2026-08-16, Version ID `c834ce32-1c89-431f-aadc-fdb7febf2b3a`.
+
+**Zbývá:** záložka *Pozice* — vybrat post a zaškrtat, kdo na něj patří (opačný směr než
+dnešní zadávání po hráčích).
+
+---
+
 ## 2026-08-13 (42) — všechna období sjednocena na „2026/2027 léto" (zásah do dat)
 
 Bez změny kódu. Na přání uživatele („u tiskových listů nech prozatím pouze 2026/2027 léto,

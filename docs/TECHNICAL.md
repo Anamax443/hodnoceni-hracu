@@ -670,8 +670,25 @@ Ke každé ose je i **formulace v první osobě** (`JA`) pro formulář hráče 
 věta: „Levou nohou přihraju na deset metrů tak, jak chci." Hráč odpovídá na „umím to",
 neznámkuje sám sebe.
 
-Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích. Kondice
-a rychlost mezi osami schválně nejsou — u téhle kategorie měří biologický věk.
+Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích.
+
+**Kondice je od 9. 8. 2026 sedmou osou u všech šablon** (rozhodnutí uživatele; dřív mezi
+osami schválně nebyla, protože u téhle kategorie měří i biologický věk). Rychlost mezi
+osami dál není, ze stejného důvodu, a slovní blok *Fyzicky* zůstává — u kondice se hodí
+o to víc.
+
+**Přidání osy uprostřed sezóny nesmí přepsat minulost.** 16 hodnocení pořízených dřív
+kondici nemá a nula by na desetibodové škále byla nejhorší možná známka — na listu, který
+si čtrnáctiletý odnese domů, ne nepřesnost, ale lež. Proto:
+
+- `osyZaznamu(sablona, hodnoty)` v `sablony.js` vrací osy **podle uloženého záznamu**, ne
+  podle aktuální šablony; starší hodnocení se vykreslí jako šestiúhelník, novější jako
+  sedmiúhelník. Radar je na počet os generický, takže to nic nestojí.
+- **Druhý polygon se kreslí jen tehdy, když stojí na týchž osách.** Jinak se vynechá
+  a na listu je věta proč — překryv šestice a sedmice by chybějící osu položil do středu.
+- Porovnání trenér × hráč počítá rozdíl **jen tam, kde známku dali oba** (`rozdil: null`
+  jinak). Bez toho by `7 − 0 = +7` vyrobilo velký rozpor, o kterém by trenér s hráčem
+  vedl rozhovor o něčem, co se nikdy nestalo.
 
 **Šablonu neměnit uprostřed sezóny.** Jiný počet vrcholů = jiný tvar polygonu a hodnocení už
 nejde porovnat s předchozím obdobím. Stará hodnocení se vykreslují šablonou, se kterou byla
