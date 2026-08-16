@@ -672,12 +672,12 @@ neznámkuje sám sebe.
 
 Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích.
 
-**Kondice je od 9. 8. 2026 sedmou osou u všech šablon** (rozhodnutí uživatele; dřív mezi
+**Kondice je od 16. 8. 2026 sedmou osou u všech šablon** (rozhodnutí uživatele; dřív mezi
 osami schválně nebyla, protože u téhle kategorie měří i biologický věk). Rychlost mezi
 osami dál není, ze stejného důvodu, a slovní blok *Fyzicky* zůstává — u kondice se hodí
 o to víc.
 
-**Přidání osy uprostřed sezóny nesmí přepsat minulost.** 16 hodnocení pořízených dřív
+**Přidání osy uprostřed sezóny nesmí přepsat minulost.** Hodnocení pořízená dřív
 kondici nemá a nula by na desetibodové škále byla nejhorší možná známka — na listu, který
 si čtrnáctiletý odnese domů, ne nepřesnost, ale lež. Proto:
 

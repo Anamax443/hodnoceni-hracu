@@ -148,7 +148,7 @@ Definované v kódu (`src/sablony.js`), sdílené frontendem i Workerem.
 
 Kondice a rychlost **nejsou** mezi osami záměrně — u této věkové kategorie měří biologický věk, ne odvedenou práci. Patří do slovního bloku *Fyzicky*.
 
-> **Změněno 9. 8. 2026 rozhodnutím zadavatele:** fyzická kondice se známkuje jako **sedmá osa u všech šablon**. Důvod výše tím nezaniká — kondice u téhle kategorie měří i biologický věk — a proto u ní slovní blok *Fyzicky* zůstává důležitější než jinde. Rychlost mezi osami dál není.
+> **Změněno 16. 8. 2026 rozhodnutím zadavatele:** fyzická kondice se známkuje jako **sedmá osa u všech šablon**. Důvod výše tím nezaniká — kondice u téhle kategorie měří i biologický věk — a proto u ní slovní blok *Fyzicky* zůstává důležitější než jinde. Rychlost mezi osami dál není.
 >
 > Původní odstavec se nepřepisuje. Zadání je historický dokument a je poctivější ukázat vedle sebe, co se rozhodlo původně a kdy se to změnilo, než se tvářit, že to tak bylo vždycky.
 

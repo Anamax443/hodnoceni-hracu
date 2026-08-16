@@ -24,7 +24,7 @@ Dva hráči vedle sebe můžou mít oba sedmičku a být jinak dobří. To je v 
 1. **Známkuje se naslepo.** Aplikace schválně neukazuje loňské hodnoty ani hodnocení hráče,
    dokud neuložíš svoje. Viditelné loňské číslo přitáhne nové k sobě a datová řada přestane
    cokoliv říkat.
-2. **Fyzická kondice se od 9. 8. 2026 známkuje** — je to sedmá osa u všech šablon.
+2. **Fyzická kondice se od 16. 8. 2026 známkuje** — je to sedmá osa u všech šablon.
    Pozor u ní o to víc: u téhle věkové kategorie měří i biologický věk, ne jen odvedenou
    práci. Kdo přes léto povyrostl, může mít lepší číslo než ten, co dřel. **Napiš proto
    ke kondici slovy, co za tím číslem stojí** — slovní blok *Fyzicky* zůstává a je u ní

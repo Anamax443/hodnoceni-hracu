@@ -25,7 +25,7 @@ export const SABLONY = {
     leader:  ['vedeni', 'priklad', 'tlak', 'fairplay', 'podpora', 'odpovednost', 'kondice']
 };
 
-/* KONDICE je sedmá osa u všech šablon — rozhodnutí z 9. 8. 2026.
+/* KONDICE je sedmá osa u všech šablon — rozhodnutí z 16. 8. 2026.
    Dřív tu záměrně nebyla, ze dvou důvodů; oba stojí za to znát, protože
    platí dál a je to vědomě přijatá daň:
 
