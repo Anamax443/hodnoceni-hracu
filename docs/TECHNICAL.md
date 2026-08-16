@@ -1191,6 +1191,29 @@ takové ukázky vyskytují. Úvodní `# Nadpis` se zahazuje, stránka svůj titu
 Cena: bundle vyrostl ze 116 na ~242 KiB gzip. Limit Workeru je řádově vyšší, ale je dobré
 vědět, že se dokumentace veze s každým nasazením.
 
+### Přihlášení samotným PINem (postaveno)
+
+Bez vyplněného jména se zkouší **dvojí, v tomhle pořadí**: nejdřív společné heslo
+(`auth`), pak **osobní PIN** proti všem aktivním trenérům s heslem
+(`najdiUcetPodleHesla`). Trenér tak na hřišti ťuká čtyři číslice a aplikace **sama pozná,
+kdo to je** — podepsané hodnocení nese jméno i bez psaní loginu.
+
+**Shoda u víc lidí se odmítne**, nevybírá se první. Hádat, kdo je u klávesnice, by
+znamenalo podepsat hodnocení cizím jménem; aplikace místo toho požádá o přihlašovací
+jméno.
+
+**Cena:** PBKDF2 (100 000 iterací) se počítá pro každého trenéra s heslem zvlášť. Proto
+se prochází **jen aktivní trenéři** — hráči účty nemají. U tří lidí je to zanedbatelné,
+u stovky by se muselo jméno začít vyžadovat.
+
+> **Bezpečnostní daň, kterou je dobré znát.** Čtyřmístný PIN bez jména je slabší než
+> dvojice jméno + heslo: 10 000 možností a stačí trefit kterýkoliv z platných, tedy
+> průměrně ~1 250 pokusů. Drží to jen **zámek na marné pokusy** — 5 na účet (nepřihlášené
+> pokusy jdou pod společný klíč `ucet:@spolecne`), 15 z jedné IP, oboje na 15 minut,
+> k tomu 700 ms prodleva u každého nezdaru. Aplikace je veřejná a jsou v ní data
+> nezletilých; **rozhodnuto vědomě 16. 8. 2026** kvůli ovládání na hřišti. Kdyby přibylo
+> trenérů nebo se PIN dostal ven, první krok je vyžadovat jméno.
+
 ### Hromadný export a import hodnocení (postaveno)
 
 `GET /api/evaluations/export.csv?obdobi=&lang=` — jeden plochý soubor: řádek = jedno

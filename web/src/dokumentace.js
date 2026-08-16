@@ -427,9 +427,19 @@ vyplněný. Platí patnáct minut a jen jednou. Jestli takový účet existuje,
 aplikace neřekne — jinak by šlo zjišťovat, kdo účet má. Nesmyslný tvar vstupu
 a vyčerpanou brzdu ale řekne nahlas, ať se nečeká na odkaz, který nikam
 nejde. Stránka s novým heslem vždycky napíše, čí heslo zrovna nastavuješ.</p>
-<p>Ze starých časů existuje ještě <b>společné heslo</b> bez jména. Používá se
-tak, že se pole „Kdo jsi“ nechá prázdné. Až budou mít všichni trenéři svůj
-účet, zruší se.</p>
+<h3>Stačí zadat PIN, jméno psát nemusíš</h3>
+<p>Pole „Kdo jsi“ jde nechat prázdné a napsat jen svůj PIN — <b>aplikace pozná,
+kdo jsi</b>, a hodnocení se podepíše tvým jménem. Na hřišti v rukavicích je to
+rozdíl mezi čtyřmi ťuknutími a vypisováním loginu.</p>
+<p>Kdyby dva lidé měli stejný PIN, aplikace <b>nehádá</b> a vyžádá si jméno.
+Vybrat jednoho z nich by znamenalo podepsat hodnocení cizím jménem.</p>
+<p>Prázdné jméno funguje i pro staré <b>společné heslo</b>. To se zruší, až
+budou mít všichni trenéři svůj účet — hodnocení uložené pod ním totiž neví,
+kdo ho psal.</p>
+<p><b>Za tohle pohodlí se platí.</b> Čtyři číslice bez jména se dají uhodnout
+snáz než jméno s heslem, a aplikace je veřejně na internetu. Drží to zámek na
+marné pokusy a prodleva u každého nezdaru. Proto: <b>PIN nikomu neříkej a nepiš
+ho do zprávy</b>, kterou by mohl číst někdo další.</p>
 
 <h2>Ochrana údajů</h2>
 <p>V aplikaci jsou jména, známky a slovní posudky nezletilých. Proto:</p>

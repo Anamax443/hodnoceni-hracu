@@ -74,8 +74,18 @@ jestli svůj účet, nebo staré společné heslo.
 **Nový trenér:** v Lidech mu vyplň přihlašovací jméno a Telegram nebo e-mail, ulož a klikni
 na *Poslat odkaz na nastavení hesla*. Heslo si nastaví sám, nemusíš mu ho diktovat.
 
-> Přechodně funguje i staré společné heslo — přihlašovací jméno necháš prázdné. Zůstalo tam,
-> aby se nedal vyzamknout celý tým, než budou mít všichni svoje. Až to nastane, dá se zrušit.
+**Jméno psát nemusíš.** Pole „Kdo jsi" nech prázdné a napiš jen svůj PIN — aplikace pozná,
+kdo jsi, a hodnocení podepíše tvým jménem. Kdyby dva lidé měli stejný PIN, aplikace nehádá
+a vyžádá si jméno; vybrat jednoho z nich by znamenalo podepsat hodnocení cizím jménem.
+
+> Prázdné jméno funguje i pro staré společné heslo. Zůstalo tam, aby se nedal vyzamknout celý
+> tým, než budou mít všichni svoje. Až to nastane, dá se zrušit — hodnocení uložené pod ním
+> totiž neví, kdo ho psal.
+
+> **Za pohodlí se platí.** Čtyři číslice bez jména se hádají snáz než jméno s heslem a aplikace
+> je veřejně na internetu. Drží to zámek na marné pokusy (5 na účet, 15 z jedné adresy, na 15
+> minut) a prodleva u každého nezdaru. **PIN nikomu neříkej a neposílej ho zprávou**, kterou
+> může číst někdo další.
 
 ### Horní lišta
 

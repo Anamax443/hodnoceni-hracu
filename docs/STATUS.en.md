@@ -29,7 +29,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Combined sheet | ✅ | optionally all of a player’s templates on one A4, verified by print to PDF |
 | Colour by template | ✅ | outfield blue, goalkeeper teal, leader crimson; template name in the sheet header, matching labels in the app |
 | Printing selected per sheet | ✅ | a tick box on every player × template row, `ids=id:sablona` |
-| Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts |
+| Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts; **the PIN alone identifies the coach** without typing a name |
 | Password recovery | ✅ | single-use link, 15 minutes, Telegram or e-mail |
 | Notifications — Telegram | ✅ | delivery confirmed |
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
@@ -68,7 +68,7 @@ Snapshot of the production database as of **16 Aug 2026** (counts only — no na
 | self-evaluation links generated | **4**, 1 of them used |
 | player self-evaluations | **1** (1 player) |
 | closed agreements between coaches | 0 |
-| rows in `auth` | 1 (still the shared password) |
+| coaches with their own password | **3 of 3**; the shared password in `auth` still remains |
 
 **The first conversation over the gap between the two views has something to stand on.**
 One player filled his in, so both polygons are drawn on his sheet. Links go out **by hand
@@ -108,9 +108,11 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
    over WhatsApp and the first self-evaluation is in. The more players hand theirs in, the
    more sheets carry a second polygon and the more there is to talk about.
    **This is the main thing right now.**
-2. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
-   or a verified e-mail, send them an invitation from People, then drop the shared password
-   (`DELETE FROM auth`).
+2. **Drop the shared password** (`DELETE FROM auth`). All three coaches have had their own
+   password since 16 Aug 2026 and the PIN alone identifies them, so the shared one is now
+   only habit — and an evaluation saved under it does not know who wrote it. What is still
+   missing is a channel (Telegram or a verified e-mail) for Julek and Maso, so they can
+   recover a password themselves.
 3. **Add positions for the remaining players** — 4 of 18 have them. Templates are already
    assigned (goalkeeper and leader evaluations exist in the database), so most of this point
    is done; what remains are the positions, which get printed on the sheet.

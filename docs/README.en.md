@@ -48,8 +48,20 @@ but a malformed entry and an exhausted rate limit are reported plainly, so you a
 left waiting for a link that was never sent. The page for setting the new password always
 states **whose** password you are changing.
 
-A legacy **shared password** still works: leave “Who are you” empty. It will be removed
-once every coach has their own account.
+**You can leave “Who are you” empty and type just your PIN** — the app works out who you
+are and signs your evaluations with your name. On the pitch in gloves that is the
+difference between four taps and typing out a login. If two people had the same PIN the
+app does **not** guess: it asks for the name, because picking one of them would sign an
+evaluation with somebody else's name.
+
+An empty name also still works for the legacy **shared password**, which will be removed
+once every coach has their own account — an evaluation saved under it does not know who
+wrote it.
+
+**That convenience has a price.** Four digits without a name are easier to guess than a
+name with a password, and the app is on the public internet. What holds it is the lockout
+on failed attempts and a delay after each one. So: **do not tell anyone your PIN and do
+not put it in a message** somebody else might read.
 
 ## 4. The command bar
 

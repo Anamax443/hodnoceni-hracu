@@ -220,6 +220,36 @@ async function overUcet(env: Env, login: string, heslo: string):
     return shoda ? { stav: 'ok', ucet: u } : { stav: 'spatne' };
 }
 
+/**
+ * Najde účty, kterým sedí zadané heslo — pro přihlášení SAMOTNÝM PINem, kdy
+ * člověk nepíše jméno. Na hřišti se do mobilu ťukají čtyři číslice a psát
+ * k tomu ještě jméno je na zimě v rukavicích otrava.
+ *
+ * Vrací pole schválně: kdyby dva lidé měli stejný PIN, nesmí se hádat, kdo to
+ * je — přihlášení se odmítne a zeptá se na jméno. Tiše vybrat prvního by
+ * znamenalo podepsat hodnocení cizím jménem.
+ *
+ * Cena: PBKDF2 se počítá pro každého trenéra s heslem zvlášť. Proto se prochází
+ * jen aktivní trenéři (hráči účty nemají) — u tří lidí je to nic, u stovky by
+ * se muselo jméno začít vyžadovat.
+ */
+async function najdiUcetPodleHesla(env: Env, heslo: string): Promise<Ucet[]> {
+    const { results } = await env.DB.prepare(
+        `SELECT id, jmeno, login, heslo_hash, heslo_sul, heslo_iterace, email, telegram_chat_id, telefon
+           FROM players
+          WHERE role = 'trener' AND aktivni = 1 AND heslo_hash IS NOT NULL`
+    ).all<Ucet>();
+
+    const sedi: Ucet[] = [];
+    for (const u of results ?? []) {
+        if (!u.heslo_sul || !u.heslo_iterace) continue;
+        if (stejne(await odvodHash(heslo, zB64url(u.heslo_sul), u.heslo_iterace), u.heslo_hash!)) {
+            sedi.push(u);
+        }
+    }
+    return sedi;
+}
+
 async function overHeslo(env: Env, heslo: string): Promise<'ok' | 'spatne' | 'nenastaveno'> {
     const a = await env.DB.prepare('SELECT heslo_hash, heslo_sul, iterace FROM auth WHERE id = 1')
         .first<{ heslo_hash: string; heslo_sul: string; iterace: number }>();
@@ -1191,18 +1221,42 @@ export default {
                     });
                 }
 
-                // Bez přihlašovacího jména platí přechodné společné heslo.
+                /* Bez přihlašovacího jména se zkouší dvojí: nejdřív přechodné
+                   společné heslo, potom OSOBNÍ PIN. Pořadí je důležité —
+                   společné heslo je jedno a známé, osobní PIN identifikuje
+                   člověka a musí přebít jen tehdy, když to společné není. */
                 const vysledek = await overHeslo(env, heslo);
                 if (vysledek === 'nenastaveno') {
                     return chyba('Na serveru není nastavené žádné heslo (chybí secret ADMIN_HESLO '
                         + 'a v databázi není uložené společné heslo). Aplikace se takhle nedá odemknout.', 500);
                 }
-                if (vysledek !== 'ok') return nezdar('Špatné heslo.');
 
-                await smazNezdary(env, klicUctu, klicIp);
-                return json({ prihlasen: true, jmeno: null, id: null }, 200, {
-                    'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
-                });
+                if (vysledek === 'ok') {
+                    await smazNezdary(env, klicUctu, klicIp);
+                    return json({ prihlasen: true, jmeno: null, id: null }, 200, {
+                        'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
+                    });
+                }
+
+                /* Osobní PIN pozná člověka sám. Podepsané hodnocení tak nese
+                   jméno i tehdy, když se trenér přihlásil jen čtyřmi číslicemi. */
+                const trefy = await najdiUcetPodleHesla(env, heslo);
+                if (trefy.length > 1) {
+                    // Hádat, kdo to je, se nesmí — podepsalo by se cizím jménem.
+                    return nezdar('Tenhle PIN má nastavený víc lidí. Přihlas se i přihlašovacím '
+                        + 'jménem, ať je jasné, kdo hodnocení podepisuje.', 409, false);
+                }
+                if (trefy.length === 1) {
+                    const u = trefy[0];
+                    await smazNezdary(env, klicUctu, klicIp);
+                    return json({ prihlasen: true, jmeno: u.jmeno, id: u.id }, 200, {
+                        'set-cookie': cookieHlavicka(
+                            await vytvorSession(env, { id: u.id, jmeno: u.jmeno }),
+                            https, SESSION_HODIN * 3600)
+                    });
+                }
+
+                return nezdar('Špatné heslo.');
             }
             if (cesta === '/api/logout' && request.method === 'POST') {
                 return json({ prihlasen: false }, 200, { 'set-cookie': cookieHlavicka('', https, 0) });

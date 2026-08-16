@@ -2,6 +2,44 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-16 (46) — osobní PIN pozná trenéra sám; všichni tři mají heslo
+
+**Na přání uživatele:** každý trenér dostal svůj PIN a **zadání PINu má rovnou určit, kdo
+to je** — bez psaní přihlašovacího jména. Společné heslo zůstává, jak bylo.
+
+**Hesla nejsou nikde v repozitáři** ani v tomhle deníku. Hashe se spočítaly stejným
+postupem jako v aplikaci (PBKDF2-SHA256, 100 000 iterací, sůl 16 B) a do ostré D1 se
+poslaly dočasným souborem ve scratchpadu, který se hned smazal. Přes `--file`, ne
+`--command` — viz poučení ze záznamu (42).
+
+**Stav:** všichni tři trenéři (Maxla, Julek, Maso) mají heslo, dřív ho měl jen Maxla.
+
+**Jak to funguje.** Při prázdném jménu se zkouší dvojí, v tomhle pořadí: nejdřív společné
+heslo, pak osobní PIN proti všem aktivním trenérům s heslem (`najdiUcetPodleHesla`).
+Pořadí je schválně — společné heslo je jedno a známé, osobní PIN identifikuje člověka.
+
+**Shoda u víc lidí se odmítne, nevybírá se první.** Kdyby dva měli stejný PIN, hádání by
+znamenalo **podepsat hodnocení cizím jménem** — a podpis je to, kvůli čemu se vlastní
+účty zaváděly. Aplikace místo toho požádá o jméno.
+
+**Cena:** PBKDF2 se počítá pro každého trenéra s heslem zvlášť, proto se prochází jen
+aktivní trenéři. U tří lidí nic, u stovky by se muselo jméno vyžadovat.
+
+**Bezpečnostní daň, řečená uživateli předem a přijatá vědomě.** Čtyřmístný PIN bez jména
+je slabší než jméno + heslo: 10 000 možností a stačí trefit kterýkoliv z platných, tedy
+průměrně ~1 250 pokusů. Drží to zámek na marné pokusy (5 na účet, 15 z jedné IP, 15 minut)
+a 700 ms prodleva u každého nezdaru. Aplikace je veřejná a jsou v ní data nezletilých.
+Kdyby přibylo trenérů nebo PIN unikl, první krok je vyžadovat jméno.
+
+**Ověřeno naostro** — poprvé v tomhle sezení šlo ověřit funkci bez prohlížeče, protože
+`/api/login` je veřejný endpoint. Všechny čtyři vstupy vrátily, co mají: tři osobní PINy
+každý svého trenéra se správným `id`, společné heslo `jmeno: null`. Úspěšné přihlášení
+navíc nuluje počitadlo, takže se tím nic nezamklo.
+
+**NASAZENO** 2026-08-16, Version ID `f620c1f7-5552-4f67-8c78-2ea6ecceb1ba`.
+
+---
+
 ## 2026-08-16 (45) — import je editace, ne zakládání (oprava návrhu)
 
 **Uživatel to vyzkoušel a našel chybu v návrhu, ne v kódu.** Vyexportoval a hned

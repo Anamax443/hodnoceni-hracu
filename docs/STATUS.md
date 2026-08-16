@@ -34,7 +34,7 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Dokumentace na vlastních stránkách | ✅ | `/dok/<klíč>` za přihlášením — 10 dokumentů převedených z Markdownu, rozcestník i seznam kapitol; žádné odkazy na (soukromý) GitHub |
 | Menu na začátku dokumentace | ✅ | skládá se z nadpisů, které v textu opravdu jsou, takže se s ním nemůže rozejít |
 | Výběr tisku po listech | ✅ | zaškrtávátko na každý řádek hráč × šablona, `ids=id:sablona` |
-| Účty a hesla | ✅ | login i e-mail, PIN od 4 znaků, zámek po 5 pokusech |
+| Účty a hesla | ✅ | login i e-mail, PIN od 4 znaků, zámek po 5 pokusech; **samotný PIN pozná trenéra** bez psaní jména |
 | Obnova hesla | ✅ | jednorázový odkaz, 15 minut, Telegram i e-mail |
 | Notifikace — Telegram | ✅ | ověřeno doručením |
 | Notifikace — e-mail | ✅ | Cloudflare Email Sending |
@@ -66,7 +66,7 @@ Otisk z ostré databáze k **16. 8. 2026** (jen počty, žádná jména ani zná
 | vygenerovaných odkazů na sebehodnocení | **4**, z toho 1 použitý |
 | sebehodnocení od hráčů | **1** (1 hráč) |
 | uzavřených shod mezi trenéry | 0 |
-| účtů v `auth` | 1 (pořád společné heslo) |
+| trenérů s vlastním heslem | **3 ze 3**; společné heslo v `auth` zatím zůstává |
 
 **První rozhovor nad rozdílem dvou pohledů má o co se opřít.** Jeden hráč vyplnil, takže
 na jeho listu se kreslí oba polygony. Odkazy se rozesílají **ručně, WhatsAppem** — což je
@@ -112,8 +112,10 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
 1. **Dorozeslat odkazy na sebehodnocení zbytku kádru.** Rozjeté to je — odkazy chodí
    ručně WhatsAppem a první sebehodnocení je vyplněné. Čím víc hráčů odevzdá, tím víc
    listů má druhý polygon a je o čem mluvit. **Tohle je teď to hlavní.**
-2. **Julek a Maso nemají vlastní heslo ani kanál.** Až budou mít Telegram nebo ověřený
-   e-mail, poslat pozvánku z Lidí; pak zrušit společné heslo (`DELETE FROM auth`).
+2. **Zrušit společné heslo** (`DELETE FROM auth`). Vlastní heslo mají od 16. 8. 2026
+   všichni tři trenéři a samotný PIN je pozná, takže společné heslo drží jen zvyk — a
+   hodnocení uložené pod ním neví, kdo ho psal. Chybí k tomu ještě kanál (Telegram nebo
+   ověřený e-mail) u Julka a Masa, aby si uměli heslo obnovit sami.
 3. **Doplnit pozice zbylým hráčům** — vyplněné je mají 4 z 18. Šablony už přiřazené jsou
    (brankářská i leader hodnocení v databázi existují), tenhle bod se tím z větší části
    vyřídil; zbývají pozice, které se tisknou na list.

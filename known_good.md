@@ -114,6 +114,30 @@ i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
 
 ---
 
+## 2026-08-16 (26) — osobní PIN pozná trenéra (ověřeno proti ostrému API)
+
+**NASAZENO** 2026-08-16, Version ID `f620c1f7-5552-4f67-8c78-2ea6ecceb1ba`.
+
+Ověřeno **voláním ostrého `/api/login`** — ten je veřejný, takže tuhle funkci šlo na rozdíl
+od většiny ostatních ověřit bez prohlížeče. Zadáno samotné heslo, bez přihlašovacího jména:
+
+| Vstup | Odpověď |
+|---|---|
+| osobní PIN trenéra A | `{"prihlasen":true,"jmeno":"Maso","id":3}` |
+| osobní PIN trenéra B | `{"prihlasen":true,"jmeno":"Julek","id":2}` |
+| osobní PIN trenéra C | `{"prihlasen":true,"jmeno":"Maxla","id":1}` |
+| společné heslo | `{"prihlasen":true,"jmeno":null,"id":null}` |
+
+Každý PIN vrátil **svého** trenéra se správným `id`, společné heslo zůstalo bez jména.
+Úspěšné přihlášení nuluje počitadlo marných pokusů, takže se testem nic nezamklo.
+
+**Hesla nejsou v repozitáři ani tady** — hashe (PBKDF2-SHA256, 100 000 iterací, sůl 16 B)
+se do ostré D1 poslaly dočasným souborem mimo repozitář, který se hned smazal.
+
+**Stav v databázi:** 3 ze 3 trenérů mají `heslo_hash`, všechny se stejným `heslo_zmeneno`.
+
+---
+
 ## 2026-08-16 (25) — kolotoč export → import ověřený uživatelem
 
 **NASAZENO** 2026-08-16, commit `0d79d33`, Version ID `f038e90e-0bcf-427a-bc27-349b8e578f93`.
