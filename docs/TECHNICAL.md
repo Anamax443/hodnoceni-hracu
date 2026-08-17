@@ -1009,7 +1009,14 @@ schválně ne — nedoporučuje ho ani hstspreload.org a odebrání ze seznamu t
 **CSP:** `default-src 'self'` a k tomu `script-src 'self' 'nonce-<náhodný>'
 https://static.cloudflareinsights.com`, `style-src 'self' 'unsafe-inline'`,
 `img-src 'self' data:`, `connect-src 'self'`, `form-action 'self'`, `base-uri 'self'`,
-`object-src 'none'`, `frame-ancestors 'none'`.
+`object-src 'none'`, `frame-ancestors 'none'`, `upgrade-insecure-requests`.
+
+`upgrade-insecure-requests` je **pojistka, ne oprava**: aplikace dnes žádnou `http://`
+adresu nenačítá (jediné výskyty jsou `127.0.0.1` v textu dokumentace). Kdyby se někdy
+do obsahu dostal odkaz na `http://`, prohlížeč ho sáhne přes https místo aby ho
+zablokoval jako mixed content — pořád ale platí, že správné řešení je mít v obsahu
+rovnou `https://`. Lokálnímu vývoji direktiva nevadí: `127.0.0.1` je „potentially
+trustworthy" a neupgraduje se (ověřeno na `wrangler dev` přes plain http).
 
 **Proč tam figuruje Cloudflare:** do HTML vstřikuje zóna dva cizí skripty, které nejsou
 vidět ve `web/` — beacon Web Analytics (`static.cloudflareinsights.com`, proto je

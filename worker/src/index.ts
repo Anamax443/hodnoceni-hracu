@@ -1354,7 +1354,12 @@ function bezpecnostniHlavicky(): Record<string, string> {
             "form-action 'self'",
             "base-uri 'self'",
             "object-src 'none'",
-            "frame-ancestors 'none'"
+            "frame-ancestors 'none'",
+            // Pojistka, ne oprava: dnes aplikace žádnou http:// adresu nenačítá.
+            // Kdyby se někdy do obsahu dostala, prohlížeč ji sáhne přes https
+            // místo aby ji zablokoval. Lokálnímu vývoji to nevadí — 127.0.0.1
+            // je „potentially trustworthy" a neupgraduje se.
+            'upgrade-insecure-requests'
         ].join('; '),
         // frame-ancestors výše platí pro moderní prohlížeče, tohle pro ty staré.
         'x-frame-options': 'DENY',
