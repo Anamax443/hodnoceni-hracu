@@ -968,9 +968,20 @@ jen zavolá obojí za sebou. Hlavička se nastaví jen tehdy, když ji odpověď
 HSTS nastavuje zóna maxferit.cz na Cloudflare, Worker ho nepřepisuje. `preload`
 schválně ne — nedoporučuje ho ani hstspreload.org a odebrání ze seznamu trvá měsíce.
 
-**CSP:** `default-src 'self'` a k tomu `script-src 'self'`, `style-src 'self'
-'unsafe-inline'`, `img-src 'self' data:`, `connect-src 'self'`, `form-action 'self'`,
-`base-uri 'self'`, `object-src 'none'`, `frame-ancestors 'none'`.
+**CSP:** `default-src 'self'` a k tomu `script-src 'self' 'nonce-<náhodný>'
+https://static.cloudflareinsights.com`, `style-src 'self' 'unsafe-inline'`,
+`img-src 'self' data:`, `connect-src 'self'`, `form-action 'self'`, `base-uri 'self'`,
+`object-src 'none'`, `frame-ancestors 'none'`.
+
+**Proč tam figuruje Cloudflare:** do HTML vstřikuje zóna dva cizí skripty, které nejsou
+vidět ve `web/` — beacon Web Analytics (`static.cloudflareinsights.com`, proto je
+v `script-src`; data posílá na vlastní doménu, takže `connect-src 'self'` stačí) a
+**inline** bootstrap bot detekce (`/cdn-cgi/challenge-platform`). Přísná `script-src 'self'`
+oba zabije: měření návštěvnosti tiše přestane měřit a v konzoli návštěvníka naskočí hláška
+o porušení CSP. Dokumentace Cloudflare na to má **nonce** — přečte si ho z CSP hlavičky
+odpovědi a svým skriptům ho doplní (`'unsafe-inline'` sám nedoporučuje). Proto se nonce
+generuje pro **každou odpověď zvlášť**; kdyby se někdy začal opakovat nebo kešovat, ztratí
+smysl. Vlastní skripty aplikace nonce nepotřebují, projdou přes `'self'`.
 
 Skripty jsou bez výjimky — proto se přepínač vzhledu (ten, co musí doběhnout před
 vykreslením, aby neproblikla bílá) přestěhoval z hlaviček HTML do `web/theme.js`.

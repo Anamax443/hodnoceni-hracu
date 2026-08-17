@@ -22,7 +22,9 @@ lokálnímu `wrangler dev --local`, pak na ostré adrese.
 | stránka `/h/<neplatný token>` | ✅ vykreslí „Neplatný odkaz.", 0 chyb konzole |
 | `/listy.html` bez přihlášení | ✅ „Nejsi přihlášen" (401 z API), 0 porušení CSP |
 | inline skripty ve `web/` | ✅ žádné — grep najde jen `<script src=…>`, nic co by CSP musela povolit |
-| ostrá adresa po nasazení | ✅ `/api/version` = `23860de`, `cisto: true`, HSTS 365 dní beze změny |
+| ostrá adresa po nasazení | ✅ `/api/version` = `8d695ab`, `cisto: true`, HSTS 365 dní beze změny |
+| nonce pro skripty vstříknuté Cloudflarem | ✅ na ostré adrese nese `nonce` z hlavičky **beacon Web Analytics i inline bootstrap bot detekce**; vlastní skripty projdou přes `'self'` |
+| ostrá `/` v headless Edge | ✅ 0 porušení CSP, 0 chyb skriptů; jediné hlášky jsou 404 na `/logo.png` (klub ho nemá nahrané, aplikace s tím počítá — bylo tak i předtím) |
 
 Co tenhle test **neprokázal**: chování uvnitř přihlášené aplikace (radar, Listy s daty) —
 tam se ověřovalo jen staticky. Riziko je malé: CSP u stylů povoluje `'unsafe-inline'`,

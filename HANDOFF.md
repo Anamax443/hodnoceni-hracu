@@ -4,9 +4,10 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-17 (43) — bezpečnostní hlavičky na každé odpovědi + security.txt
 
-**Commit:** `23860de` · **NASAZENO** 2026-08-17, Version ID `2575b45e-a20c-4261-9dc2-ed1066084cb5`.
-Ověřeno živě: `/api/version` = `23860de`, `cisto: true`; hlavičky sedí na `/`, `/app.js`,
-`/listy.html` i `/.well-known/security.txt`.
+**Commity:** `23860de` (hlavičky) → `59260fd` (dokumentace) → `8d695ab` (nonce pro
+Cloudflare) · **NASAZENO** 2026-08-17, poslední Version ID `f823bf22-e477-4d44-ad75-9bcff6dfd1b1`.
+Ověřeno živě: `/api/version` = `8d695ab`, `cisto: true`; hlavičky sedí na `/`, `/app.js`,
+`/listy.html` i `/.well-known/security.txt`; headless prohlížeč hlásí **0 porušení CSP**.
 
 Podnět: audit `hodnoceni.maxferit.cz` (17. 8. 2026) — 78 %, chybějící CSP a spol.
 Co se opravilo:
@@ -41,6 +42,20 @@ odpověď. Router se kvůli tomu přestěhoval z `export default` do funkce `sme
 `style=` na desítkách míst (`app.js`, `radar.js`, `obnova.js`) a stránky dokumentace mají
 styl v hlavičce. Bez povolení by se rozsypal vzhled, ne bezpečnost. Skriptů se to netýká,
 tam je `'self'` bez výjimky — to je ta část, na které záleží.
+
+**Třetí věc, která by tiše zhasla (a bez prohlídky ostré stránky by se nenašla):**
+do HTML vstřikuje Cloudflare **sám dva cizí skripty** — beacon Web Analytics
+(`static.cloudflareinsights.com`) a **inline** bootstrap bot detekce
+(`/cdn-cgi/challenge-platform`). Přísná `script-src 'self'` je oba zabije: měření
+návštěvnosti přestane měřit a v konzoli každého návštěvníka naskočí hláška o porušení CSP.
+
+Řešení podle dokumentace Cloudflare: **nonce**. Cloudflare si ho vyzobne z CSP hlavičky
+odpovědi a svým skriptům ho doplní, takže nemusí přijít `'unsafe-inline'` (což CF sám
+výslovně nedoporučuje). `script-src` je proto
+`'self' 'nonce-<náhodný>' https://static.cloudflareinsights.com` a nonce je v každé
+odpovědi jiný. Ověřeno na ostré adrese: oba vstříknuté skripty nesou `nonce`, který sedí
+s hlavičkou; vlastní skripty aplikace nonce nepotřebují, projdou přes `'self'`.
+Stejná past čeká na každou další appku v téhle zóně (maxferit.cz).
 
 **Co se schválně neudělalo:** HSTS `preload` (sám hstspreload.org ho nedoporučuje
 a odebrání ze seznamu trvá měsíce) a COOP/COEP (aplikace nic izolovaného nepotřebuje).
