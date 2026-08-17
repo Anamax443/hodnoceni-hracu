@@ -949,6 +949,53 @@ Odpovědi nesou klíče, ne texty: `/api/self` vrací `osy: ['prava', …]`, `/a
 Známá a přijatá limitace: kdo odkaz získá, může sebehodnocení vyplnit za hráče.
 Pro 19 hráčů 2× ročně je to přijatelné.
 
+### Bezpečnostní hlavičky (od 2026-08-17)
+
+Všechny odpovědi — stránky, API i statické soubory — projdou funkcí
+`sBezpecnostnimiHlavickami()` v `worker/src/index.ts`. Je to jediné místo, kde hlavičky
+vznikají; kvůli tomu je vlastní směrování ve funkci `smerovac()` a `export default.fetch`
+jen zavolá obojí za sebou. Hlavička se nastaví jen tehdy, když ji odpověď nemá vlastní.
+
+| Hlavička | Hodnota | Proč |
+|---|---|---|
+| `Content-Security-Policy` | viz níž | odkud smí stránka načítat |
+| `X-Frame-Options` | `DENY` | starší prohlížeče; moderní řeší `frame-ancestors` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | odkaz `/h/<token>` nesmí odejít v refereru na cizí web |
+| `Permissions-Policy` | kamera, mikrofon, poloha, platby, USB zakázané | aplikace nic z toho nepoužívá |
+| `X-Content-Type-Options` | `nosniff` | prohlížeč nemá hádat typ obsahu |
+| `X-XSS-Protection` | `0` | starý XSS Auditor měl vlastní díry, explicitně se vypíná |
+
+HSTS nastavuje zóna maxferit.cz na Cloudflare, Worker ho nepřepisuje. `preload`
+schválně ne — nedoporučuje ho ani hstspreload.org a odebrání ze seznamu trvá měsíce.
+
+**CSP:** `default-src 'self'` a k tomu `script-src 'self'`, `style-src 'self'
+'unsafe-inline'`, `img-src 'self' data:`, `connect-src 'self'`, `form-action 'self'`,
+`base-uri 'self'`, `object-src 'none'`, `frame-ancestors 'none'`.
+
+Skripty jsou bez výjimky — proto se přepínač vzhledu (ten, co musí doběhnout před
+vykreslením, aby neproblikla bílá) přestěhoval z hlaviček HTML do `web/theme.js`.
+Nový inline `<script>` v jakékoliv stránce se od téhle chvíle **nespustí**.
+
+Styly výjimku `'unsafe-inline'` mají: aplikace skládá HTML s atributem `style=` na
+desítkách míst (`app.js`, `radar.js`, `obnova.js`) a stránky dokumentace nesou styl
+v hlavičce. Bez povolení by se rozsypal vzhled, ne bezpečnost.
+
+**Dvě věci, na kterých to stojí:**
+
+1. `"run_worker_first": true` v `assets` (wrangler.jsonc). Bez toho Cloudflare odbaví
+   existující soubor sám a Worker se vůbec nespustí — takže `/app.js`, `/app.css`
+   i celá tisková stránka `/listy.html` chodily bez hlaviček. Daň: požadavek na statický
+   soubor je teď taky požadavek na Worker (limit Workers Free je 100 000 denně).
+2. `soubor()` předává hlavičky původního požadavku asset serveru. Jinak by neviděl
+   `if-none-match`, nikdy by neodpověděl `304` a prohlížeč by po změně z bodu 1 tahal
+   `app.js` (147 kB) při každém načtení znovu.
+
+### /.well-known/security.txt
+
+Kontakt pro toho, kdo najde díru (RFC 9116) — obsluhuje ho přímo Worker, ne asset server,
+aby se `Expires` dopočítávalo za běhu (dnes + rok). Pevné datum v souboru by jednou tiše
+propadlo a nikdo by si toho nevšiml. Adresa je v konstantě `KONTAKT_BEZPECNOST`.
+
 ---
 
 ## 9. Rozhodnutí a exit criteria

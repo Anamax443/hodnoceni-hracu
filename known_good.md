@@ -5,6 +5,31 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-17 (29) — bezpečnostní hlavičky a CSP nerozbily aplikaci
+
+Commit `23860de`, Version ID `2575b45e-a20c-4261-9dc2-ed1066084cb5`. Ověřeno nejdřív proti
+lokálnímu `wrangler dev --local`, pak na ostré adrese.
+
+| Kontrola | Výsledek |
+|---|---|
+| hlavičky na stránce (`/`) | ✅ CSP, `x-frame-options: DENY`, `referrer-policy`, `permissions-policy`, `nosniff`, `x-xss-protection: 0` |
+| hlavičky na statickém souboru (`/app.js`, `/app.css`) | ✅ až po `run_worker_first: true`; **před ním chyběly úplně** — asset server běžel dřív než Worker |
+| hlavičky na tiskové stránce `/listy.html` | ✅ (chodí přímo z assetů, ne přes router — proto byla nejrizikovější) |
+| hlavičky na `/api/version` a `/h/<token>` | ✅ |
+| `/.well-known/security.txt` | ✅ 200, `Contact`, `Expires` (dnes + rok), `Canonical` |
+| odpověď 304 s `If-None-Match` | ✅ 304 i s hlavičkami — obal `new Response(body, …)` na prázdném těle nespadne |
+| stránka `/` v headless Edge (CDP) | ✅ `data-theme` nastavené = `/theme.js` se pod CSP spustil; **0 chyb konzole, 0 porušení CSP** |
+| stránka `/h/<neplatný token>` | ✅ vykreslí „Neplatný odkaz.", 0 chyb konzole |
+| `/listy.html` bez přihlášení | ✅ „Nejsi přihlášen" (401 z API), 0 porušení CSP |
+| inline skripty ve `web/` | ✅ žádné — grep najde jen `<script src=…>`, nic co by CSP musela povolit |
+| ostrá adresa po nasazení | ✅ `/api/version` = `23860de`, `cisto: true`, HSTS 365 dní beze změny |
+
+Co tenhle test **neprokázal**: chování uvnitř přihlášené aplikace (radar, Listy s daty) —
+tam se ověřovalo jen staticky. Riziko je malé: CSP u stylů povoluje `'unsafe-inline'`,
+takže atributy `style=` v `app.js` projdou, a skripty aplikace žádné inline nevytvářejí.
+
+---
+
 ## 2026-08-13 (28) — nabídka období v Listech a tisk celé historie
 
 Ověřeno proti lokálnímu `wrangler dev` (`--local`) na datech se **třemi obdobími**, která

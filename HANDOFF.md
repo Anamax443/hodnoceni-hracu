@@ -2,6 +2,54 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-17 (43) — bezpečnostní hlavičky na každé odpovědi + security.txt
+
+**Commit:** `23860de` · **NASAZENO** 2026-08-17, Version ID `2575b45e-a20c-4261-9dc2-ed1066084cb5`.
+Ověřeno živě: `/api/version` = `23860de`, `cisto: true`; hlavičky sedí na `/`, `/app.js`,
+`/listy.html` i `/.well-known/security.txt`.
+
+Podnět: audit `hodnoceni.maxferit.cz` (17. 8. 2026) — 78 %, chybějící CSP a spol.
+Co se opravilo:
+
+| Nález auditu | Co se udělalo |
+|---|---|
+| Content-Security-Policy chybí | přidána, `script-src 'self'` (žádné inline skripty) |
+| X-Frame-Options chybí | `DENY` (+ `frame-ancestors 'none'` v CSP pro moderní prohlížeče) |
+| Referrer-Policy chybí | `strict-origin-when-cross-origin` |
+| Permissions-Policy chybí | kamera, mikrofon, poloha, platby a USB zakázané |
+| X-XSS-Protection chybí | explicitní `0` — starý XSS Auditor měl vlastní díry |
+| 1 inline skript | přepínač vzhledu přesunut do `web/theme.js` |
+| security.txt chybí | `/.well-known/security.txt`, kontakt `info@maxferit.cz` |
+
+**Kde hlavičky vznikají:** jedno místo — `sBezpecnostnimiHlavickami()` obalí každou
+odpověď. Router se kvůli tomu přestěhoval z `export default` do funkce `smerovac()`;
+`export default.fetch` je teď dvouřádkový.
+
+**Dvě věci, které to vytáhlo na světlo a bez kterých by to nefungovalo:**
+
+1. **Asset server běžel dřív než Worker.** Soubory (`/app.js`, `/app.css`, ale i celá
+   tisková stránka `/listy.html`) odbavoval Cloudflare přímo a Worker se vůbec nespustil —
+   ty odpovědi by hlavičky nikdy nedostaly. Řeší `"run_worker_first": true` v `assets`.
+   Daň: každý požadavek na statický soubor je teď požadavek na Worker (Workers Free
+   má 100 000 denně, tahle appka se k tomu nepřiblíží).
+2. **Zmizely by odpovědi 304.** `soubor()` skládal nový požadavek bez hlaviček, takže
+   asset server nikdy neviděl `if-none-match`. Dokud šly soubory mimo Worker, nevadilo to;
+   po změně z bodu 1 by prohlížeč tahal `app.js` (147 kB) při každém načtení znovu.
+   `soubor()` proto hlavičky požadavku předává dál — ověřeno, že `304` chodí.
+
+**Proč CSP povoluje `style-src 'unsafe-inline'`:** aplikace skládá HTML s atributem
+`style=` na desítkách míst (`app.js`, `radar.js`, `obnova.js`) a stránky dokumentace mají
+styl v hlavičce. Bez povolení by se rozsypal vzhled, ne bezpečnost. Skriptů se to netýká,
+tam je `'self'` bez výjimky — to je ta část, na které záleží.
+
+**Co se schválně neudělalo:** HSTS `preload` (sám hstspreload.org ho nedoporučuje
+a odebrání ze seznamu trvá měsíce) a COOP/COEP (aplikace nic izolovaného nepotřebuje).
+
+**Platnost v security.txt** se dopočítává za běhu (dnes + rok). Pevné datum by jednou
+tiše propadlo a nikdo by si toho nevšiml.
+
+---
+
 ## 2026-08-13 (42) — všechna období sjednocena na „2026/2027 léto" (zásah do dat)
 
 Bez změny kódu. Na přání uživatele („u tiskových listů nech prozatím pouze 2026/2027 léto,
