@@ -74,6 +74,13 @@ a odebrání ze seznamu trvá měsíce) a COOP/COEP (aplikace nic izolovaného n
 **Platnost v security.txt** se dopočítává za běhu (dnes + rok). Pevné datum by jednou
 tiše propadlo a nikdo by si toho nevšiml.
 
+**Dodatek (commit `f47c205`, Version ID `4387125e-36bc-432f-ad18-22fec50eae0b`):** druhé
+kolo auditu chtělo do CSP ještě `upgrade-insecure-requests`. Přidáno, ale je to **pojistka,
+ne oprava** — aplikace žádnou `http://` adresu nenačítá (jediné výskyty jsou `127.0.0.1`
+v textu dokumentace), takže dnes nemá co upgradovat. Ověřeno, že to nerozbije lokální
+vývoj: `wrangler dev` běží na plain http a `127.0.0.1` je „potentially trustworthy",
+takže se neupgraduje — stránka i `app.js` se načetly normálně.
+
 ---
 
 ## 2026-08-16 (48) — záložka Pozice: obsazení postu místo proklikávání hráčů
