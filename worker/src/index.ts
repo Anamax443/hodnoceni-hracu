@@ -48,6 +48,9 @@ const SESSION_HODIN = 12;
 const PASMO_SUMU = 2;         // §7.4: posun o 1 bod u subjektivního hodnocení není signál
 const OBNOVA_MINUT = 15;      // platnost odkazu na obnovu hesla
 const OBNOVA_MAX_ZA_OKNO = 3; // víc žádostí za 15 minut se nepošle (brzda na spamování schránky)
+// Adresa v /.well-known/security.txt — kam má napsat ten, kdo najde díru.
+// Je veřejná, takže sem patří schránka, která se opravdu čte.
+const KONTAKT_BEZPECNOST = 'info@maxferit.cz';
 // Krátký PIN je vědomý ústupek pohodlí (trenéři to ťukají na hřišti v mobilu).
 // Únosné je to jen díky zámku po několika špatných pokusech — bez něj by se
 // 10 000 kombinací zkusilo hrubou silou za pár vteřin. Viz PRIHLASENI_*.
@@ -1109,139 +1112,9 @@ async function rozesliSouhrn(env: Env, zaklad: string, vynutit = false): Promise
 
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
-        const url = new URL(request.url);
-        const cesta = url.pathname;
-        const https = url.protocol === 'https:';
-
-        try {
-            /* ---------- health a verze ---------- */
-            if (cesta === '/health') {
-                return json({ status: 'ok', module: MODUL, timestamp: new Date().toISOString() });
-            }
-            if (cesta === '/api/version') {
-                // Verze je zapečená v bundlu, ne čtená z assetu — ten na custom
-                // doméně držela cache zóny a lišta ukazovala předchozí commit.
-                // no-store navíc brání tomu, aby se držela samotná odpověď.
-                return json(VERZE, 200, { 'cache-control': 'no-store' });
-            }
-
-            /* ---------- stránka sebehodnocení ----------
-               Token zůstává v adrese, stránku si Worker vytáhne sám.
-               Proto má asset server vypnuté html_handling — jinak by
-               /h.html přesměroval na /h a token by z URL zmizel.      */
-            if (cesta === '/h' || cesta.startsWith('/h/')) {
-                return soubor(env, url, '/h.html');
-            }
-
-            /* ---------- veřejné API pro hráče ---------- */
-            if (cesta.startsWith('/api/self/')) {
-                return await self(request, env, cesta.slice('/api/self/'.length));
-            }
-
-            /* ---------- obnova zapomenutého hesla (veřejné) ---------- */
-            if (cesta === '/obnova' || cesta.startsWith('/obnova/')) {
-                return soubor(env, url, '/obnova.html');
-            }
-            if (cesta === '/api/obnova' && request.method === 'POST') {
-                return await zadostOObnovu(request, env, url);
-            }
-            if (cesta.startsWith('/api/obnova/')) {
-                return await obnovaHesla(request, env, cesta.slice('/api/obnova/'.length));
-            }
-
-            /* ---------- přihlášení ---------- */
-            if (cesta === '/api/login' && request.method === 'POST') {
-                const { login, heslo } = await request.json<{ login?: string; heslo?: string }>();
-
-                // Heslo smí být krátký PIN, takže prodleva sama nestačí — marné
-                // pokusy se počítají a po pár zkouškách se přihlášení zamkne.
-                const ip = request.headers.get('cf-connecting-ip') ?? 'neznama';
-                const klicUctu = login && login.trim()
-                    ? `ucet:${login.trim().toLowerCase()}`
-                    : 'ucet:@spolecne';
-                const klicIp = `ip:${ip}`;
-
-                const zamek = await zamceno(env, klicUctu, klicIp);
-                if (zamek) return chyba(zamek, 429);
-
-                // Prodleva u nezdaru: aplikace je veřejná a chrání data nezletilých,
-                // hádání hesla ve smyčce tím přestane být praktické.
-                const nezdar = async (zprava: string, kod = 401, zapocitat = true) => {
-                    if (zapocitat) await zapisNezdar(env, klicUctu, klicIp, ip);
-                    await new Promise(hotovo => setTimeout(hotovo, 700));
-                    return chyba(zprava, kod);
-                };
-                if (!heslo) return nezdar('Chybí heslo.', 401, false);
-
-                if (login && login.trim()) {
-                    const v = await overUcet(env, login, heslo);
-                    if (v.stav === 'neznamy' || v.stav === 'spatne') {
-                        return nezdar('Špatné přihlašovací jméno nebo heslo.');
-                    }
-                    if (v.stav === 'bezHesla') {
-                        // Účet bez hesla není špatný pokus — nemá se čím trefit.
-                        return nezdar('Tenhle účet ještě nemá nastavené heslo. '
-                            + 'Použij „Zapomenuté heslo" a přijde ti odkaz na jeho nastavení.', 409, false);
-                    }
-                    await smazNezdary(env, klicUctu, klicIp);
-                    return json({ prihlasen: true, jmeno: v.ucet.jmeno, id: v.ucet.id }, 200, {
-                        'set-cookie': cookieHlavicka(
-                            await vytvorSession(env, { id: v.ucet.id, jmeno: v.ucet.jmeno }),
-                            https, SESSION_HODIN * 3600)
-                    });
-                }
-
-                // Bez přihlašovacího jména platí přechodné společné heslo.
-                const vysledek = await overHeslo(env, heslo);
-                if (vysledek === 'nenastaveno') {
-                    return chyba('Na serveru není nastavené žádné heslo (chybí secret ADMIN_HESLO '
-                        + 'a v databázi není uložené společné heslo). Aplikace se takhle nedá odemknout.', 500);
-                }
-                if (vysledek !== 'ok') return nezdar('Špatné heslo.');
-
-                await smazNezdary(env, klicUctu, klicIp);
-                return json({ prihlasen: true, jmeno: null, id: null }, 200, {
-                    'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
-                });
-            }
-            if (cesta === '/api/logout' && request.method === 'POST') {
-                return json({ prihlasen: false }, 200, { 'set-cookie': cookieHlavicka('', https, 0) });
-            }
-            if (cesta === '/api/me') {
-                const s = await overSession(env, request.headers.get('cookie'));
-                return json({ prihlasen: !!s, jmeno: s?.jmeno ?? null, id: s?.id ?? null });
-            }
-
-            /* ---------- dokumentace jako samostatné stránky ----------
-               Za přihlášením schválně: osobní údaje v ní nejsou, ale provozní
-               podrobnosti (ID kanálu, verze, otevřené díry v GDPR) na veřejný
-               web nepatří. Proto neleží ve `web/`, odkud by je ASSETS
-               servírovalo komukoliv. */
-            if (cesta === '/dok' || cesta.startsWith('/dok/')) {
-                const s = await overSession(env, request.headers.get('cookie'));
-                if (!s) {
-                    // Přihlašovací stránka je v kořeni; návrat sem řeší člověk
-                    // sám, odkaz na dokument si otevře znovu.
-                    return new Response(null, { status: 302, headers: { location: '/' } });
-                }
-                return dokumentStranka(cesta.slice('/dok'.length).replace(/^\//, ''));
-            }
-
-            /* ---------- admin API ---------- */
-            if (cesta.startsWith('/api/')) {
-                const s = await overSession(env, request.headers.get('cookie'));
-                if (!s) return chyba('Nepřihlášen.', 401);
-                return await admin(request, env, url, s);
-            }
-
-            /* ---------- statické soubory ---------- */
-            return soubor(env, url, cesta === '/' ? '/index.html' : cesta);
-
-        } catch (e) {
-            const zprava = e instanceof Error ? e.message : String(e);
-            console.error('Chyba požadavku', cesta, zprava);
-            return chyba(`Chyba serveru: ${zprava}`, 500);
-        }
+        // Bezpečnostní hlavičky přidává jedno místo pro všechny odpovědi —
+        // včetně souborů z asset serveru, ten si je sám nepřidá.
+        return sBezpecnostnimiHlavickami(await smerovac(request, env));
     },
 
     /* Cron běží každou hodinu; jestli je zrovna ta správná, rozhodne Worker
@@ -1254,9 +1127,231 @@ export default {
     }
 } satisfies ExportedHandler<Env>;
 
-/** Vrátí statický soubor z ./web, aniž by se měnila adresa v prohlížeči. */
-function soubor(env: Env, url: URL, cesta: string): Promise<Response> {
-    return env.ASSETS.fetch(new Request(new URL(cesta, url), { method: 'GET' }));
+/** Vlastní směrování požadavků. Odpověď ještě projde `sBezpecnostnimiHlavickami`. */
+async function smerovac(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const cesta = url.pathname;
+    const https = url.protocol === 'https:';
+
+    try {
+        /* ---------- health a verze ---------- */
+        if (cesta === '/health') {
+            return json({ status: 'ok', module: MODUL, timestamp: new Date().toISOString() });
+        }
+        if (cesta === '/.well-known/security.txt') {
+            return securityTxt(url);
+        }
+        if (cesta === '/api/version') {
+            // Verze je zapečená v bundlu, ne čtená z assetu — ten na custom
+            // doméně držela cache zóny a lišta ukazovala předchozí commit.
+            // no-store navíc brání tomu, aby se držela samotná odpověď.
+            return json(VERZE, 200, { 'cache-control': 'no-store' });
+        }
+
+        /* ---------- stránka sebehodnocení ----------
+           Token zůstává v adrese, stránku si Worker vytáhne sám.
+           Proto má asset server vypnuté html_handling — jinak by
+           /h.html přesměroval na /h a token by z URL zmizel.      */
+        if (cesta === '/h' || cesta.startsWith('/h/')) {
+            return soubor(env, request, url, '/h.html');
+        }
+
+        /* ---------- veřejné API pro hráče ---------- */
+        if (cesta.startsWith('/api/self/')) {
+            return await self(request, env, cesta.slice('/api/self/'.length));
+        }
+
+        /* ---------- obnova zapomenutého hesla (veřejné) ---------- */
+        if (cesta === '/obnova' || cesta.startsWith('/obnova/')) {
+            return soubor(env, request, url, '/obnova.html');
+        }
+        if (cesta === '/api/obnova' && request.method === 'POST') {
+            return await zadostOObnovu(request, env, url);
+        }
+        if (cesta.startsWith('/api/obnova/')) {
+            return await obnovaHesla(request, env, cesta.slice('/api/obnova/'.length));
+        }
+
+        /* ---------- přihlášení ---------- */
+        if (cesta === '/api/login' && request.method === 'POST') {
+            const { login, heslo } = await request.json<{ login?: string; heslo?: string }>();
+
+            // Heslo smí být krátký PIN, takže prodleva sama nestačí — marné
+            // pokusy se počítají a po pár zkouškách se přihlášení zamkne.
+            const ip = request.headers.get('cf-connecting-ip') ?? 'neznama';
+            const klicUctu = login && login.trim()
+                ? `ucet:${login.trim().toLowerCase()}`
+                : 'ucet:@spolecne';
+            const klicIp = `ip:${ip}`;
+
+            const zamek = await zamceno(env, klicUctu, klicIp);
+            if (zamek) return chyba(zamek, 429);
+
+            // Prodleva u nezdaru: aplikace je veřejná a chrání data nezletilých,
+            // hádání hesla ve smyčce tím přestane být praktické.
+            const nezdar = async (zprava: string, kod = 401, zapocitat = true) => {
+                if (zapocitat) await zapisNezdar(env, klicUctu, klicIp, ip);
+                await new Promise(hotovo => setTimeout(hotovo, 700));
+                return chyba(zprava, kod);
+            };
+            if (!heslo) return nezdar('Chybí heslo.', 401, false);
+
+            if (login && login.trim()) {
+                const v = await overUcet(env, login, heslo);
+                if (v.stav === 'neznamy' || v.stav === 'spatne') {
+                    return nezdar('Špatné přihlašovací jméno nebo heslo.');
+                }
+                if (v.stav === 'bezHesla') {
+                    // Účet bez hesla není špatný pokus — nemá se čím trefit.
+                    return nezdar('Tenhle účet ještě nemá nastavené heslo. '
+                        + 'Použij „Zapomenuté heslo" a přijde ti odkaz na jeho nastavení.', 409, false);
+                }
+                await smazNezdary(env, klicUctu, klicIp);
+                return json({ prihlasen: true, jmeno: v.ucet.jmeno, id: v.ucet.id }, 200, {
+                    'set-cookie': cookieHlavicka(
+                        await vytvorSession(env, { id: v.ucet.id, jmeno: v.ucet.jmeno }),
+                        https, SESSION_HODIN * 3600)
+                });
+            }
+
+            // Bez přihlašovacího jména platí přechodné společné heslo.
+            const vysledek = await overHeslo(env, heslo);
+            if (vysledek === 'nenastaveno') {
+                return chyba('Na serveru není nastavené žádné heslo (chybí secret ADMIN_HESLO '
+                    + 'a v databázi není uložené společné heslo). Aplikace se takhle nedá odemknout.', 500);
+            }
+            if (vysledek !== 'ok') return nezdar('Špatné heslo.');
+
+            await smazNezdary(env, klicUctu, klicIp);
+            return json({ prihlasen: true, jmeno: null, id: null }, 200, {
+                'set-cookie': cookieHlavicka(await vytvorSession(env), https, SESSION_HODIN * 3600)
+            });
+        }
+        if (cesta === '/api/logout' && request.method === 'POST') {
+            return json({ prihlasen: false }, 200, { 'set-cookie': cookieHlavicka('', https, 0) });
+        }
+        if (cesta === '/api/me') {
+            const s = await overSession(env, request.headers.get('cookie'));
+            return json({ prihlasen: !!s, jmeno: s?.jmeno ?? null, id: s?.id ?? null });
+        }
+
+        /* ---------- dokumentace jako samostatné stránky ----------
+           Za přihlášením schválně: osobní údaje v ní nejsou, ale provozní
+           podrobnosti (ID kanálu, verze, otevřené díry v GDPR) na veřejný
+           web nepatří. Proto neleží ve `web/`, odkud by je ASSETS
+           servírovalo komukoliv. */
+        if (cesta === '/dok' || cesta.startsWith('/dok/')) {
+            const s = await overSession(env, request.headers.get('cookie'));
+            if (!s) {
+                // Přihlašovací stránka je v kořeni; návrat sem řeší člověk
+                // sám, odkaz na dokument si otevře znovu.
+                return new Response(null, { status: 302, headers: { location: '/' } });
+            }
+            return dokumentStranka(cesta.slice('/dok'.length).replace(/^\//, ''));
+        }
+
+        /* ---------- admin API ---------- */
+        if (cesta.startsWith('/api/')) {
+            const s = await overSession(env, request.headers.get('cookie'));
+            if (!s) return chyba('Nepřihlášen.', 401);
+            return await admin(request, env, url, s);
+        }
+
+        /* ---------- statické soubory ---------- */
+        return soubor(env, request, url, cesta === '/' ? '/index.html' : cesta);
+
+    } catch (e) {
+        const zprava = e instanceof Error ? e.message : String(e);
+        console.error('Chyba požadavku', cesta, zprava);
+        return chyba(`Chyba serveru: ${zprava}`, 500);
+    }
+}
+
+/* ===================== bezpečnostní hlavičky ===================== */
+
+/**
+ * Hlavičky, které má nést každá odpověď. Nastavují se jen tam, kde ještě
+ * nejsou, aby si je konkrétní odpověď mohla přepsat.
+ *
+ * CSP: skripty smí jen z vlastní domény — proto je i přepínač vzhledu
+ * v `/theme.js` a ne inline v HTML (viz web/theme.js). Styly naopak
+ * 'unsafe-inline' potřebují: aplikace skládá HTML s atributem `style=`
+ * na desítkách míst a stránky dokumentace mají styl přímo v hlavičce.
+ * Bez 'unsafe-inline' by se rozsypal vzhled, ne bezpečnost.
+ */
+const BEZPECNOSTNI_HLAVICKY: Record<string, string> = {
+    'content-security-policy': [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "connect-src 'self'",
+        "font-src 'self'",
+        "form-action 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'"
+    ].join('; '),
+    // frame-ancestors výše platí pro moderní prohlížeče, tohle pro ty staré.
+    'x-frame-options': 'DENY',
+    'x-content-type-options': 'nosniff',
+    // Odkaz na sebehodnocení nese token přímo v adrese — na cizí web se smí
+    // dostat nanejvýš samotná doména, nikdy celá cesta i s tokenem.
+    'referrer-policy': 'strict-origin-when-cross-origin',
+    'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+    // Starý XSS Auditor měl vlastní díry a moderní prohlížeče ho nemají;
+    // explicitní 0 zajistí, že ho nezapne ani zastaralý prohlížeč.
+    'x-xss-protection': '0'
+};
+
+function sBezpecnostnimiHlavickami(odpoved: Response): Response {
+    const hlavicky = new Headers(odpoved.headers);
+    for (const [jmeno, hodnota] of Object.entries(BEZPECNOSTNI_HLAVICKY)) {
+        if (!hlavicky.has(jmeno)) hlavicky.set(jmeno, hodnota);
+    }
+    // Hlavičky odpovědi z fetch() (asset server) jsou jen ke čtení,
+    // musí vzniknout nová odpověď.
+    return new Response(odpoved.body, {
+        status: odpoved.status,
+        statusText: odpoved.statusText,
+        headers: hlavicky
+    });
+}
+
+/**
+ * Kontakt pro nálezce chyb podle RFC 9116 (/.well-known/security.txt).
+ * Platnost se dopočítává za běhu — pevné datum by jednou tiše propadlo
+ * a soubor by přestal platit, aniž by si toho někdo všiml.
+ */
+function securityTxt(url: URL): Response {
+    const platnost = new Date(Date.now() + 365 * 24 * 3600 * 1000)
+        .toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const telo = [
+        '# Našel jsi v téhle aplikaci bezpečnostní problém? Napiš, prosím, sem.',
+        `Contact: mailto:${KONTAKT_BEZPECNOST}`,
+        `Expires: ${platnost}`,
+        'Preferred-Languages: cs, en',
+        `Canonical: ${url.origin}/.well-known/security.txt`,
+        ''
+    ].join('\n');
+    return new Response(telo, {
+        headers: {
+            'content-type': 'text/plain; charset=utf-8',
+            'cache-control': 'public, max-age=86400'
+        }
+    });
+}
+
+/**
+ * Vrátí statický soubor z ./web, aniž by se měnila adresa v prohlížeči.
+ * Hlavičky požadavku se předávají dál kvůli `if-none-match` — bez nich by
+ * asset server nikdy neodpověděl 304 a prohlížeč by tahal app.js pokaždé znovu.
+ */
+function soubor(env: Env, request: Request, url: URL, cesta: string): Promise<Response> {
+    return env.ASSETS.fetch(new Request(new URL(cesta, url), {
+        method: 'GET',
+        headers: request.headers
+    }));
 }
 
 /* ===================== dokumentace jako stránky ===================== */

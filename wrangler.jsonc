@@ -15,7 +15,11 @@
         // Bez tohohle asset server přesměrovává /h.html na /h a z URL zmizí
         // token sebehodnocení. Cesty si proto mapuje Worker sám.
         "html_handling": "none",
-        "not_found_handling": "none"
+        "not_found_handling": "none",
+        // Bez tohohle by asset server odbavil soubory (i /listy.html) dřív, než
+        // se Worker vůbec spustí — a odpověď by přišla bez bezpečnostních
+        // hlaviček. Takhle projde všechno Workerem, který je přidá.
+        "run_worker_first": true
     },
 
     "d1_databases": [
