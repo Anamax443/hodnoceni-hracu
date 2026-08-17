@@ -1,6 +1,6 @@
 # STATUS — where the project stands
 
-Snapshot as of **9 Aug 2026**. It answers three questions: what runs, what has been
+Snapshot as of **16 Aug 2026**. It answers three questions: what runs, what has been
 verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HANDOFF.md)
 (a diary, newest entry first — Czech only).
 
@@ -16,7 +16,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Squad register (People) | ✅ | 22 people (18 active players + 3 coaches); positions, nicknames, roles; click a name to edit |
 | Several templates per player | ✅ | goalkeeper + outfield + leader; each its own series, link and sheet |
 | Squad export / import | ✅ | `.xlsx` with Text formatting, CSV, dry-run import |
-| Coach evaluation | ✅ | 6 axes 1–10, append-only, templates `pole` / `brankar` / `leader` |
+| Coach evaluation | ✅ | **7 axes** 1–10, append-only, templates `pole` / `brankar` / `leader` |
 | Bulk evaluation | ✅ | one score for several players, merged into the latest record |
 | Editing an evaluation | ✅ | load, correct, save = **a new version**; own records only, blind scoring still holds |
 | Player self-evaluation | ✅ | single-use link, blind guard verified live |
@@ -29,12 +29,16 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Combined sheet | ✅ | optionally all of a player’s templates on one A4, verified by print to PDF |
 | Colour by template | ✅ | outfield blue, goalkeeper teal, leader crimson; template name in the sheet header, matching labels in the app |
 | Printing selected per sheet | ✅ | a tick box on every player × template row, `ids=id:sablona` |
-| Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts |
+| Accounts and passwords | ✅ | sign in by name or e-mail, PIN from 4 characters, lockout after 5 attempts; **the PIN alone identifies the coach** without typing a name |
 | Password recovery | ✅ | single-use link, 15 minutes, Telegram or e-mail |
 | Notifications — Telegram | ✅ | delivery confirmed |
 | Notifications — e-mail | ✅ | Cloudflare Email Sending |
 | Notifications — SMS | ✅ | **confirmed for real on 9 Aug 2026** — dry run plus a delivered message; channel on (`smsAktivni = 1`), cap 50/day |
 | SMS header | ✅ | editable in Settings, preview with segment count and a warning for characters outside GSM-7; empty = club name |
+| Positions tab | ✅ | the reverse view of People: pick a position and tick who plays it; only that one position is saved, the rest stay untouched |
+| Renaming applies backwards | ✅ | fixing a name or nickname also shows on older evaluations; the template is frozen at the time of recording (by design) |
+| Physical condition as a 7th axis | ✅ | on every template; older six-axis evaluations still draw as a hexagon, and a difference is computed only where both sides scored |
+| Bulk export/import of evaluations | ✅ | CSV for Excel; the import is append-only, requires a coach signature and refuses self-evaluations |
 | Curves distinguishable in B&W | ✅ | coach solid line + filled dot, second view dashed + hollow square; the legend draws the real line, not a coloured chip |
 | Channel status in the top bar | ✅ | Model / SMS / Telegram / E-mail with ● ○ ✕; TG, SMS and e-mail really checked and for free, the model only reports its configuration (a query would eat the limit) |
 | Documentation on its own pages | ✅ | `/dok/<key>` behind sign-in — 10 documents rendered from Markdown, with a signpost and a chapter list; no links to the (private) GitHub |
@@ -56,7 +60,7 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 > chapter *Project status*, where they are read straight from the database via
 > `/api/stav-dat`. What follows is a snapshot.
 
-Snapshot of the production database as of **9 Aug 2026, 12:50** (counts only — no names, no scores):
+Snapshot of the production database as of **16 Aug 2026** (counts only — no names, no scores):
 
 | | |
 |---|---|
@@ -66,7 +70,7 @@ Snapshot of the production database as of **9 Aug 2026, 12:50** (counts only —
 | self-evaluation links generated | **4**, 1 of them used |
 | player self-evaluations | **1** (1 player) |
 | closed agreements between coaches | 0 |
-| rows in `auth` | 1 (still the shared password) |
+| coaches with their own password | **3 of 3**; the shared password in `auth` still remains |
 
 **The first conversation over the gap between the two views has something to stand on.**
 One player filled his in, so both polygons are drawn on his sheet. Links go out **by hand
@@ -106,9 +110,11 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
    over WhatsApp and the first self-evaluation is in. The more players hand theirs in, the
    more sheets carry a second polygon and the more there is to talk about.
    **This is the main thing right now.**
-2. **Julek and Maso have neither their own password nor a channel.** Once they have Telegram
-   or a verified e-mail, send them an invitation from People, then drop the shared password
-   (`DELETE FROM auth`).
+2. **Drop the shared password** (`DELETE FROM auth`). All three coaches have had their own
+   password since 16 Aug 2026 and the PIN alone identifies them, so the shared one is now
+   only habit — and an evaluation saved under it does not know who wrote it. What is still
+   missing is a channel (Telegram or a verified e-mail) for Julek and Maso, so they can
+   recover a password themselves.
 3. **Add positions for the remaining players** — 4 of 18 have them. Templates are already
    assigned (goalkeeper and leader evaluations exist in the database), so most of this point
    is done; what remains are the positions, which get printed on the sheet.

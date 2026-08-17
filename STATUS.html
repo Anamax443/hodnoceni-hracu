@@ -127,7 +127,7 @@
        i černobíle a barvoslepému čtenáři.</p>
   </div>
 
-  <h2 class="section">Kolik je v aplikaci dat — 9. 8. 2026</h2>
+  <h2 class="section">Kolik je v aplikaci dat — 16. 8. 2026</h2>
   <div class="scroll">
   <table>
     <thead><tr><th>Ukazatel</th><th>Počet</th><th>Poznámka</th></tr></thead>
@@ -142,7 +142,9 @@
       <tr><td>Sebehodnocení od hráčů</td><td class="num big">1</td><td>první je vyplněné — řetěz prošel skutečným provozem</td></tr>
       <tr><td>Uzavřených shod mezi trenéry</td><td class="num">0</td><td>zatím hodnotí jeden</td></tr>
       <tr><td>Hráčů s vyplněnými pozicemi</td><td class="num">4 / 18</td><td>pozice se tisknou na list</td></tr>
-      <tr><td>Účtů v <code>auth</code></td><td class="num">1</td><td>pořád společné heslo</td></tr>
+      <tr><td>Trenérů s vlastním heslem</td><td class="num big">3 / 3</td>
+          <td>od 16. 8. 2026; <strong>samotný PIN pozná, kdo se přihlásil</strong></td></tr>
+      <tr><td>Účtů v <code>auth</code></td><td class="num">1</td><td>společné heslo — už jen ze zvyku, dá se zrušit</td></tr>
     </tbody>
   </table>
   </div>
@@ -188,12 +190,16 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
         <li class="yes"><strong>Analýzy</strong> — souhrny za kádr počítané v aplikaci (nejslabší osy, největší rozpory)</li>
         <li class="yes">Notifikace na Telegram a e-mail, CS/EN, tmavý vzhled, mobil, dokumentace v aplikaci</li>
         <li class="yes"><strong>SMS ověřená naostro</strong> — zkouška nanečisto i doručená zpráva; editovatelná hlavička, zkouška na libovolné číslo v Nastavení</li>
+        <li class="yes"><strong>Záložka Pozice</strong> — opačný pohled než Lidé: vybere se post a zaškrtá, kdo ho hraje; ukládá se jen ta jedna pozice</li>
+        <li class="yes"><strong>Přejmenování se propíše zpětně</strong> — jméno ani přezdívka se do hodnocení nekopírují, drží se odkaz na osobu; šablona se naopak zamrazí v okamžiku pořízení</li>
+        <li class="yes"><strong>Fyzická kondice jako 7. osa</strong> — u všech šablon; starší šestiosá hodnocení se dál kreslí šesticí a rozdíl se počítá jen tam, kde známku dali oba</li>
+        <li class="yes"><strong>Hromadný export/import hodnocení</strong> — CSV pro Excel; import je append-only, chce podpis trenéra a sebehodnocení nepřijímá</li>
         <li class="yes"><strong>Log komunikace</strong> — sbalený, s hledáním a exportem celého logu do CSV</li>
       </ul></div>
     <div class="card"><h3>⚠️ Postavené, ale nedotažené</h3>
       <ul>
         <li class="wait"><strong>Jazykový model</strong> — Workers AI ověřený a zdarma; Claude čeká na <code>ANTHROPIC_API_KEY</code></li>
-        <li class="wait"><strong>Julek a Maso</strong> nemají vlastní heslo ani kanál — jede společné heslo</li>
+        <li class="wait"><strong>Společné heslo</strong> pořád existuje, i když už mají všichni trenéři vlastní — hodnocení uložené pod ním neví, kdo ho psal. Ke zrušení chybí Julkovi a Masovi kanál na obnovu hesla (Telegram nebo ověřený e-mail)</li>
         <li class="wait"><strong>GDPR k analýzám</strong> — otázky modelu jsou <strong>zapnuté</strong> a posílají ven známky i posudky nezletilých; záznam o činnosti zpracování a informace pro rodiče zatím nejsou</li>
         <li class="wait"><strong>Trendy v čase</strong> — šipky u os hotové, plný pohled až s druhým obdobím</li>
       </ul></div>
@@ -248,7 +254,7 @@ výstup    <span class="m">-&gt;</span> Listy     <span class="m">-&gt;</span> A
 
   <footer>
     <span>Podrobnosti: <code>docs/STATUS.md</code> · deník <code>HANDOFF.md</code> · doklady <code>known_good.md</code></span>
-    <span>Snímek k 9. 8. 2026 · živě na hodnoceni.maxferit.cz</span>
+    <span>Snímek k 16. 8. 2026 · živě na hodnoceni.maxferit.cz</span>
   </footer>
 
 </div>

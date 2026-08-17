@@ -10,7 +10,7 @@ Hráč dostane jednu stránku A4: graf šesti dovedností, tři slovní bloky (F
 V partě) a dva až tři cíle na další půlrok. Nic víc se na papír nevejde a nic víc tam ani
 nepatří.
 
-Navíc si hráč sám vyplní stejných šest os přes soukromý odkaz. Tam, kde se váš pohled rozchází
+Navíc si hráč sám vyplní tytéž osy přes soukromý odkaz. Tam, kde se váš pohled rozchází
 víc, než je nastavená tolerance, aplikace osu označí — a to jsou témata k rozhovoru. Tohle je
 na celém nástroji to nejcennější.
 
@@ -24,8 +24,11 @@ Dva hráči vedle sebe můžou mít oba sedmičku a být jinak dobří. To je v 
 1. **Známkuje se naslepo.** Aplikace schválně neukazuje loňské hodnoty ani hodnocení hráče,
    dokud neuložíš svoje. Viditelné loňské číslo přitáhne nové k sobě a datová řada přestane
    cokoliv říkat.
-2. **Kondice a rychlost se neznámkují.** U téhle věkové kategorie měří biologický věk, ne
-   odvedenou práci. Patří do slovního bloku *Fyzicky*.
+2. **Fyzická kondice se od 16. 8. 2026 známkuje** — je to sedmá osa u všech šablon.
+   Pozor u ní o to víc: u téhle věkové kategorie měří i biologický věk, ne jen odvedenou
+   práci. Kdo přes léto povyrostl, může mít lepší číslo než ten, co dřel. **Napiš proto
+   ke kondici slovy, co za tím číslem stojí** — slovní blok *Fyzicky* zůstává a je u ní
+   důležitější než jinde. Rychlost mezi osami dál není, ze stejného důvodu.
 3. **Povaha se neznámkuje nikdy.** Spolehlivost, snaha, parta — jen slovy.
 
 ### Škála 1–10
@@ -71,8 +74,18 @@ jestli svůj účet, nebo staré společné heslo.
 **Nový trenér:** v Lidech mu vyplň přihlašovací jméno a Telegram nebo e-mail, ulož a klikni
 na *Poslat odkaz na nastavení hesla*. Heslo si nastaví sám, nemusíš mu ho diktovat.
 
-> Přechodně funguje i staré společné heslo — přihlašovací jméno necháš prázdné. Zůstalo tam,
-> aby se nedal vyzamknout celý tým, než budou mít všichni svoje. Až to nastane, dá se zrušit.
+**Jméno psát nemusíš.** Pole „Kdo jsi" nech prázdné a napiš jen svůj PIN — aplikace pozná,
+kdo jsi, a hodnocení podepíše tvým jménem. Kdyby dva lidé měli stejný PIN, aplikace nehádá
+a vyžádá si jméno; vybrat jednoho z nich by znamenalo podepsat hodnocení cizím jménem.
+
+> Prázdné jméno funguje i pro staré společné heslo. Zůstalo tam, aby se nedal vyzamknout celý
+> tým, než budou mít všichni svoje. Až to nastane, dá se zrušit — hodnocení uložené pod ním
+> totiž neví, kdo ho psal.
+
+> **Za pohodlí se platí.** Čtyři číslice bez jména se hádají snáz než jméno s heslem a aplikace
+> je veřejně na internetu. Drží to zámek na marné pokusy (5 na účet, 15 z jedné adresy, na 15
+> minut) a prodleva u každého nezdaru. **PIN nikomu neříkej a neposílej ho zprávou**, kterou
+> může číst někdo další.
 
 ### Horní lišta
 
@@ -175,9 +188,26 @@ Hledání dělá **sama aplikace** nad kádrem, který už má načtený — je 
 a nic nestojí. Jazykový model se ptá teprve na větu, které aplikace nerozumí,
 a jen když je zapnutý (Nastavení → Jazykový model).
 
+### Pozice
+
+**Opačný pohled než Lidé.** Tam vybíráš hráče a zaškrtáváš mu pozice; tady vybereš
+**pozici** a zaškrtáš, kdo na ni patří. Když skládáš sestavu, přemýšlíš „kdo mi může hrát
+pravého beka", ne „co všechno umí Vilém" — a proklikat kvůli tomu osmnáct karet je otrava.
+
+V nabídce je u každé pozice vidět, **kolik lidí ji zatím má**, a otevře se rovnou ta
+nejprázdnější. U každého hráče je vpravo seznam jeho **dalších pozic**, ať je poznat, koho
+odjinud přetahuješ.
+
+**Ukládá se jen ta jedna vybraná pozice.** Ostatní, které má hráč nastavené, zůstávají —
+tenhle formulář o nich nic neví a nesmí je smazat. Když zaškrtnutí odpovídá tomu, co už
+je uložené, aplikace to řekne a nic nezapíše.
+
+Je to totéž pole jako v Lidech, jen z druhé strany: co zaškrtneš tady, uvidíš tam u hráče.
+Pozice se tisknou na list.
+
 ### Hodnotit
 
-Vybereš hráče, dole se objeví formulář: šest os po deseti známkách, tři slovní bloky a cíle.
+Vybereš hráče, dole se objeví formulář: sedm os po deseti známkách, tři slovní bloky a cíle.
 
 Nic není předvyplněné a předchozí hodnoty se nezobrazují — to je záměr, ne opomenutí.
 
@@ -198,7 +228,7 @@ zaškrtnuté** — cizí šablona v nabídce vůbec není a při jediné přiřa
 Předvolená je první zaškrtnutá a pod výběrem je vypsané, co všechno má přiřazeno. Kdo chytá, hraje v poli
 i vede mužstvo, se vyplňuje tolikrát, kolik má šablon — po uložení nabídne aplikace rovnou
 *Ohodnotit: brankář* a další. Dostane pak list na každou z nich a každá řada v čase žije
-samostatně; do jednoho grafu se sloučit nedají, protože jiných šest os má jiný tvar.
+samostatně; do jednoho grafu se sloučit nedají, protože jiná sada os má jiný tvar.
 
 **Tři slovní bloky** jsou zbylé tři rohy modelu a číslo v nich schválně není. Co do kterého
 patří, je napsané i pod každým políčkem ve formuláři — bez toho si je tři trenéři vyloží

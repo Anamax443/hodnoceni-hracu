@@ -265,7 +265,7 @@ async function prekresli() {
     const obsah = $('#obsah');
     obsah.innerHTML = `<p class="popis">${t('shell.nacitam')}</p>`;
     try {
-        const kresli = { uvod, lide, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
+        const kresli = { uvod, lide, pozice, hodnotit, shoda, listy, porovnani, analyzy, odkazy, nastaveni, dokumentace }[stav.zalozka];
         await kresli(obsah);
     } catch (e) {
         obsah.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
@@ -439,6 +439,116 @@ function schovejChybejiciZnak(prvek) {
     if (prvek.complete && !prvek.naturalWidth) prvek.hidden = true;
 }
 
+/* ===================== čtení nahraného souboru =====================
+
+   Sešit .xlsx se rozbalí a převede na CSV už tady v prohlížeči: má
+   DecompressionStream i DOMParser, takže server zůstává jednoduchý
+   a umí pořád jen jeden formát.
+
+   Modulová úroveň je tu schválně: soubor nahrávají DVĚ záložky — Lidé
+   (kádr) a Listy (hodnocení). Dokud tyhle funkce bydlely uvnitř funkce
+   záložky Lidé, spadl import hodnocení hned po kliknutí na chybu
+   "textSouboru is not defined". Kontrola syntaxe to nechytí: volání
+   nedefinované funkce je syntakticky v pořádku a projeví se až za běhu.
+   Pomocník potřebný ve dvou záložkách nepatří do útrob jedné z nich.
+   ===================================================================== */
+
+/** Vyzobne ze ZIPu jmenovaný soubor. XLSX je ZIP, položky bývají deflate. */
+const zeZipu = async (bajty, jmenoSouboru) => {
+    const dv = new DataView(bajty.buffer, bajty.byteOffset, bajty.byteLength);
+    // Konec centrálního adresáře se hledá od konce — může za ním být komentář.
+    let konec = -1;
+    for (let i = bajty.length - 22; i >= 0 && i > bajty.length - 65558; i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { konec = i; break; }
+    }
+    if (konec < 0) throw new Error(t('lide.import.nenizip'));
+
+    const pocet = dv.getUint16(konec + 10, true);
+    let pos = dv.getUint32(konec + 16, true);
+    const dekoder = new TextDecoder('utf-8');
+
+    for (let i = 0; i < pocet; i++) {
+        const delkaJmena = dv.getUint16(pos + 28, true);
+        const delkaExtra = dv.getUint16(pos + 30, true);
+        const delkaKomentare = dv.getUint16(pos + 32, true);
+        const metoda = dv.getUint16(pos + 10, true);
+        const velikost = dv.getUint32(pos + 20, true);
+        const posunHlavicky = dv.getUint32(pos + 42, true);
+        const jmeno = dekoder.decode(bajty.subarray(pos + 46, pos + 46 + delkaJmena));
+
+        if (jmeno === jmenoSouboru) {
+            // Lokální hlavička má vlastní délky jména a extra pole.
+            const lokJmeno = dv.getUint16(posunHlavicky + 26, true);
+            const lokExtra = dv.getUint16(posunHlavicky + 28, true);
+            const zacatek = posunHlavicky + 30 + lokJmeno + lokExtra;
+            const data = bajty.subarray(zacatek, zacatek + velikost);
+            if (metoda === 0) return dekoder.decode(data);
+            const proud = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            return dekoder.decode(new Uint8Array(await new Response(proud).arrayBuffer()));
+        }
+        pos += 46 + delkaJmena + delkaExtra + delkaKomentare;
+    }
+    return null;
+};
+
+/** Sešit → řádky textů. Bere sdílené i vložené řetězce, díry doplní prázdnem. */
+const xlsxNaRadky = async (soubor) => {
+    const bajty = new Uint8Array(await soubor.arrayBuffer());
+    const listXml = await zeZipu(bajty, 'xl/worksheets/sheet1.xml');
+    if (!listXml) throw new Error(t('lide.import.nenilist'));
+    const sdileneXml = await zeZipu(bajty, 'xl/sharedStrings.xml');
+
+    const parser = new DOMParser();
+    const sdilene = sdileneXml
+        ? [...parser.parseFromString(sdileneXml, 'application/xml').getElementsByTagName('si')]
+            .map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''))
+        : [];
+
+    const cisloSloupce = (adresa) => {
+        const pismena = (adresa.match(/^[A-Z]+/) ?? [''])[0];
+        let n = 0;
+        for (const z of pismena) n = n * 26 + (z.charCodeAt(0) - 64);
+        return n - 1;
+    };
+
+    const list = parser.parseFromString(listXml, 'application/xml');
+    return [...list.getElementsByTagName('row')].map(radek => {
+        const bunky = [];
+        for (const c of radek.getElementsByTagName('c')) {
+            const i = cisloSloupce(c.getAttribute('r') ?? '');
+            const typ = c.getAttribute('t');
+            let hodnota = '';
+            if (typ === 's') {
+                hodnota = sdilene[Number(c.getElementsByTagName('v')[0]?.textContent ?? -1)] ?? '';
+            } else if (typ === 'inlineStr') {
+                hodnota = [...c.getElementsByTagName('t')].map(t => t.textContent).join('');
+            } else {
+                hodnota = c.getElementsByTagName('v')[0]?.textContent ?? '';
+            }
+            while (bunky.length < i) bunky.push('');
+            bunky[i] = hodnota ?? '';
+        }
+        return bunky;
+    });
+};
+
+/** Řádky → CSV, protože import na serveru čte jediný formát. */
+const radkyNaCsv = (radky) => radky
+    .map(r => r.map(b => /[";\r\n]/.test(b) ? `"${b.replace(/"/g, '""')}"` : b).join(';'))
+    .join('\r\n');
+
+/* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
+   Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
+   Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
+const textSouboru = async (soubor) => {
+    const bajty = new Uint8Array(await soubor.arrayBuffer());
+    if (bajty[0] === 0xEF && bajty[1] === 0xBB && bajty[2] === 0xBF) {
+        return new TextDecoder('utf-8').decode(bajty.subarray(3));
+    }
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(bajty); }
+    catch { return new TextDecoder('windows-1250').decode(bajty); }
+};
+
 /* ===================== záložka: Lidé ===================== */
 
 async function lide(kam) {
@@ -549,107 +659,6 @@ async function lide(kam) {
             <button class="vedlejsi" id="zavrit-osobu" title="${t('lide.zavrit.tip')}">${t('lide.zavrit')}</button>
             <button class="vedlejsi zrusit" id="smazat-osobu" title="${t('lide.smazat.tip')}" hidden>${t('lide.smazat')}</button>
         </div>`;
-
-    /* ===== čtení nahraného souboru =====
-       Sešit .xlsx se rozbalí a převede na CSV už tady v prohlížeči: má
-       DecompressionStream i DOMParser, takže server zůstává jednoduchý
-       a umí pořád jen jeden formát.                                       */
-
-    /** Vyzobne ze ZIPu jmenovaný soubor. XLSX je ZIP, položky bývají deflate. */
-    const zeZipu = async (bajty, jmenoSouboru) => {
-        const dv = new DataView(bajty.buffer, bajty.byteOffset, bajty.byteLength);
-        // Konec centrálního adresáře se hledá od konce — může za ním být komentář.
-        let konec = -1;
-        for (let i = bajty.length - 22; i >= 0 && i > bajty.length - 65558; i--) {
-            if (dv.getUint32(i, true) === 0x06054b50) { konec = i; break; }
-        }
-        if (konec < 0) throw new Error(t('lide.import.nenizip'));
-
-        const pocet = dv.getUint16(konec + 10, true);
-        let pos = dv.getUint32(konec + 16, true);
-        const dekoder = new TextDecoder('utf-8');
-
-        for (let i = 0; i < pocet; i++) {
-            const delkaJmena = dv.getUint16(pos + 28, true);
-            const delkaExtra = dv.getUint16(pos + 30, true);
-            const delkaKomentare = dv.getUint16(pos + 32, true);
-            const metoda = dv.getUint16(pos + 10, true);
-            const velikost = dv.getUint32(pos + 20, true);
-            const posunHlavicky = dv.getUint32(pos + 42, true);
-            const jmeno = dekoder.decode(bajty.subarray(pos + 46, pos + 46 + delkaJmena));
-
-            if (jmeno === jmenoSouboru) {
-                // Lokální hlavička má vlastní délky jména a extra pole.
-                const lokJmeno = dv.getUint16(posunHlavicky + 26, true);
-                const lokExtra = dv.getUint16(posunHlavicky + 28, true);
-                const zacatek = posunHlavicky + 30 + lokJmeno + lokExtra;
-                const data = bajty.subarray(zacatek, zacatek + velikost);
-                if (metoda === 0) return dekoder.decode(data);
-                const proud = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-                return dekoder.decode(new Uint8Array(await new Response(proud).arrayBuffer()));
-            }
-            pos += 46 + delkaJmena + delkaExtra + delkaKomentare;
-        }
-        return null;
-    };
-
-    /** Sešit → řádky textů. Bere sdílené i vložené řetězce, díry doplní prázdnem. */
-    const xlsxNaRadky = async (soubor) => {
-        const bajty = new Uint8Array(await soubor.arrayBuffer());
-        const listXml = await zeZipu(bajty, 'xl/worksheets/sheet1.xml');
-        if (!listXml) throw new Error(t('lide.import.nenilist'));
-        const sdileneXml = await zeZipu(bajty, 'xl/sharedStrings.xml');
-
-        const parser = new DOMParser();
-        const sdilene = sdileneXml
-            ? [...parser.parseFromString(sdileneXml, 'application/xml').getElementsByTagName('si')]
-                .map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''))
-            : [];
-
-        const cisloSloupce = (adresa) => {
-            const pismena = (adresa.match(/^[A-Z]+/) ?? [''])[0];
-            let n = 0;
-            for (const z of pismena) n = n * 26 + (z.charCodeAt(0) - 64);
-            return n - 1;
-        };
-
-        const list = parser.parseFromString(listXml, 'application/xml');
-        return [...list.getElementsByTagName('row')].map(radek => {
-            const bunky = [];
-            for (const c of radek.getElementsByTagName('c')) {
-                const i = cisloSloupce(c.getAttribute('r') ?? '');
-                const typ = c.getAttribute('t');
-                let hodnota = '';
-                if (typ === 's') {
-                    hodnota = sdilene[Number(c.getElementsByTagName('v')[0]?.textContent ?? -1)] ?? '';
-                } else if (typ === 'inlineStr') {
-                    hodnota = [...c.getElementsByTagName('t')].map(t => t.textContent).join('');
-                } else {
-                    hodnota = c.getElementsByTagName('v')[0]?.textContent ?? '';
-                }
-                while (bunky.length < i) bunky.push('');
-                bunky[i] = hodnota ?? '';
-            }
-            return bunky;
-        });
-    };
-
-    /** Řádky → CSV, protože import na serveru čte jediný formát. */
-    const radkyNaCsv = (radky) => radky
-        .map(r => r.map(b => /[";\r\n]/.test(b) ? `"${b.replace(/"/g, '""')}"` : b).join(';'))
-        .join('\r\n');
-
-    /* Excel ukládá CSV buď v UTF-8 (s BOM), nebo ve své staré kódové stránce.
-       Kdybychom četli vždycky jako UTF-8, z háčků by po importu byly patvary.
-       Rozhodne se to tady v prohlížeči — Worker umí dekódovat jen UTF-8.       */
-    const textSouboru = async (soubor) => {
-        const bajty = new Uint8Array(await soubor.arrayBuffer());
-        if (bajty[0] === 0xEF && bajty[1] === 0xBB && bajty[2] === 0xBF) {
-            return new TextDecoder('utf-8').decode(bajty.subarray(3));
-        }
-        try { return new TextDecoder('utf-8', { fatal: true }).decode(bajty); }
-        catch { return new TextDecoder('windows-1250').decode(bajty); }
-    };
 
     // Stažení přes odkaz, ne fetch — session cookie se pošle sama a soubor
     // skončí rovnou ve Staženém, bez blobů v paměti.
@@ -1147,6 +1156,94 @@ function dokumentace(kam) {
             ? t('dokCisla.mameRozhovor')
             : t('dokCisla.chybiRozhovor')}</p>`;
     }).catch(() => { /* informativní — bez čísel se dokumentace čte dál */ });
+}
+
+/* ===================== záložka: Pozice =====================
+
+   Opačný pohled než Lidé: nevybírá se hráč a k němu pozice, ale pozice a k ní
+   hráči. Když trenér obsazuje sestavu, přemýšlí „kdo mi může hrát pravého beka",
+   ne „co všechno umí Vilém" — a proklikat kvůli tomu osmnáct karet je otrava.
+
+   Ukládá se **jen ta jedna vybraná pozice**; ostatní, které má hráč nastavené,
+   zůstávají. Kdyby se zapisovalo celé pole, tenhle formulář by hráči smazal
+   všechno, co v něm zrovna není vidět.                                        */
+
+async function pozice(kam) {
+    const hraci = hraciAktivni();
+    // Předvybraná je ta, kterou má nejmíň lidí — tam je nejspíš práce.
+    const kolikMa = p => hraci.filter(h => (h.pozice ?? []).includes(p)).length;
+    let vybrana = POZICE.slice().sort((a, b) => kolikMa(a) - kolikMa(b))[0] ?? POZICE[0];
+
+    kam.innerHTML = `
+        <div class="karta">
+            <h2>${t('pozice.nadpis')}</h2>
+            <p class="popis">${t('pozice.popis')}</p>
+            <div class="pole">
+                <label for="p-pozice">${t('pozice.vyber')}</label>
+                <select id="p-pozice">
+                    ${POZICE.map(p => `<option value="${p}"${p === vybrana ? ' selected' : ''}>`
+                        + `${t('pozice.' + p)} — ${t('pozice.kolik', kolikMa(p))}</option>`).join('')}
+                </select>
+            </div>
+            <div id="p-seznam"></div>
+            <p style="margin-top:14px">
+                <button class="hl" id="p-ulozit" title="${t('pozice.ulozit.tip')}">${t('pozice.ulozit')}</button>
+            </p>
+            <div id="p-vysledek"></div>
+        </div>`;
+
+    /* Seznam se překresluje při každé změně pozice. Zaškrtnutí se bere vždycky
+       z dat, ne z toho, co bylo zaškrtané předtím — jinak by se rozdělaná
+       a neuložená volba tiše přenesla na jinou pozici. */
+    const vykresli = () => {
+        $('#p-seznam').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th class="cisla"><input type="checkbox" id="p-vsichni" title="${t('pozice.vsichni.tip')}"></th>
+                    <th>${t('hodnotit.hrac')}</th>
+                    <th>${t('pozice.dalsi')}</th>
+                </tr></thead>
+                <tbody>${hraci.map(h => {
+                    const ma = (h.pozice ?? []).includes(vybrana);
+                    const ostatni = (h.pozice ?? []).filter(p => p !== vybrana);
+                    return `
+                    <tr class="${ma ? 'ano-radek' : ''}">
+                        <td class="cisla"><input type="checkbox" class="p-hrac" value="${h.id}"${ma ? ' checked' : ''}></td>
+                        <td>${jmenoHtml(h)}</td>
+                        <td class="popis">${ostatni.length
+                            ? ostatni.map(p => esc(t('pozice.' + p))).join(' · ')
+                            : '&mdash;'}</td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+
+        $('#p-vsichni').onchange = e =>
+            kam.querySelectorAll('.p-hrac').forEach(c => { c.checked = e.target.checked; });
+    };
+
+    $('#p-pozice').onchange = () => {
+        vybrana = $('#p-pozice').value;
+        $('#p-vysledek').innerHTML = '';
+        vykresli();
+    };
+    vykresli();
+
+    $('#p-ulozit').onclick = async () => {
+        const ids = [...kam.querySelectorAll('.p-hrac:checked')].map(c => Number(c.value));
+        const cil = $('#p-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const r = await api('/api/pozice', { telo: { pozice: vybrana, ids }, method: 'PUT' });
+            stav.lide = await api('/api/players');      // ať nabídka i sloupec „další pozice" sedí
+            await prekresli();
+            $('#p-vysledek').innerHTML = `<div class="hlaska ${r.zmeneno ? 'ok' : 'info'}">`
+                + (r.zmeneno ? t('pozice.ulozeno', r.zmeneno, t('pozice.' + vybrana))
+                             : t('pozice.bezeZmeny'))
+                + '</div>';
+        } catch (e) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(e.message)}</div>`;
+        }
+    };
 }
 
 /* ===================== záložka: Hodnotit ===================== */
@@ -1820,6 +1917,18 @@ async function listy(kam) {
             <p style="margin-top:14px">
                 <button class="hl" id="otevrit-listy" title="${t('listy.otevrit.tip')}">${t('listy.otevrit')}</button>
             </p>
+        </div>
+
+        <div class="karta">
+            <h2>${t('davky.nadpis')}</h2>
+            <p class="popis">${t('davky.popis')}</p>
+            <p>
+                <button class="vedlejsi" id="export-hodnoceni" title="${t('davky.export.tip')}">${t('davky.export')}</button>
+                <button class="vedlejsi" id="import-hodnoceni" title="${t('davky.import.tip')}">${t('davky.import')}</button>
+                <input type="file" id="import-hodnoceni-soubor" accept=".xlsx,.csv,text/csv" hidden>
+            </p>
+            <div id="davky-vysledek"></div>
+            <p class="popis">${t('davky.pravidla')}</p>
         </div>`;
 
     /* Tabulka platí pro vybrané období, ne pro to z Nastavení: ✓ a pomlčka
@@ -1848,7 +1957,12 @@ async function listy(kam) {
                     // Řádek na každou přiřazenou šablonu: každá je vlastní list,
                     // takže musí být vidět, která z nich ještě chybí.
                     const stavy = h.stavSablon ?? [{ sablona: h.sablona, maTrener: h.ma_trener, maHrac: h.ma_hrac }];
-                    const znacka = ano => ano ? '<span class="ano">✓</span>' : '<span class="ne">—</span>';
+                    // Fajfka není jen informace, ale i cesta k listu: co je hotové,
+                    // to jde rovnou vytisknout. Pomlčka nikam nevede — není co ukázat.
+                    const znacka = (ano, sablona, cim) => ano
+                        ? `<button class="jakoodkaz ano" data-list="${h.id}:${esc(sablona)}" data-porovnani="${cim}"`
+                          + ` title="${t('listy.otevritJeden.tip')}">✓</button>`
+                        : '<span class="ne">—</span>';
                     // Zaškrtávátko je na KAŽDÉM řádku, ne na hráči: co list, to
                     // vlastní volba. Ferda má tři šablony a nemá smysl, aby se
                     // pokaždé tisklo všechno, když chce trenér jen brankářský list.
@@ -1859,8 +1973,8 @@ async function listy(kam) {
                                    title="${t('listy.vyber.tip')}" checked></td>
                         ${i === 0 ? `<td rowspan="${stavy.length}">${jmenoHtml(h)}</td>` : ''}
                         <td>${stitekSablonyKlik(h.id, s.sablona)}</td>
-                        <td class="cisla">${znacka(s.maTrener)}</td>
-                        <td class="cisla">${znacka(s.maHrac)}</td>
+                        <td class="cisla">${znacka(s.maTrener, s.sablona, 'minule')}</td>
+                        <td class="cisla">${znacka(s.maHrac, s.sablona, 'hrac')}</td>
                     </tr>`).join('');
                 }).join('')}</tbody>
             </table>`;
@@ -1871,10 +1985,86 @@ async function listy(kam) {
         // Řádek s pomlčkou u trenéra říká, který list ještě nemá hodnocení —
         // z téhle tabulky je proto nejblíž rovnou do formuláře té šablony.
         zapojZkratkyNaHodnoceni(cil);
+
+        /* Klik na fajfku otevře ten jeden list — nejnovější hodnocení té šestice.
+           Sloupec rozhoduje, co bude druhým polygonem: u hráčovy fajfky má smysl
+           ukázat právě jeho sebehodnocení.
+
+           Zapojuje se TADY, ne po `nactiKdo()`: tabulka se překresluje při každé
+           změně období, takže jednorázové zapojení by po přepnutí přestalo platit. */
+        cil.querySelectorAll('[data-list]').forEach(b => b.onclick = () => {
+            otevriListy({
+                ids: b.dataset.list,
+                porovnani: b.dataset.porovnani,
+                obdobi: vybraneObdobi,
+                kumulovane: false   // jeden řádek = jedna šablona, není co kumulovat
+            });
+        });
     };
 
     $('#l-obdobi').onchange = () => { vybraneObdobi = $('#l-obdobi').value; nactiKdo(); };
     await nactiKdo();
+
+    /* Export bere období z nabídky nahoře — „všechna" znamená celý archiv.
+       Stažení přes odkaz, ne fetch: cookie se pošle sama a soubor skončí
+       rovnou ve Staženém, bez blobů v paměti. */
+    $('#export-hodnoceni').onclick = () => {
+        const obdobi = vybraneObdobi && vybraneObdobi !== 'vse'
+            ? `&obdobi=${encodeURIComponent(vybraneObdobi)}` : '';
+        location.href = `/api/evaluations/export.csv?lang=${jazyk()}${obdobi}`;
+    };
+
+    $('#import-hodnoceni').onclick = () => $('#import-hodnoceni-soubor').click();
+
+    $('#import-hodnoceni-soubor').onchange = async (e) => {
+        const soubor = e.target.files?.[0];
+        if (!soubor) return;
+        const cil = $('#davky-vysledek');
+        cil.innerHTML = `<div class="hlaska info">${t('shell.nacitam')}</div>`;
+        try {
+            const jeXlsx = /\.xlsx$/i.test(soubor.name);
+            const csv = jeXlsx ? radkyNaCsv(await xlsxNaRadky(soubor)) : await textSouboru(soubor);
+
+            // Nejdřív nanečisto — u hodnocení o to víc: zápis se nedá vzít zpět,
+            // append-only znamená, že omylem nahraný řádek už v historii zůstane.
+            const zkouska = await api('/api/evaluations/import', { telo: { csv, nanecisto: true } });
+
+            /* Přeskočené řádky nejsou chyba — sebehodnocení v souboru být má,
+               jen se nedá měnit. Vypisují se zvlášť, ať se v tom neztratí to,
+               co se opravdu nepovedlo. */
+            const seznam = (klic, polozky) => polozky.length
+                ? `<br><b>${t(klic)}:</b><br>${polozky.map(esc).join('<br>')}` : '';
+            const vypis = seznam('davky.chyby', zkouska.chyby) + seznam('davky.preskoceno', zkouska.preskoceno);
+            const celkem = zkouska.pridano + zkouska.upraveno;
+
+            if (!celkem) {
+                const hlaska = zkouska.bezeZmeny
+                    ? t('davky.bezeZmeny', zkouska.bezeZmeny)   // kolotoč export→import beze změn
+                    : t('davky.nicKZapisu');
+                cil.innerHTML = `<div class="hlaska ${zkouska.chyby.length ? 'pozor' : 'info'}">${hlaska}${vypis}</div>`;
+                e.target.value = '';
+                return;
+            }
+            if (!confirm(`${t('davky.potvrdit', zkouska.pridano, zkouska.upraveno)}\n\n`
+                + (zkouska.bezeZmeny ? t('davky.bezeZmeny', zkouska.bezeZmeny) + '\n' : '')
+                + (zkouska.chyby.length ? t('davky.chybStrucne', zkouska.chyby.length) + '\n' : '')
+                + '\n' + zkouska.nahled.join('\n'))) {
+                cil.innerHTML = `<div class="hlaska pozor">${t('davky.zruseno')}${vypis}</div>`;
+                e.target.value = '';
+                return;
+            }
+
+            const r = await api('/api/evaluations/import', { telo: { csv } });
+            cil.innerHTML = `<div class="hlaska ${r.chyby.length ? 'pozor' : 'ok'}">`
+                + t('davky.hotovo', r.pridano, r.upraveno)
+                + seznam('davky.chyby', r.chyby) + seznam('davky.preskoceno', r.preskoceno)
+                + '</div>';
+            await nactiKdo();          // fajfky musí ukázat nový stav
+        } catch (chyba) {
+            cil.innerHTML = `<div class="hlaska chyba">${esc(chyba.message)}</div>`;
+        }
+        e.target.value = '';
+    };
 
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);
@@ -2211,16 +2401,22 @@ function tabulkaPorovnani(p) {
 
     const popisky = Object.fromEntries(osy(p.sablona || sablonaZOs(p.osy)).map(o => [o.klic, o.popis]));
 
+    /* `rozdil === null` znamená, že známku nedal jeden z nich — typicky osa,
+       která v době staršího hodnocení ještě neexistovala. Není to shoda ani
+       rozpor, je to nezměřeno, a tak se to musí i napsat. */
     const radky = p.osy.map(o => `
         <tr class="${o.resit ? 'resit' : ''}">
             <td>${esc(popisky[o.klic] || o.klic)}</td>
-            <td class="cisla">${o.trener}</td>
-            <td class="cisla">${o.hrac}</td>
-            <td class="cisla">${o.rozdil > 0 ? `<span class="rozdil-plus">+${o.rozdil}</span>`
+            <td class="cisla">${o.trener ?? '—'}</td>
+            <td class="cisla">${o.hrac ?? '—'}</td>
+            <td class="cisla">${o.rozdil === null ? '—'
+                              : o.rozdil > 0 ? `<span class="rozdil-plus">+${o.rozdil}</span>`
                               : o.rozdil < 0 ? `<span class="rozdil-minus">${o.rozdil}</span>` : '0'}</td>
-            <td>${o.resit
-                    ? (o.rozdil > 0 ? t('porovnani.slepeMisto') : t('porovnani.sebeduvera'))
-                    : `<span class="ne">${t('porovnani.vToleranci')}</span>`}</td>
+            <td>${o.rozdil === null
+                    ? `<span class="ne">${t('porovnani.neporovnatelne')}</span>`
+                    : o.resit
+                        ? (o.rozdil > 0 ? t('porovnani.slepeMisto') : t('porovnani.sebeduvera'))
+                        : `<span class="ne">${t('porovnani.vToleranci')}</span>`}</td>
         </tr>`).join('');
 
     return `

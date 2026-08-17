@@ -556,7 +556,7 @@ Dřív se to pletlo do jedné kolonky `post`. Rozděleno:
   Klíče v seznamu `POZICE` v `sablony.js`, názvy se překládají (`pozice.*` v i18n).
 - **`post`** zůstal jako volný text pro funkci nebo poznámku — „Kapitán", „Hlavní trenér".
   Na listu se tiskne za pozicemi.
-- **šablona os** — kterých šest os se známkuje. Sedí na **hodnocení**, ne na osobě.
+- **šablona os** — která sada os se známkuje. Sedí na **hodnocení**, ne na osobě.
 
 **Proč je šablona na hodnocení:** hráč, který chytá i hraje v poli, potřebuje obojí. Ferda
 může mít v jednom období hodnocení brankářskou i polní šablonou a každá řada žije samostatně —
@@ -646,15 +646,15 @@ Důsledky, které musí platit všude:
 
 Definované v `web/src/sablony.js`, sdílené frontendem i Workerem.
 
-**`pole`** — hráč v poli, 6 os:
+**`pole`** — hráč v poli, 7 os (kondice přibyla 16. 8. 2026):
 `prava` Technika pravá noha · `leva` Technika levá noha · `hlavicky` Hlavičkování ·
 `prihravka` Přihrávka a první dotek · `braneni` Bránění 1v1 · `skenovani` Skenování a poziční hra
 
-**`brankar`** — 6 os:
+**`brankar`** — 7 os:
 `chytani` Chytání a zákroky · `misto` Výběr místa a postavení · `nohama` Hra nohama (rozehrávka) ·
 `vykopy` Výkopy a dlouhá rozehrávka · `mimo` Hra mimo bránu a centry · `organizace` Organizace a komunikace
 
-**`leader`** — vůdcovství, 6 os (od 2026-08-07):
+**`leader`** — vůdcovství, 7 os (od 2026-08-07, kondice od 16. 8. 2026):
 `vedeni` Vedení na hřišti · `priklad` Příklad v tréninku · `tlak` Reakce na chybu a tlak ·
 `fairplay` Fair play a respekt · `podpora` Podpora spoluhráčů · `odpovednost` Spolehlivost a odpovědnost
 
@@ -670,8 +670,25 @@ Ke každé ose je i **formulace v první osobě** (`JA`) pro formulář hráče 
 věta: „Levou nohou přihraju na deset metrů tak, jak chci." Hráč odpovídá na „umím to",
 neznámkuje sám sebe.
 
-Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích. Kondice
-a rychlost mezi osami schválně nejsou — u téhle kategorie měří biologický věk.
+Škála 1–10 s pevnými kotvami (`KOTVY`) se tiskne na list i zobrazuje ve formulářích.
+
+**Kondice je od 16. 8. 2026 sedmou osou u všech šablon** (rozhodnutí uživatele; dřív mezi
+osami schválně nebyla, protože u téhle kategorie měří i biologický věk). Rychlost mezi
+osami dál není, ze stejného důvodu, a slovní blok *Fyzicky* zůstává — u kondice se hodí
+o to víc.
+
+**Přidání osy uprostřed sezóny nesmí přepsat minulost.** Hodnocení pořízená dřív
+kondici nemá a nula by na desetibodové škále byla nejhorší možná známka — na listu, který
+si čtrnáctiletý odnese domů, ne nepřesnost, ale lež. Proto:
+
+- `osyZaznamu(sablona, hodnoty)` v `sablony.js` vrací osy **podle uloženého záznamu**, ne
+  podle aktuální šablony; starší hodnocení se vykreslí jako šestiúhelník, novější jako
+  sedmiúhelník. Radar je na počet os generický, takže to nic nestojí.
+- **Druhý polygon se kreslí jen tehdy, když stojí na týchž osách.** Jinak se vynechá
+  a na listu je věta proč — překryv šestice a sedmice by chybějící osu položil do středu.
+- Porovnání trenér × hráč počítá rozdíl **jen tam, kde známku dali oba** (`rozdil: null`
+  jinak). Bez toho by `7 − 0 = +7` vyrobilo velký rozpor, o kterém by trenér s hráčem
+  vedl rozhovor o něčem, co se nikdy nestalo.
 
 **Šablonu neměnit uprostřed sezóny.** Jiný počet vrcholů = jiný tvar polygonu a hodnocení už
 nejde porovnat s předchozím obdobím. Stará hodnocení se vykreslují šablonou, se kterou byla
@@ -765,6 +782,27 @@ smazat člověka, na kterého odkazují hodnocení, by rozbilo historii.
 Hodnocení se **nikdy nepřepisuje**. Každé uložení je nový řádek s datem; aplikace pracuje
 vždy s nejnovějším záznamem daného autora a období (`ORDER BY id DESC LIMIT 1`). Historie
 vzniká sama, zvláštní tabulka pro verzování není potřeba.
+
+### Přejmenování se propíše zpětně, šablona ne
+
+**Jméno ani přezdívka se nikam nekopírují.** `evaluations` i `tokens` drží jen `player_id`
+a každá čtecí cesta si jméno bere joinem na `players` — tiskový list, historie verzí,
+shoda mezi trenéry, odkazy, log komunikace i CSV export. Oprava překlepu nebo doplnění
+přezdívky se proto **promítne i do hodnocení pořízených dřív**, bez migrace a bez zásahu
+do dat. Ověřeno 16. 8. 2026: v celém Workeru není `INSERT`, který by jméno zapsal jinam
+než do `players`.
+
+**Šablona se naopak kopíruje** (`evaluations.sablona`) a nemění se zpětně. Rozdíl stojí
+za zapamatování, protože vypadá nedůsledně, a není:
+
+| | Chování | Proč |
+|---|---|---|
+| jméno, přezdívka, pozice | **aktualizuje se** zpětně | je to popis člověka; starý překlep na novém výtisku nikoho netěší |
+| šablona (sada os) | **mrzne** v okamžiku pořízení | je součástí měření — hodnocení se musí vykreslit tou sadou, se kterou vzniklo, i když hráč šablonu později ztratí nebo osa přibude (viz `osyZaznamu`) |
+
+Praktický důsledek pro CSV: **už stažený soubor** má jméno zamrzlé v okamžiku exportu.
+Import ale páruje **podle `hrac_id`**, ne podle jména, takže i starší soubor po přejmenování
+sedne na správnou osobu a nezaloží duplicitu.
 
 ### players drží hráče i trenéry
 
@@ -1232,6 +1270,61 @@ takové ukázky vyskytují. Úvodní `# Nadpis` se zahazuje, stránka svůj titu
 Cena: bundle vyrostl ze 116 na ~242 KiB gzip. Limit Workeru je řádově vyšší, ale je dobré
 vědět, že se dokumentace veze s každým nasazením.
 
+### Přihlášení samotným PINem (postaveno)
+
+Bez vyplněného jména se zkouší **dvojí, v tomhle pořadí**: nejdřív společné heslo
+(`auth`), pak **osobní PIN** proti všem aktivním trenérům s heslem
+(`najdiUcetPodleHesla`). Trenér tak na hřišti ťuká čtyři číslice a aplikace **sama pozná,
+kdo to je** — podepsané hodnocení nese jméno i bez psaní loginu.
+
+**Shoda u víc lidí se odmítne**, nevybírá se první. Hádat, kdo je u klávesnice, by
+znamenalo podepsat hodnocení cizím jménem; aplikace místo toho požádá o přihlašovací
+jméno.
+
+**Cena:** PBKDF2 (100 000 iterací) se počítá pro každého trenéra s heslem zvlášť. Proto
+se prochází **jen aktivní trenéři** — hráči účty nemají. U tří lidí je to zanedbatelné,
+u stovky by se muselo jméno začít vyžadovat.
+
+> **Bezpečnostní daň, kterou je dobré znát.** Čtyřmístný PIN bez jména je slabší než
+> dvojice jméno + heslo: 10 000 možností a stačí trefit kterýkoliv z platných, tedy
+> průměrně ~1 250 pokusů. Drží to jen **zámek na marné pokusy** — 5 na účet (nepřihlášené
+> pokusy jdou pod společný klíč `ucet:@spolecne`), 15 z jedné IP, oboje na 15 minut,
+> k tomu 700 ms prodleva u každého nezdaru. Aplikace je veřejná a jsou v ní data
+> nezletilých; **rozhodnuto vědomě 16. 8. 2026** kvůli ovládání na hřišti. Kdyby přibylo
+> trenérů nebo se PIN dostal ven, první krok je vyžadovat jméno.
+
+### Hromadný export a import hodnocení (postaveno)
+
+`GET /api/evaluations/export.csv?obdobi=&lang=` — jeden plochý soubor: řádek = jedno
+hodnocení, sloupec na **každou osu napříč šablonami** (`vsechnyOsy()`, dnes 19). Osa cizí
+šablony zůstane **prázdná, ne nula** — nula je platná známka a znamenala by, že ji někdo
+dal. Bez `obdobi` se veze celý archiv. Popisky sloupců jdou z `POPISKY.osa` v `sablony.js`
+(server texty jinak nevrací; tady jde o soubor pro člověka, ne pro aplikaci).
+
+`POST /api/evaluations/import` s `{csv, nanecisto}` — stejný dvoukrokový vzorec jako import
+kádru: nanečisto vrátí, co by se zapsalo, teprve druhé volání zapisuje. Drží tři pravidla:
+
+**Import je editace, ne jen zakládání.** Řádek s vyplněným `id` je **úprava** toho
+hodnocení a uloží se jako **nová verze s `uprava_id`** — přesně jako oprava ve formuláři.
+Řádek bez `id` zakládá nové hodnocení.
+
+| Pravidlo | Proč |
+|---|---|
+| **Append-only** — každý řádek je `INSERT`, nikdy `UPDATE`; u úpravy se navíc vyplní `uprava_id` | historie se nepřepisuje, ale je v ní vidět nit oprav |
+| **Prázdná buňka u osy = neměnit**, ne nula | jinak by neprošel ani **nezměněný export** staršího hodnocení, které novou osu (kondici) vůbec nemá — a přesně na tom to poprvé spadlo |
+| **Nezměněný řádek se nezapisuje** (`bezeZmeny`) | bez toho by kolotoč export → import při každém průchodu založil kopii celé historie |
+| **Podpis povinný** — `hodnotil`, jinak podpis předlohy, jinak přihlášený trenér | stejné pořadí jako ve formuláři, který přihlášeného předvyplní |
+| **Sebehodnocení nelze měnit** — řádky s `autor = hráč` se **přeskočí** (ne chyba) | nástroj stojí na dvou **nezávislých** pohledech; export je obsahuje schválně, aby byla vidět, ale měnit je smí jen hráč přes svůj odkaz |
+
+Nové hodnocení musí projít `zkontrolujHodnoty` — tedy mít **všechny** osy šablony.
+U úpravy se vychází z původních známek a přepíšou se jen vyplněné buňky, takže starší
+šestiosý záznam zůstane šestiosý, dokud mu někdo kondici nedoplní.
+
+`id` cizího hráče se odmítne: sloupec `id` se nikdy nepřepisuje na jiný záznam.
+
+Hlavička se čte v obou jazycích i v holých klíčích (`klicZPopisu`), takže ručně upravený
+nebo starší soubor projde. Cíle jsou v jedné buňce oddělené `|`.
+
 ### Stav kanálů v liště (postaveno)
 
 `GET /api/stav` vrací čtyři položky (`ai`, `sms`, `telegram`, `email`), každou jako
@@ -1336,7 +1429,7 @@ Rozhodnuto 2026-08-06:
 
 - admin auth = heslo v secretu + podepsaná session cookie (§14/1)
 - doména = nakonec vlastní pod `maxferit.cz`, do té doby `*.workers.dev` (§14/2)
-- sebehodnocení má **6 os + jednu nepovinnou otevřenou otázku** „Na čem chceš pracovat?"
+- sebehodnocení má **tytéž osy jako trenér + jednu nepovinnou otevřenou otázku** „Na čem chceš pracovat?"
   (§14/4) — odpověď vidí trenér v Porovnání, na tištěný list se nedostane
 - osobní data (jména i posudky) zůstávají v repu a v databázi → **repozitář musí zůstat private**
 

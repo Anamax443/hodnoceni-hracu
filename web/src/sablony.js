@@ -16,19 +16,29 @@ export const MAX = 10;   // maximum škály
 export const KRUHY = 5;  // počet soustředných úrovní mřížky (po 2 bodech)
 
 export const SABLONY = {
-    pole:    ['prava', 'leva', 'hlavicky', 'prihravka', 'braneni', 'skenovani'],
-    brankar: ['chytani', 'misto', 'nohama', 'vykopy', 'mimo', 'organizace'],
-    /* Vůdcovství se známkuje zvlášť, ne jako sedmá osa u všech. Sedm vrcholů
-       místo šesti by změnilo tvar radaru a nová hodnocení by nešlo porovnat
-       se staršími. Takhle dostane hráč druhý list vedle svého herního —
-       stejně jako Ferda, který je hodnocený jako brankář i jako hráč v poli.
-       Není to hodnocení povahy: každá osa popisuje chování, které je vidět. */
-    leader:  ['vedeni', 'priklad', 'tlak', 'fairplay', 'podpora', 'odpovednost']
+    pole:    ['prava', 'leva', 'hlavicky', 'prihravka', 'braneni', 'skenovani', 'kondice'],
+    brankar: ['chytani', 'misto', 'nohama', 'vykopy', 'mimo', 'organizace', 'kondice'],
+    /* Vůdcovství se známkuje zvlášť, ne jako další osa u všech. Takhle dostane
+       hráč druhý list vedle svého herního — stejně jako Ferda, který je
+       hodnocený jako brankář i jako hráč v poli. Není to hodnocení povahy:
+       každá osa popisuje chování, které je vidět. */
+    leader:  ['vedeni', 'priklad', 'tlak', 'fairplay', 'podpora', 'odpovednost', 'kondice']
 };
 
-/* Kondice a rychlost mezi osami záměrně nejsou — u téhle věkové
-   kategorie měří biologický věk, ne odvedenou práci. Patří do
-   slovního bloku „Fyzicky". */
+/* KONDICE je sedmá osa u všech šablon — rozhodnutí z 16. 8. 2026.
+   Dřív tu záměrně nebyla, ze dvou důvodů; oba stojí za to znát, protože
+   platí dál a je to vědomě přijatá daň:
+
+   1. U téhle věkové kategorie kondice měří i biologický věk, ne jen
+      odvedenou práci. Kdo povyroste o deset centimetrů, může mít lepší
+      známku než ten, co dřel — a ten list si čtrnáctiletý odnese domů.
+      Proto se u ní o to víc hodí říct slovy, co za číslem stojí; slovní
+      blok „Fyzicky" zůstává a nezaniká.
+   2. Sedm vrcholů místo šesti mění tvar polygonu. Hodnocení pořízená
+      před tímhle datem mají šest os a vykreslují se dál jako šestiúhelník
+      (osy se berou ze záznamu, ne ze šablony — viz `osyZaznamu`), takže
+      nelžou. Porovnat starou šestici s novou sedmicí ale nejde a aplikace
+      se o to nepokouší. */
 
 /* Pozice, na kterých hráč může hrát. Klidně několik najednou — hráč
    bývá použitelný na levém beku i na křídle. Je to popisné, tiskne se
@@ -63,6 +73,21 @@ export const POPISKY = {
             ofenzivni_zaloznik: 'ofenzivní záložník', prave_kridlo: 'pravé křídlo',
             leve_kridlo: 'levé křídlo', hrotovy_utocnik: 'hrotový útočník'
         },
+        /* Popisky os pro export hodnocení. V hlavičce CSV musí stát to, co zná
+           trenér z formuláře — `prihravka` mu nic neřekne. Import bere obojí,
+           popisek i klíč, takže ručně upravený i starší soubor projde. */
+        osa: {
+            prava: 'Technika pravá noha', leva: 'Technika levá noha',
+            hlavicky: 'Hlavičkování', prihravka: 'Přihrávka a první dotek',
+            braneni: 'Bránění 1v1', skenovani: 'Skenování a poziční hra',
+            chytani: 'Chytání a zákroky', misto: 'Výběr místa a postavení',
+            nohama: 'Hra nohama (rozehrávka)', vykopy: 'Výkopy a dlouhá rozehrávka',
+            mimo: 'Hra mimo bránu a centry', organizace: 'Organizace a komunikace',
+            vedeni: 'Vedení na hřišti', priklad: 'Příklad v tréninku',
+            tlak: 'Reakce na chybu a tlak', fairplay: 'Fair play a respekt',
+            podpora: 'Podpora spoluhráčů', odpovednost: 'Spolehlivost a odpovědnost',
+            kondice: 'Fyzická kondice'
+        },
         ano: 'ano', ne: 'ne'
     },
     en: {
@@ -74,9 +99,30 @@ export const POPISKY = {
             stredni_zaloznik: 'centre midfielder', ofenzivni_zaloznik: 'attacking midfielder',
             prave_kridlo: 'right winger', leve_kridlo: 'left winger', hrotovy_utocnik: 'striker'
         },
+        osa: {
+            prava: 'Technique right foot', leva: 'Technique left foot',
+            hlavicky: 'Heading', prihravka: 'Passing and first touch',
+            braneni: 'Defending 1v1', skenovani: 'Scanning and positioning',
+            chytani: 'Shot stopping', misto: 'Positioning and starting position',
+            nohama: 'Playing with the feet', vykopy: 'Goal kicks and long distribution',
+            mimo: 'Off the line and crosses', organizace: 'Organisation and communication',
+            vedeni: 'Leading on the pitch', priklad: 'Example in training',
+            tlak: 'Response to mistakes and pressure', fairplay: 'Fair play and respect',
+            podpora: 'Supporting team-mates', odpovednost: 'Reliability and responsibility',
+            kondice: 'Physical condition'
+        },
         ano: 'yes', ne: 'no'
     }
 };
+
+/**
+ * Všechny osy napříč šablonami, bez opakování a v pořadí šablon.
+ * Export hodnocení je jeden plochý soubor pro Excel, takže musí mít sloupec
+ * na každou osu, která se kde vyskytuje; u řádku jiné šablony zůstane prázdný.
+ */
+export function vsechnyOsy() {
+    return [...new Set(Object.values(SABLONY).flat())];
+}
 
 /** Popisek klíče pro export. Neznámý klíč se vrátí, jak přišel. */
 export function popis(skupina, klic, jazyk = 'cs') {
@@ -116,6 +162,25 @@ export function zkontrolujPozice(pozice) {
 /** Vrátí klíče os dané šablony, nebo prázdné pole u neznámé šablony. */
 export function klice(sablona) {
     return SABLONY[sablona] ?? [];
+}
+
+/**
+ * Osy, kterými se vykresluje KONKRÉTNÍ uložený záznam.
+ *
+ * Bere je ze šablony, ale nechá jen ty, které v uložených hodnotách opravdu
+ * jsou. Hodnocení pořízené dřív, než osa přibyla, ji tak neukáže jako nulu —
+ * a nula je na desetibodové škále nejhorší možná známka. Na listu, který si
+ * čtrnáctiletý odnese domů, by to nebyla nepřesnost, ale lež.
+ *
+ * Radar je generický na počet os, takže starší záznam se prostě vykreslí
+ * jako šestiúhelník vedle novějšího sedmiúhelníku.
+ */
+export function osyZaznamu(sablona, hodnoty) {
+    const vsechny = klice(sablona);
+    if (!hodnoty || typeof hodnoty !== 'object') return vsechny;
+    const jsou = vsechny.filter(k => Number.isFinite(Number(hodnoty[k])) && hodnoty[k] !== null && hodnoty[k] !== '');
+    // Prázdný průnik znamená rozbitý záznam, ne starý — ať se radar nezhroutí.
+    return jsou.length ? jsou : vsechny;
 }
 
 /**

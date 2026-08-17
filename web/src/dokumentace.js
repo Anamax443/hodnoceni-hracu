@@ -63,7 +63,10 @@ nebo za rodiči.</p>
 <i>Upravit</i> na konci řádku dělá totéž. U každého člověka se vede:</p>
 <ul>
   <li><b>Jméno a přezdívka</b> — přezdívka se ukazuje všude, kde se jméno
-      vypisuje. Hodí se, když jsou v kádru tři stejná příjmení.</li>
+      vypisuje. Hodí se, když jsou v kádru tři stejná příjmení.
+      <b>Oprava se propíše zpětně</b>: doplněná přezdívka nebo opravený překlep
+      se objeví i u hodnocení a sebehodnocení pořízených dřív, protože ta drží
+      odkaz na osobu, ne opsané jméno. Nic se kvůli tomu nepředělává.</li>
   <li><b>Role</b> — hráč, nebo trenér. Trenér se přihlašuje, hráč ne.</li>
   <li><b>Pozice</b> — může jich být víc (brankář i střední záložník).
       Tisknou se na list.</li>
@@ -98,6 +101,21 @@ se 3“), a teprve po potvrzení zapisuje. Řádek se páruje k člověku podle
 jinak by z každé opravy vznikl nový člověk. Vadné řádky se přeskočí a vypíšou
 s číslem řádku tak, jak ho vidíš v Excelu.</p>
 <p><b>Import nikdy nemění hesla ani hodnocení.</b> Jde výhradně o kartotéku lidí.</p>
+
+<h2>Pozice</h2>
+<p><b>Opačný pohled než Lidé.</b> Tam se vybírá hráč a k němu se zaškrtávají
+pozice; tady se vybere <b>pozice</b> a zaškrtá se, kdo na ni patří. Když
+skládáš sestavu, přemýšlíš „kdo mi může hrát pravého beka", ne „co všechno
+umí Vilém" — a proklikat kvůli tomu osmnáct karet je otrava.</p>
+<p>V nabídce je u každé pozice vidět, <b>kolik lidí ji zatím má</b>, a otevře se
+rovnou ta nejprázdnější — tam je nejspíš práce. U každého hráče je vpravo
+seznam jeho <b>dalších pozic</b>, ať je vidět, koho odjinud přetahuješ.</p>
+<p><b>Ukládá se jen ta jedna vybraná pozice.</b> Ostatní, které má hráč
+nastavené, zůstávají — tenhle formulář o nich nic neví a nesmí je smazat.
+Když zaškrtnutí odpovídá tomu, co už je uložené, aplikace to řekne a nic
+nezapíše.</p>
+<p>Je to totéž pole jako v Lidech, jen z druhé strany: co zaškrtneš tady, uvidíš
+tam u hráče, a naopak. Pozice se tisknou na list.</p>
 
 <h2>Příkazový řádek</h2>
 <p>Pruh nad obsahem. Napiš jméno hráče a aplikace nabídne, co s ním: <b>Hodnotit</b>,
@@ -284,6 +302,36 @@ s plnými kolečky a lehkou výplň, druhý pohled čárkovanou čáru s prázdn
 typ čáry a tvar značky přežijí i kopírku. Ze stejného důvodu je ve <b>vzorku
 v legendě</b> kousek skutečné čáry se značkou, ne barevný obdélníček.</p>
 
+<h3>Hromadný export a import hodnocení</h3>
+<p>Dole v Listech je <b>Export hodnocení do CSV</b> — soubor, který otevře Excel.
+Řádek je jedno hodnocení, sloupec je jedna osa; osy cizí šablony zůstanou
+prázdné. Export bere <b>období vybrané nahoře</b>, volba „všechna období"
+stáhne celý archiv.</p>
+<p>Vyplněný soubor jde nahrát zpátky tlačítkem <b>Import hodnocení z CSV</b>.
+Hodí se, když se známkuje mimo aplikaci nebo se doplňuje víc hráčů najednou.
+Nejdřív se ukáže, co by se zapsalo, a teprve po potvrzení se zapisuje.</p>
+<p><b>Import se chová stejně jako oprava ve formuláři.</b> Řádek s vyplněným
+<code>id</code> uloží <b>novou verzi</b> toho hodnocení a původní zůstane
+v historii; řádek bez <code>id</code> založí nové hodnocení. Nic se nikdy
+nepřepisuje.</p>
+<ul>
+  <li><b>Prázdná buňka u osy znamená „neměnit"</b>, ne nulu. Díky tomu projde
+      i nezměněný export staršího hodnocení, které novou osu (kondici) vůbec
+      nemá — zůstane takové, jaké bylo.</li>
+  <li><b>Nezměněný řádek se nezapisuje.</b> Když soubor stáhneš a hned nahradíš
+      beze změny, neudělá se nic a aplikace to řekne. Jinak by se při každém
+      kolečku zakládala kopie celé historie.</li>
+  <li><b>Podpis je povinný.</b> Bere se ze sloupce <i>hodnotil</i>, jinak
+      z opravovaného hodnocení, jinak jsi to ty jako přihlášený — stejné pořadí
+      jako ve formuláři.</li>
+  <li><b>Sebehodnocení hráče měnit nejde.</b> V souboru je schválně, ať je vidět,
+      ale při importu se přeskočí. Vyplňuje ho hráč přes svůj odkaz — kdyby ho
+      mohl přepsat trenér, přestal by to být hráčův pohled a celé porovnání dvou
+      pohledů by ztratilo smysl.</li>
+</ul>
+<p>Nové hodnocení musí mít vyplněné <b>všechny osy</b> své šablony. Hlavička může
+být česky, anglicky i v klíčích, takže ručně upravený soubor projde.</p>
+
 <h2>Analýzy</h2>
 <p>Souhrny za celý kádr: <b>kde je mužstvo nejslabší</b> (průměr osy přes všechny hodnocené,
 od nejnižší) a <b>kde se nejvíc rozchází pohled trenéra a hráče</b>. Počítá to aplikace,
@@ -397,9 +445,19 @@ vyplněný. Platí patnáct minut a jen jednou. Jestli takový účet existuje,
 aplikace neřekne — jinak by šlo zjišťovat, kdo účet má. Nesmyslný tvar vstupu
 a vyčerpanou brzdu ale řekne nahlas, ať se nečeká na odkaz, který nikam
 nejde. Stránka s novým heslem vždycky napíše, čí heslo zrovna nastavuješ.</p>
-<p>Ze starých časů existuje ještě <b>společné heslo</b> bez jména. Používá se
-tak, že se pole „Kdo jsi“ nechá prázdné. Až budou mít všichni trenéři svůj
-účet, zruší se.</p>
+<h3>Stačí zadat PIN, jméno psát nemusíš</h3>
+<p>Pole „Kdo jsi“ jde nechat prázdné a napsat jen svůj PIN — <b>aplikace pozná,
+kdo jsi</b>, a hodnocení se podepíše tvým jménem. Na hřišti v rukavicích je to
+rozdíl mezi čtyřmi ťuknutími a vypisováním loginu.</p>
+<p>Kdyby dva lidé měli stejný PIN, aplikace <b>nehádá</b> a vyžádá si jméno.
+Vybrat jednoho z nich by znamenalo podepsat hodnocení cizím jménem.</p>
+<p>Prázdné jméno funguje i pro staré <b>společné heslo</b>. To se zruší, až
+budou mít všichni trenéři svůj účet — hodnocení uložené pod ním totiž neví,
+kdo ho psal.</p>
+<p><b>Za tohle pohodlí se platí.</b> Čtyři číslice bez jména se dají uhodnout
+snáz než jméno s heslem, a aplikace je veřejně na internetu. Drží to zámek na
+marné pokusy a prodleva u každého nezdaru. Proto: <b>PIN nikomu neříkej a nepiš
+ho do zprávy</b>, kterou by mohl číst někdo další.</p>
 
 <h2>Ochrana údajů</h2>
 <p>V aplikaci jsou jména, známky a slovní posudky nezletilých. Proto:</p>
@@ -516,7 +574,10 @@ Where the coach and the player disagree, there is something to talk about.</p>
 <i>Edit</i> button at the end of the row does the same. For each person the app keeps:</p>
 <ul>
   <li><b>Name and nickname</b> — the nickname appears wherever names are shown,
-      which helps when three players share a surname.</li>
+      which helps when three players share a surname. <b>A correction applies
+      backwards</b>: a nickname you add or a typo you fix also shows up on
+      evaluations and self-evaluations recorded earlier, because those hold a
+      reference to the person, not a copied-out name. Nothing has to be redone.</li>
   <li><b>Role</b> — player or coach. Coaches sign in, players do not.</li>
   <li><b>Positions</b> — there can be several (goalkeeper and midfielder).</li>
   <li><b>Function</b> — free text, e.g. “Captain”.</li>
@@ -548,6 +609,21 @@ A row is matched to a person by <code>id</code>, else by sign-in name, else by
 name and role — otherwise every correction would create a new person. Invalid
 rows are skipped and listed with the row number as Excel shows it.</p>
 <p><b>Import never touches passwords or evaluations.</b></p>
+
+<h2>Positions</h2>
+<p><b>The reverse view of People.</b> There you pick a player and tick their
+positions; here you pick a <b>position</b> and tick who belongs there. Putting a
+line-up together, you think "who can play right back for me", not "what is Vilém
+good at" — and clicking through eighteen cards for that is a chore.</p>
+<p>The selector shows <b>how many people hold each position</b> and opens on the
+emptiest one, where the work most likely is. Next to every player you see their
+<b>other positions</b>, so it is clear who you are pulling away from elsewhere.</p>
+<p><b>Only the selected position is saved.</b> The others a player has set stay
+untouched — this form knows nothing about them and must not wipe them. If the
+ticks match what is already stored, the app says so and writes nothing.</p>
+<p>It is the same field as in People, just from the other side: what you tick here
+shows up there on the player, and the other way round. Positions are printed on
+the sheet.</p>
 
 <h2>Command bar</h2>
 <p>The strip above the content. Type a player's name and the app offers what to do:
@@ -736,6 +812,37 @@ a dashed line with hollow squares and no fill. On a black-and-white printer the
 shades of grey would merge, whereas a line type and a marker shape survive even
 a photocopier. For the same reason the <b>legend swatch</b> is a piece of the
 real line with its marker, not a coloured rectangle.</p>
+
+<h3>Bulk export and import of evaluations</h3>
+<p>At the bottom of Sheets there is <b>Export evaluations to CSV</b> — a file that
+opens in Excel. A row is one evaluation, a column is one axis; axes belonging to
+another template stay empty. The export uses the <b>period selected above</b>, and
+"all periods" downloads the whole archive.</p>
+<p>The filled-in file goes back with <b>Import evaluations from CSV</b>. It helps
+when scoring happens outside the app or several players are filled in at once.
+What would be written is shown first; writing happens only after you confirm.</p>
+<p><b>The import behaves exactly like correcting a record in the form.</b> A row
+with an <code>id</code> saves a <b>new version</b> of that evaluation and the
+original stays in the history; a row without one creates a new evaluation.
+Nothing is ever overwritten.</p>
+<ul>
+  <li><b>An empty axis cell means "leave as is"</b>, not zero. That is why an
+      unchanged export of an older evaluation without the new axis (physical
+      condition) goes through — it stays exactly as it was.</li>
+  <li><b>An unchanged row is not written.</b> Download the file and upload it back
+      untouched and nothing happens, and the app says so. Otherwise every round
+      trip would create a copy of the whole history.</li>
+  <li><b>A signature is required.</b> Taken from the <i>signed by</i> column, else
+      from the evaluation being corrected, else from you as the signed-in coach —
+      the same order as in the form.</li>
+  <li><b>Player self-evaluations cannot be changed.</b> They are in the file on
+      purpose, so they are visible, but the import skips them. The player fills
+      those in through their own link — if a coach could overwrite them, they
+      would stop being the player's view and comparing the two would lose its
+      point.</li>
+</ul>
+<p>A new evaluation must have <b>all axes</b> of its template filled in. The header
+may be in Czech, English or raw keys, so a hand-edited file still works.</p>
 
 <h2>Analyses</h2>
 <p>Squad-wide summaries: <b>where the team is weakest</b> (average of an axis across all

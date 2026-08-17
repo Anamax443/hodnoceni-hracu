@@ -14,7 +14,7 @@
    ===================================================================== */
 
 import { radar, vzorekRady } from './radar.js';
-import { t, osy, kotvy, ja, locale } from './i18n.js';
+import { t, osy, osyProZaznam, kotvy, ja, locale } from './i18n.js';
 
 /** Escapuje text z databáze, aby `&` nebo `<` v komentáři nerozbily HTML. */
 export function esc(hodnota) {
@@ -62,8 +62,18 @@ function obdobiListu(h, nas) {
  * @param {Object} nas {klub, kategorie, sezona, obdobi, latka, cileNadpis}
  */
 export function list(h, nas) {
-    const seznamOs = osy(h.sablona);
+    // Osy podle TOHOTO záznamu, ne podle aktuální šablony: hodnocení pořízené
+    // dřív, než osa přibyla, se vykreslí tou šesticí, se kterou vzniklo.
+    const seznamOs = osyProZaznam(h.sablona, h.hodnoceni);
     if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
+
+    // Druhý polygon se kreslí jen tehdy, když stojí na týchž osách. Jinak by
+    // se šestice porovnávala se sedmicí a chybějící osa by spadla na nulu —
+    // což na papíře vypadá jako nejhorší možná známka, ne jako „neměřeno".
+    const porovnatelne = h.porovnani
+        && seznamOs.every(o => Number.isFinite(Number(h.porovnani[o.klic])));
+    const druhyPolygon = porovnatelne ? h.porovnani : null;
+    const nesouhlasnaSablona = !!h.porovnani && !porovnatelne;
 
     const datum = new Date().toLocaleDateString(locale());
 
@@ -89,11 +99,12 @@ export function list(h, nas) {
 
         ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
 
-        <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
+        <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, druhyPolygon)}</div>
         <div class="legend">
             <span>${vzorekRady(0, 'var(--sab-tmava, #1565C0)')} ${t('list.trener')}</span>
-            ${h.porovnani ? `<span>${vzorekRady(1)} ${esc(popisekPorovnani(h))}</span>` : ''}
+            ${druhyPolygon ? `<span>${vzorekRady(1)} ${esc(popisekPorovnani(h))}</span>` : ''}
         </div>
+        ${nesouhlasnaSablona ? `<p class="note-unfilled">${t('list.jinaSestice')}</p>` : ''}
 
         <div class="blocks">
             <div class="block fyz">
@@ -181,13 +192,18 @@ export function listKumulovany(hraci, nas) {
 
         <div class="charts">
             ${hraci.map(h => {
-                const seznamOs = osy(h.sablona);
+                // Totéž co u jednoho listu: osy podle záznamu a druhý polygon
+                // jen tehdy, když stojí na týchž osách.
+                const seznamOs = osyProZaznam(h.sablona, h.hodnoceni);
                 if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
+                const druhy = h.porovnani
+                    && seznamOs.every(o => Number.isFinite(Number(h.porovnani[o.klic]))) ? h.porovnani : null;
                 return `
                 <div class="chart-one sab-${esc(h.sablona)}">
                     <div class="chart-title">${t('sablona.' + h.sablona)}</div>
-                    <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, h.porovnani)}</div>
+                    <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, druhy)}</div>
                     ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
+                    ${h.porovnani && !druhy ? `<p class="note-unfilled">${t('list.jinaSestice')}</p>` : ''}
                 </div>`;
             }).join('')}
         </div>

@@ -2,12 +2,20 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
-## 2026-08-17 (43) — bezpečnostní hlavičky na každé odpovědi + security.txt
+## 2026-08-17 (49) — bezpečnostní hlavičky na každé odpovědi + security.txt
 
 **Commity:** `23860de` (hlavičky) → `59260fd` (dokumentace) → `8d695ab` (nonce pro
-Cloudflare) · **NASAZENO** 2026-08-17, poslední Version ID `f823bf22-e477-4d44-ad75-9bcff6dfd1b1`.
-Ověřeno živě: `/api/version` = `8d695ab`, `cisto: true`; hlavičky sedí na `/`, `/app.js`,
-`/listy.html` i `/.well-known/security.txt`; headless prohlížeč hlásí **0 porušení CSP**.
+Cloudflare). Ověřeno na ostré adrese: hlavičky sedí na `/`, `/app.js`, `/listy.html`
+i `/.well-known/security.txt`, headless prohlížeč hlásí **0 porušení CSP**.
+
+> **Pozor, zpackané nasazení.** Tyhle commity vznikly nad **neaktuálním** lokálním
+> stromem (`064aa97`), protože jsem si před prací nestáhl origin — a `npm run deploy`
+> tím na ostrou adresu vrátil starší aplikaci: **bez záložky Pozice, bez sedmé osy
+> kondice a bez importu/exportu CSV** (zápisy 44–48). Trvalo to zhruba deset minut
+> a nikdo si toho podle logu nevšiml; do databáze to nesáhlo. Vráceno rollbackem na
+> Version ID `b3d57c40` (= commit `5f9363d`, stav před zásahem) a teprve pak se
+> hlavičky spojily s origin/main. **Poučení: `git fetch` a `git status` proti originu
+> patří před první změnu, ne až před push.**
 
 Podnět: audit `hodnoceni.maxferit.cz` (17. 8. 2026) — 78 %, chybějící CSP a spol.
 Co se opravilo:
@@ -62,6 +70,250 @@ a odebrání ze seznamu trvá měsíce) a COOP/COEP (aplikace nic izolovaného n
 
 **Platnost v security.txt** se dopočítává za běhu (dnes + rok). Pevné datum by jednou
 tiše propadlo a nikdo by si toho nevšiml.
+
+---
+
+## 2026-08-16 (48) — záložka Pozice: obsazení postu místo proklikávání hráčů
+
+**Zadání uživatele:** vidět to i obráceně — vybrat post (třeba pravého beka) a dostat
+seznam všech hráčů se zaškrtávátky, předvyplněnými podle toho, co už mají nastavené.
+
+**Proč to dává smysl:** pozice má vyplněné jen 4 z 18 hráčů, protože se dnes zadávají
+po jednom v Lidech. Jenže když trenér skládá sestavu, přemýšlí „kdo mi může hrát pravého
+beka", ne „co všechno umí Vilém" — a proklikat kvůli tomu osmnáct karet nikdo nechce.
+
+**Nejdůležitější rozhodnutí je v tom, co se ukládá.** Zapisuje se **jen ta jedna vybraná
+pozice**: `PUT /api/pozice` projde hráče, porovná „má být" proti „má teď" a sáhne jen na
+ty, kde se to liší — přidá pozici do pole, nebo ji z něj vyhodí. Kdyby se ukládalo celé
+pole pozic, jak ho formulář zrovna zobrazuje, **smazal by hráčům všechny ostatní pozice**,
+o kterých tenhle pohled nic neví. To je přesně ta chyba, kterou by nikdo neodhalil dřív
+než u tisku listů.
+
+Drobnosti, které to dělají použitelným:
+- v nabídce je u každé pozice **kolik lidí ji zatím má** a otevře se ta nejprázdnější,
+  protože tam je nejspíš práce;
+- u každého hráče je vidět **jeho další pozice**, ať je poznat, koho odjinud přetahuješ;
+- **beze změny se nic nezapisuje** a aplikace to řekne;
+- zaškrtnutí se po přepnutí pozice bere vždycky z dat, ne z předchozí volby — jinak by se
+  rozdělaná a neuložená volba tiše přenesla na jiný post.
+
+**Ověřeno:** klíče i18n v obou jazycích, `node --check`, nasazení a to, že se `app.js`
+s funkcí `pozice` i tlačítko v liště opravdu servírují. **Neověřeno:** proklik v prohlížeči
+— zápis do kartotéky si zaslouží, abys to zkusil nejdřív na jedné pozici.
+
+**NASAZENO** 2026-08-16, Version ID `b1322329-91ae-41bf-9328-e52244c35710`.
+
+**Doplněk: dokumentace se rozešla na dvou místech**, našlo se to při kontrole po nasazení.
+
+1. **Záložka Pozice chyběla v samostatných příručkách** (`docs/README.md`, `README.en.md`),
+   i když v aplikační dokumentaci byla. A protože se ty příručky servírují na
+   `/dok/prirucka`, chybělo by to i tam. Rozdíl vznikl tím, že jsem psal jen do
+   `dokumentace.js` — příručky mají vlastní strukturu záložek a musí se doplnit zvlášť.
+2. **Příručky pořád mluvily o „šesti osách"**, přestože kondicí je jich sedm. Zbytek
+   z doby před 16. 8. Opraveno na sedm tam, kde jde o počet, a na „sada os" tam, kde na
+   počtu nezáleží — druhá formulace nezestárne, až se osy zase změní.
+
+Poučení: **po každé změně počtu os projít `grep "šest os\|six axes"`.** Formulace vázaná
+na konkrétní číslo zestárne tiše a člověk ji najde, až když podle ní někdo něco udělá.
+
+---
+
+## 2026-08-16 (47) — přejmenování se propisuje zpětně (ověřeno, nic se nestavělo)
+
+**Dotaz uživatele:** když se opraví jméno nebo doplní přezdívka, má se to promítnout i do
+už zavedených hodnocení a sebehodnocení.
+
+**Nestavělo se nic — funguje to tak od začátku** a stálo za to si to ověřit místo hádání:
+
+- `evaluations` má sloupce `id · player_id · datum · obdobi · autor · autor_id · sablona ·
+  hodnoty · fyzicky · hlavou · parta · cile · poznamka · uprava_id` — **žádné jméno**.
+  Totéž `tokens`.
+- V celém Workeru **není jediný `INSERT`, který by jméno zapsal mimo `players`**.
+- Každá čtecí cesta si ho bere joinem: tiskový list, historie verzí, shoda, odkazy, log
+  komunikace i CSV export.
+
+Oprava jména se tedy propíše všude, včetně listů vytištěných znovu, bez migrace.
+
+**Rozdíl, který vypadá nedůsledně a není:** `sablona` se do hodnocení **kopíruje** a zpětně
+se nemění. Jméno je popis člověka, šablona je součást měření — hodnocení se musí vykreslit
+tou sadou os, se kterou vzniklo, i když hráč šablonu později ztratí nebo osa přibude. Přesně
+tenhle rozdíl drží i to, že po přidání kondice zůstala starší hodnocení šestiosá.
+
+**Praktický důsledek pro CSV:** už stažený soubor má jméno zamrzlé, ale import páruje podle
+`hrac_id`, ne podle jména — starší soubor po přejmenování sedne na správnou osobu.
+
+Zapsáno do `docs/TECHNICAL.md` (tabulka „aktualizuje se / mrzne") a do příručky v aplikaci
+(CS i EN) k položce *Jméno a přezdívka*. Je to otázka, která se za půl roku zeptá znovu.
+
+---
+
+## 2026-08-16 (46) — osobní PIN pozná trenéra sám; všichni tři mají heslo
+
+**Na přání uživatele:** každý trenér dostal svůj PIN a **zadání PINu má rovnou určit, kdo
+to je** — bez psaní přihlašovacího jména. Společné heslo zůstává, jak bylo.
+
+**Hesla nejsou nikde v repozitáři** ani v tomhle deníku. Hashe se spočítaly stejným
+postupem jako v aplikaci (PBKDF2-SHA256, 100 000 iterací, sůl 16 B) a do ostré D1 se
+poslaly dočasným souborem ve scratchpadu, který se hned smazal. Přes `--file`, ne
+`--command` — viz poučení ze záznamu (42).
+
+**Stav:** všichni tři trenéři (Maxla, Julek, Maso) mají heslo, dřív ho měl jen Maxla.
+
+**Jak to funguje.** Při prázdném jménu se zkouší dvojí, v tomhle pořadí: nejdřív společné
+heslo, pak osobní PIN proti všem aktivním trenérům s heslem (`najdiUcetPodleHesla`).
+Pořadí je schválně — společné heslo je jedno a známé, osobní PIN identifikuje člověka.
+
+**Shoda u víc lidí se odmítne, nevybírá se první.** Kdyby dva měli stejný PIN, hádání by
+znamenalo **podepsat hodnocení cizím jménem** — a podpis je to, kvůli čemu se vlastní
+účty zaváděly. Aplikace místo toho požádá o jméno.
+
+**Cena:** PBKDF2 se počítá pro každého trenéra s heslem zvlášť, proto se prochází jen
+aktivní trenéři. U tří lidí nic, u stovky by se muselo jméno vyžadovat.
+
+**Bezpečnostní daň, řečená uživateli předem a přijatá vědomě.** Čtyřmístný PIN bez jména
+je slabší než jméno + heslo: 10 000 možností a stačí trefit kterýkoliv z platných, tedy
+průměrně ~1 250 pokusů. Drží to zámek na marné pokusy (5 na účet, 15 z jedné IP, 15 minut)
+a 700 ms prodleva u každého nezdaru. Aplikace je veřejná a jsou v ní data nezletilých.
+Kdyby přibylo trenérů nebo PIN unikl, první krok je vyžadovat jméno.
+
+**Ověřeno naostro** — poprvé v tomhle sezení šlo ověřit funkci bez prohlížeče, protože
+`/api/login` je veřejný endpoint. Všechny čtyři vstupy vrátily, co mají: tři osobní PINy
+každý svého trenéra se správným `id`, společné heslo `jmeno: null`. Úspěšné přihlášení
+navíc nuluje počitadlo, takže se tím nic nezamklo.
+
+**NASAZENO** 2026-08-16, Version ID `f620c1f7-5552-4f67-8c78-2ea6ecceb1ba`.
+
+---
+
+## 2026-08-16 (45) — import je editace, ne zakládání (oprava návrhu)
+
+**Uživatel to vyzkoušel a našel chybu v návrhu, ne v kódu.** Vyexportoval a hned
+naimportoval **beze změny** — a půlka řádků spadla na „Osa kondice musí být celé číslo
+1 až 10 (přišlo: undefined)". Kolotoč export → import přitom musí projít bez jediné chyby.
+
+**Kde jsem to rozmyslel špatně.** Postavil jsem import jako *zakládání nových záznamů*
+a vzal na něj validaci pro nové hodnocení: musí mít **všechny** osy šablony. Jenže starší
+hodnocení kondici nemají, export je tedy vyveze s prázdnou buňkou a ta pak neprošla.
+K tomu měl každý řádek zakládat nezávislý záznam, takže by kolotoč při každém průchodu
+naklonoval celou historii.
+
+**Uživatel to shrnul přesně:** „editace je nastejno, jako bych editoval záznam v systému,
+takže import by se měl chovat stejně." Přepsáno podle toho:
+
+- **Řádek s `id` je úprava** — uloží se jako nová verze s `uprava_id`, původní zůstává
+  v historii. Přesně to, co dělá oprava ve formuláři. Řádek bez `id` zakládá nové.
+- **Prázdná buňka u osy znamená „neměnit"**, ne nulu. Úprava vychází z původních známek
+  a přepíše jen vyplněné buňky, takže starší šestiosý záznam zůstane šestiosý.
+- **Nezměněný řádek se nezapisuje** a počítá se zvlášť (`bezeZmeny`). Bez toho by
+  stažení a nahrazení beze změny nafouklo databázi o kopii všeho.
+- **Podpis** se bere ze sloupce, jinak z opravovaného hodnocení, jinak z přihlášeného
+  trenéra — stejné pořadí jako ve formuláři. Tím zmizela i chyba u řádku, kde starší
+  hodnocení podpis nemá.
+- **`id` cizího hráče se odmítne**, aby se sloupec nedal přepsat na jiný záznam.
+
+**Sebehodnocení zůstává nedotknutelné** — uživatel to výslovně schválil. Nově se ale
+hlásí jako **přeskočeno**, ne jako chyba: v exportu je schválně, aby bylo vidět, takže
+červený výpis u nezměněného kolotoče děsil zbytečně.
+
+**NASAZENO** 2026-08-16, Version ID `49e01b05-b882-4eee-8f2e-c9d6486fd650`.
+
+**Poučení k zapsání:** u kolotočových funkcí (export → úprava → import) je **nezměněný
+průchod první test, který má projít**. Napsal jsem ho do dokumentace jako chování, ne jen
+do kódu.
+
+---
+
+## 2026-08-16 (44) — hromadný export a import hodnocení do CSV
+
+**Na přání uživatele:** stáhnout hodnocení do CSV, otevřít v Excelu a nahrát zpátky.
+Export kádru už existoval, tohle je totéž pro hodnocení.
+
+**Export** `GET /api/evaluations/export.csv?obdobi=&lang=` je jeden plochý soubor: řádek
+= jedno hodnocení, sloupec na **každou osu napříč šablonami** (dnes 19). Osa cizí šablony
+zůstane **prázdná, ne nula** — nula je platná známka a znamenala by, že ji někdo dal.
+Bez `obdobi` se veze celý archiv; v Listech se bere období z nabídky nahoře.
+
+**Import** `POST /api/evaluations/import` jede stejným dvoukrokovým vzorcem jako import
+kádru: nanečisto ukáže, co by se zapsalo, teprve druhé volání zapisuje. Tři pravidla,
+u kterých bylo potřeba rozhodnout, ne jen naprogramovat:
+
+1. **Append-only.** Každý řádek je `INSERT`, nikdy `UPDATE`; sloupec `id` se při zápisu
+   ignoruje a je tam jen k orientaci v Excelu. Důsledek se říká nahlas i v potvrzovacím
+   dialogu: **zápis se nedá vzít zpět**, omylem nahraný řádek zůstane v historii.
+2. **Podpis povinný**, stejně jako ve formuláři — `hodnotil` musí sedět na trenéra
+   v kartotéce. Bez toho by za půl roku nikdo nedohledal autora a Shoda mezi trenéry by
+   neměla co porovnávat.
+3. **Sebehodnocení se importovat nedá.** Řádky s `autor = hráč` se odmítnou i s důvodem.
+   Tohle bylo jediné skutečné rozhodnutí: technicky by to šlo, ale celý nástroj stojí na
+   dvou **nezávislých** pohledech. Kdyby hráčův pohled mohl nahrát trenér, přestal by být
+   hráčův a porovnání dvou pohledů by ztratilo smysl.
+
+Hlavička se čte česky, anglicky i v holých klíčích, takže ručně upravený nebo starší
+soubor projde. Popisky os přibyly do `POPISKY.osa` v `sablony.js` — server jinak texty
+nevrací, ale CSV čte člověk, ne aplikace, a `prihravka` by mu nic neřeklo.
+
+**Ověřeno:** okružní cesta popisků (`Fyzická kondice` → `kondice` a zpátky), 19 sloupců
+os, `node --check`, nasazení. **Neověřeno:** skutečný export a import proti ostrým datům
+— vyžaduje přihlášení, které nemám. **Než to pustíš na celý kádr, zkus to na jednom
+řádku:** import je append-only, takže omyl se maže hůř, než vznikne.
+
+**NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`.
+
+**Oprava hned po nasazení: `textSouboru is not defined`.** Import hodnocení spadl na první
+kliknutí. Čtení nahraného souboru (`zeZipu`, `xlsxNaRadky`, `radkyNaCsv`, `textSouboru`)
+bydlelo **uvnitř funkce záložky Lidé**, takže z Listů nebylo vidět. Přesunuto na modulovou
+úroveň — soubor nahrávají dvě záložky, pomocník tedy nepatří do útrob jedné z nich.
+
+**Je to podruhé, co mě dostala tatáž mezera v kontrolách** — poprvé „ai is not defined"
+v záznamu (27). `node --check` ověří **syntaxi**, ne existenci volaných jmen: volání
+nedefinované funkce je syntakticky v pořádku a spadne až za běhu, po kliknutí. Nic
+z toho, co mám k dispozici bez přihlášení, tuhle třídu chyb nechytí; **jediná spolehlivá
+kontrola je proklikat to v prohlížeči.** Opraveno v Version ID
+`728ff8e2-41cc-4214-bcfe-93b10d0f0c8f`.
+
+---
+
+## 2026-08-16 (43) — kondice jako sedmá osa, klikací fajfka v Listech
+
+**Klik na fajfku otevře list.** V tabulce *Kdo se vytiskne* byla fajfka jen informace.
+Teď je to tlačítko: otevře ten jeden list s nejnovějším hodnocením. Sloupec rozhoduje,
+co bude druhým polygonem — u trenérovy fajfky minulé období, u hráčovy jeho sebehodnocení.
+Pomlčka zůstává nekliknutelná, není co ukázat.
+
+**Fyzická kondice je sedmá osa u všech šablon** — rozhodnutí uživatele. Nabídl jsem tři
+cesty (vlastní šablona jako u leadera / sedmá osa všude / číslo mimo radar) i s daněmi;
+vybral sedmou osu. Proti tomu v kódu stál výslovný zákaz na dvou místech, oba důvody ale
+platí dál a stojí za zapsání:
+
+1. **Kondice u téhle kategorie měří i biologický věk**, ne jen odvedenou práci. Kdo přes
+   léto povyrostl, dostane lepší číslo než ten, co dřel — a ten list si čtrnáctiletý
+   odnese domů. Slovní blok *Fyzicky* proto zůstává a u kondice je důležitější než jinde;
+   napsal jsem to do příručky, ne jen do kódu.
+2. **Sedm vrcholů mění tvar polygonu.** Přesně proto se kdysi vůdcovství stalo vlastní
+   šablonou místo sedmé osy.
+
+**Přidání osy uprostřed sezóny nesmělo přepsat minulost.** 16 hotových hodnocení kondici
+nemá a naivní vykreslení by jí dalo **nulu — nejhorší možnou známku na desetibodové
+škále**. To by na papíře nebyla nepřesnost, ale lež. Ošetřeno na třech místech:
+
+- `osyZaznamu()` vrací osy **podle uloženého záznamu**, ne podle aktuální šablony. Starší
+  hodnocení se vykreslí jako šestiúhelník, novější jako sedmiúhelník; radar je na počet
+  os generický, takže to nic nestálo. **Ověřeno vyrenderováním obou vedle sebe.**
+- **Druhý polygon se kreslí jen tehdy, když stojí na týchž osách.** Jinak se vynechá
+  a na listu je věta proč.
+- **Rozdíl trenér × hráč se počítá jen tam, kde známku dali oba.** Tohle byla nejtišší
+  past: nové sedmiosé sebehodnocení proti starému šestiosému hodnocení trenéra by
+  u kondice spočítalo `7 − 0 = +7`, označilo to za velký rozpor a poslalo trenéra vést
+  s hráčem rozhovor o něčem, co se nikdy nestalo. Teď je tam `—` a „nezměřeno u obou".
+
+**V zadání se původní odstavec nepřepsal**, jen se pod něj doplnilo, kdy a proč se
+rozhodnutí změnilo. Zadání je historický dokument; tvářit se, že to tak bylo vždycky, by
+bylo totéž provinění jako ta zestárlá čísla o den dřív.
+
+**NASAZENO** 2026-08-16, Version ID `c834ce32-1c89-431f-aadc-fdb7febf2b3a`.
+
+**Zbývá:** záložka *Pozice* — vybrat post a zaškrtat, kdo na něj patří (opačný směr než
+dnešní zadávání po hráčích).
 
 ---
 

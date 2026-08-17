@@ -141,6 +141,97 @@ i `web/src/i18n.js` bez chyby, nové klíče jsou v obou jazycích.
 
 ---
 
+## 2026-08-16 (27) — záložka Pozice ověřená uživatelem
+
+**NASAZENO** 2026-08-16, commit `5381f5b`. **Ověřil uživatel v prohlížeči proti ostrým
+datům** — obsazení pozice se uloží a hráčům nezmizí pozice, které mají nastavené jinde.
+
+To je u tohohle formuláře ta podstatná kontrola: zobrazuje vždy jen jednu pozici, takže
+kdyby se ukládalo celé pole pozic, smazal by hráčům všechno ostatní — a nikdo by si toho
+nevšiml dřív než u tisku listů. `PUT /api/pozice` proto porovnává „má být" proti „má teď"
+a sahá jen na rozdíl.
+
+---
+
+## 2026-08-16 (26) — osobní PIN pozná trenéra (ověřeno proti ostrému API)
+
+**NASAZENO** 2026-08-16, Version ID `f620c1f7-5552-4f67-8c78-2ea6ecceb1ba`.
+
+Ověřeno **voláním ostrého `/api/login`** — ten je veřejný, takže tuhle funkci šlo na rozdíl
+od většiny ostatních ověřit bez prohlížeče. Zadáno samotné heslo, bez přihlašovacího jména:
+
+| Vstup | Odpověď |
+|---|---|
+| osobní PIN trenéra A | `{"prihlasen":true,"jmeno":"Maso","id":3}` |
+| osobní PIN trenéra B | `{"prihlasen":true,"jmeno":"Julek","id":2}` |
+| osobní PIN trenéra C | `{"prihlasen":true,"jmeno":"Maxla","id":1}` |
+| společné heslo | `{"prihlasen":true,"jmeno":null,"id":null}` |
+
+Každý PIN vrátil **svého** trenéra se správným `id`, společné heslo zůstalo bez jména.
+Úspěšné přihlášení nuluje počitadlo marných pokusů, takže se testem nic nezamklo.
+
+**Hesla nejsou v repozitáři ani tady** — hashe (PBKDF2-SHA256, 100 000 iterací, sůl 16 B)
+se do ostré D1 poslaly dočasným souborem mimo repozitář, který se hned smazal.
+
+**Stav v databázi:** 3 ze 3 trenérů mají `heslo_hash`, všechny se stejným `heslo_zmeneno`.
+
+---
+
+## 2026-08-16 (25) — kolotoč export → import ověřený uživatelem
+
+**NASAZENO** 2026-08-16, commit `0d79d33`, Version ID `f038e90e-0bcf-427a-bc27-349b8e578f93`.
+**Ověřil uživatel v prohlížeči proti ostrým datům** — ne jen nasazeno.
+
+| Kontrola | Výsledek |
+|---|---|
+| export hodnocení do CSV, otevření v Excelu | funguje |
+| import nezměněného exportu | **projde bez chyby**, nic se nezapíše (`bezeZmeny`) |
+| starší šestiosá hodnocení bez kondice | prázdná buňka = neměnit, řádek neshoří |
+| sebehodnocení v souboru | přeskočeno s vysvětlením, ne hlášeno jako chyba |
+
+Předchozí pokus (verze `2632352c`) na tomhle **spadl**: import byl postavený jako
+zakládání nových záznamů a vyžadoval všechny osy šablony, takže nezměněný export starších
+hodnocení skončil na „Osa kondice … přišlo: undefined". Opraveno tím, že řádek s `id` je
+úprava (nová verze s `uprava_id`), prázdná buňka znamená „neměnit" a nezměněný řádek se
+nezapisuje.
+
+**Poučení, které z toho platí dál:** u kolotočových funkcí (export → úprava → import) je
+**nezměněný průchod první test, který má projít**.
+
+---
+
+## 2026-08-16 (24) — kondice jako sedmá osa, export/import hodnocení
+
+**NASAZENO** 2026-08-16, Version ID `2632352c-389c-4930-8305-aeae1bdc19f0`, commit viz
+`/api/version`. Ověřeno spuštěním funkcí a nasazením, **ne proklikáním za přihlášením**.
+
+**Sedmá osa nerozbila starší záznamy** — spuštěno nad skutečným tvarem dat z ostré DB:
+
+| Kontrola | Výsledek |
+|---|---|
+| šablona `pole` má os | 7 (`…, skenovani, kondice`) |
+| starý záznam (bez `kondice`) se vykreslí osami | **6** — kondice se nepřidá jako nula |
+| nový záznam se vykreslí osami | 7 |
+| validace nového | OK |
+| render | starý = šestiúhelník, nový = sedmiúhelník; ověřeno obrázkem vedle sebe |
+
+**Rozdíl trenér × hráč u nesouhlasných šestic**: `rozdil = null`, v tabulce `—`
+a „nezměřeno u obou". Bez toho by nové sedmiosé sebehodnocení proti starému šestiosému
+hodnocení trenéra spočítalo u kondice `7 − 0 = +7` a označilo to za velký rozpor.
+
+**Export/import hodnocení:**
+
+| Kontrola | Výsledek |
+|---|---|
+| sloupců os v exportu | 19 (sjednocení všech tří šablon) |
+| popisek osy tam a zpět | `kondice` → „Fyzická kondice" → `kondice` |
+| `node --check` nad změněnými soubory | prošel |
+
+**Neověřeno:** skutečný export a import proti ostrým datům. Import je append-only —
+před prvním použitím na celý kádr zkusit jeden řádek.
+
+---
+
 ## 2026-08-09 (23) — křivky rozlišené tvarem (černobílý tisk)
 
 **NASAZENO** 2026-08-09, Version ID `0e574db2-134e-45b8-89fa-d68f32e6ed3f`.

@@ -8,7 +8,7 @@
    Překládají se jen jejich popisy.
    ===================================================================== */
 
-import { SABLONY } from './sablony.js';
+import { SABLONY, osyZaznamu } from './sablony.js';
 
 const ULOZISTE = 'hodnoceni.lang';
 
@@ -277,6 +277,17 @@ const SLOVNIK = {
         'historie.ruznaSablona': 'Vybrané verze mají jinou šestici os, porovnat je nejde.',
 
         /* --- pozice --- */
+        'nav.pozice': 'Pozice',
+        'pozice.nadpis': 'Kdo hraje kterou pozici',
+        'pozice.popis': 'Opačný pohled než Lidé: vyber pozici a zaškrtej, kdo na ni patří. Hodí se, když skládáš sestavu — přemýšlíš „kdo mi může hrát pravého beka", ne „co všechno umí Vilém". Zaškrtnutí se ukládá jen pro vybranou pozici, ostatní hráči nepřijdou o nic, co mají nastavené jinde.',
+        'pozice.vyber': 'Pozice',
+        'pozice.kolik': 'zatím {0}',
+        'pozice.dalsi': 'Další pozice hráče',
+        'pozice.vsichni.tip': 'Zaškrtne nebo odškrtne všechny najednou',
+        'pozice.ulozit': 'Uložit obsazení',
+        'pozice.ulozit.tip': 'Uloží, kdo tuhle pozici hraje — ostatní pozice hráčů zůstanou beze změny',
+        'pozice.ulozeno': 'Uloženo: změněno {0} hráčů u pozice {1}.',
+        'pozice.bezeZmeny': 'Nic se nezměnilo — zaškrtnutí odpovídá tomu, co už bylo uložené.',
         'pozice.brankar': 'Brankář',
         'pozice.pravy_bek': 'Pravý bek',
         'pozice.stoper': 'Stoper',
@@ -436,6 +447,7 @@ const SLOVNIK = {
         'porovnani.rozdil': 'rozdíl',
         'porovnani.kRozhovoru': 'k rozhovoru',
         'porovnani.vToleranci': 'v toleranci',
+        'porovnani.neporovnatelne': 'nezměřeno u obou',
         'porovnani.slepeMisto': 'slepé místo — chybí zpětná vazba',
         'porovnani.sebeduvera': 'sebedůvěra — může jít o něco mimo fotbal',
         'porovnani.upozorneni': 'Toleranci překračuje {0} os. Na jeden rozhovor je to moc — vyber 2 až 3 témata.',
@@ -575,6 +587,22 @@ const SLOVNIK = {
         'konektivita.sms': 'SMS',
         'konektivita.telegram': 'Telegram',
         'konektivita.email': 'E-mail',
+        'listy.otevritJeden.tip': 'Otevře tenhle jeden list s nejnovějším hodnocením',
+        'davky.nadpis': 'Hromadný export a import hodnocení',
+        'davky.popis': 'Stáhne hodnocení jako CSV, které otevře Excel. Vyplněný soubor jde nahrát zpátky — hodí se, když se známkuje mimo aplikaci nebo se doplňuje víc hráčů najednou. Export bere období vybrané nahoře.',
+        'davky.export': 'Export hodnocení do CSV',
+        'davky.export.tip': 'Stáhne hodnocení za vybrané období; „všechna období" stáhne celý archiv',
+        'davky.import': 'Import hodnocení z CSV',
+        'davky.import.tip': 'Nahraje vyplněný soubor — nejdřív ukáže, co by se zapsalo, a teprve po potvrzení zapíše',
+        'davky.pravidla': 'Import se chová stejně jako oprava ve formuláři: řádek s vyplněným „id" uloží novou verzi toho hodnocení, řádek bez „id" založí nové. Původní záznam zůstává v historii, nic se nepřepisuje. Prázdná buňka u osy znamená „neměnit", ne nulu — proto projde i nezměněný export staršího hodnocení, které novou osu nemá. Sebehodnocení hráčů se měnit nedá: vyplňuje ho hráč přes svůj odkaz a jen tak má cenu ho porovnávat s trenérovým pohledem.',
+        'davky.chyby': 'Nezapsané řádky',
+        'davky.preskoceno': 'Přeskočené řádky',
+        'davky.chybStrucne': 'Nezapsaných řádků kvůli chybě: {0}.',
+        'davky.bezeZmeny': 'Beze změny, a proto nezapsáno: {0} řádků.',
+        'davky.nicKZapisu': 'Není co zapsat — žádný řádek neprošel kontrolou.',
+        'davky.potvrdit': 'Zapsat {0} nových hodnocení a {1} oprav?\n\nOprava se uloží jako nová verze, původní záznam zůstává v historii — stejně jako když se hodnocení opravuje ve formuláři.',
+        'davky.zruseno': 'Import zrušen, nic se nezapsalo.',
+        'davky.hotovo': 'Nových hodnocení: {0}. Oprav (nových verzí): {1}.',
         'dokCisla.osob': 'Osob v kartotéce',
         'dokCisla.aktivnichHracu': 'aktivních hráčů',
         'dokCisla.trenerskych': 'Hodnocení od trenéra',
@@ -632,6 +660,7 @@ const SLOVNIK = {
         'list.sezona': 'sezóna',
         'list.vystaveno': 'Vystaveno',
         'list.nevyplneno': '⚠ Hodnocení za tohle období zatím není vyplněné.',
+        'list.jinaSestice': '⚠ Druhý pohled vznikl s jinou sadou os, takže se do grafu nekreslí — porovnat je nejde.',
         'list.ted': 'teď',
         'list.minule': 'minule',
         'list.trener': 'trenér',
@@ -678,6 +707,7 @@ const SLOVNIK = {
         'osa.fairplay': 'Fair play a respekt',
         'osa.podpora': 'Podpora spoluhráčů',
         'osa.odpovednost': 'Spolehlivost a odpovědnost',
+        'osa.kondice': 'Fyzická kondice',
 
         /* --- osy v první osobě (formulář hráče) --- */
         'ja.prava': 'Pravou nohou trefím, co chci — i pod tlakem.',
@@ -698,6 +728,7 @@ const SLOVNIK = {
         'ja.fairplay': 'Na soupeře ani na rozhodčího nenadávám, i když se mi křivdí.',
         'ja.podpora': 'Spoluhráče po chybě povzbudím místo abych ho seřval.',
         'ja.odpovednost': 'Chodím včas a co slíbím, to udělám.',
+        'ja.kondice': 'Vydržím běhat celý zápas a ke konci mi síly neubývají.',
 
         /* --- kotvy škály ---
            `nazev` je jméno úrovně, které se tiskne k číslu na listu. Samotná
@@ -965,6 +996,17 @@ const SLOVNIK = {
         'historie.posun': 'Shift: {0} → {1}',
         'historie.ruznaSablona': 'The selected versions use a different set of axes, they cannot be compared.',
 
+        'nav.pozice': 'Positions',
+        'pozice.nadpis': 'Who plays which position',
+        'pozice.popis': 'The reverse view of People: pick a position and tick who belongs there. It helps when putting a line-up together — you think "who can play right back for me", not "what is Vilém good at". Only the selected position is saved; nobody loses the other positions they have set.',
+        'pozice.vyber': 'Position',
+        'pozice.kolik': '{0} so far',
+        'pozice.dalsi': 'Player\'s other positions',
+        'pozice.vsichni.tip': 'Ticks or unticks everyone at once',
+        'pozice.ulozit': 'Save the line-up',
+        'pozice.ulozit.tip': 'Saves who plays this position — the players\' other positions stay untouched',
+        'pozice.ulozeno': 'Saved: {0} players changed for {1}.',
+        'pozice.bezeZmeny': 'Nothing changed — the ticks match what was already saved.',
         'pozice.brankar': 'Goalkeeper',
         'pozice.pravy_bek': 'Right back',
         'pozice.stoper': 'Centre back',
@@ -1117,6 +1159,7 @@ const SLOVNIK = {
         'porovnani.rozdil': 'difference',
         'porovnani.kRozhovoru': 'to discuss',
         'porovnani.vToleranci': 'within tolerance',
+        'porovnani.neporovnatelne': 'not scored by both',
         'porovnani.slepeMisto': 'blind spot — feedback is missing',
         'porovnani.sebeduvera': 'confidence — may be about something outside football',
         'porovnani.upozorneni': '{0} axes exceed the tolerance. That is too much for one talk — pick 2 or 3 topics.',
@@ -1253,6 +1296,22 @@ const SLOVNIK = {
         'konektivita.sms': 'SMS',
         'konektivita.telegram': 'Telegram',
         'konektivita.email': 'E-mail',
+        'listy.otevritJeden.tip': 'Opens this one sheet with the most recent evaluation',
+        'davky.nadpis': 'Bulk export and import of evaluations',
+        'davky.popis': 'Downloads evaluations as a CSV that opens in Excel. The filled-in file can be uploaded back — useful when scoring happens outside the app or several players are filled in at once. The export uses the period selected above.',
+        'davky.export': 'Export evaluations to CSV',
+        'davky.export.tip': 'Downloads evaluations for the selected period; "all periods" downloads the whole archive',
+        'davky.import': 'Import evaluations from CSV',
+        'davky.import.tip': 'Uploads a filled-in file — first shows what would be written, and writes only after you confirm',
+        'davky.pravidla': 'The import behaves exactly like correcting a record in the form: a row with an "id" saves a new version of that evaluation, a row without one creates a new evaluation. The original stays in the history, nothing is overwritten. An empty axis cell means "leave as is", not zero — which is why an unchanged export of an older evaluation without the new axis goes through. Player self-evaluations cannot be changed: the player fills those in through their own link, and only then are they worth comparing with the coach\'s view.',
+        'davky.chyby': 'Rows not written',
+        'davky.preskoceno': 'Skipped rows',
+        'davky.chybStrucne': 'Rows not written because of an error: {0}.',
+        'davky.bezeZmeny': 'Unchanged, therefore not written: {0} rows.',
+        'davky.nicKZapisu': 'Nothing to write — no row passed the checks.',
+        'davky.potvrdit': 'Write {0} new evaluations and {1} corrections?\n\nA correction is saved as a new version and the original stays in the history — exactly like correcting an evaluation in the form.',
+        'davky.zruseno': 'Import cancelled, nothing was written.',
+        'davky.hotovo': 'New evaluations: {0}. Corrections (new versions): {1}.',
         'dokCisla.osob': 'People in the register',
         'dokCisla.aktivnichHracu': 'active players',
         'dokCisla.trenerskych': 'Coach evaluations',
@@ -1308,6 +1367,7 @@ const SLOVNIK = {
         'list.sezona': 'season',
         'list.vystaveno': 'Issued',
         'list.nevyplneno': '⚠ No evaluation for this period yet.',
+        'list.jinaSestice': '⚠ The second view was recorded with a different set of axes, so it is not drawn — the two cannot be compared.',
         'list.ted': 'now',
         'list.minule': 'previous',
         'list.trener': 'coach',
@@ -1351,6 +1411,7 @@ const SLOVNIK = {
         'osa.fairplay': 'Fair play and respect',
         'osa.podpora': 'Supporting team-mates',
         'osa.odpovednost': 'Reliability and responsibility',
+        'osa.kondice': 'Physical condition',
 
         'ja.prava': 'With my right foot I hit what I aim for — even under pressure.',
         'ja.leva': 'With my left foot I pass ten metres exactly where I want.',
@@ -1370,6 +1431,7 @@ const SLOVNIK = {
         'ja.fairplay': 'I do not abuse opponents or the referee, even when I feel wronged.',
         'ja.podpora': 'After a mistake I pick a team-mate up instead of shouting at him.',
         'ja.odpovednost': 'I turn up on time and do what I promise.',
+        'ja.kondice': 'I can run the whole match and I do not fade towards the end.',
 
         'kotva.1.rozsah': '1–3', 'kotva.1.nazev': 'starting',   'kotva.1.text': 'starting out, only calm and unpressured',
         'kotva.2.rozsah': '4–5', 'kotva.2.nazev': 'building',   'kotva.2.text': 'fine in training, patchy in a match',
@@ -1503,6 +1565,15 @@ export function t(klic, ...hodnoty) {
 /** Osy šablony i s přeloženými popisy — přesně to, co chce radar(). */
 export function osy(sablona) {
     return (SABLONY[sablona] ?? []).map(klic => ({ klic, popis: t('osa.' + klic) }));
+}
+
+/**
+ * Osy pro vykreslení konkrétního záznamu — s popisky. Starší hodnocení,
+ * pořízené před přidáním osy, se tak vykreslí tou šesticí, se kterou vzniklo,
+ * místo aby chybějící osa spadla na nulu. Viz `osyZaznamu` v sablony.js.
+ */
+export function osyProZaznam(sablona, hodnoty) {
+    return osyZaznamu(sablona, hodnoty).map(klic => ({ klic, popis: t('osa.' + klic) }));
 }
 
 /** Kotvy škály jako trojice [rozsah, význam, název úrovně]. */
