@@ -5,8 +5,11 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 ## 2026-08-17 (49) — bezpečnostní hlavičky na každé odpovědi + security.txt
 
 **Commity:** `23860de` (hlavičky) → `59260fd` (dokumentace) → `8d695ab` (nonce pro
-Cloudflare). Ověřeno na ostré adrese: hlavičky sedí na `/`, `/app.js`, `/listy.html`
-i `/.well-known/security.txt`, headless prohlížeč hlásí **0 porušení CSP**.
+Cloudflare) → `2efcf57` (spojení s origin/main) · **NASAZENO** 2026-08-17,
+Version ID `585cd0f4-bd52-4260-a433-a31010f73b73`, `/api/version` = `2efcf57`.
+Ověřeno na ostré adrese: hlavičky sedí na `/`, `/app.js`, `/listy.html`
+i `/.well-known/security.txt`, headless prohlížeč hlásí **0 porušení CSP**
+a záložka *Pozice* i `/api/pozice` jsou zpátky.
 
 > **Pozor, zpackané nasazení.** Tyhle commity vznikly nad **neaktuálním** lokálním
 > stromem (`064aa97`), protože jsem si před prací nestáhl origin — a `npm run deploy`

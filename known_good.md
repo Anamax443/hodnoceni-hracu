@@ -7,8 +7,9 @@ Nový záznam nahoru.
 
 ## 2026-08-17 (29) — bezpečnostní hlavičky a CSP nerozbily aplikaci
 
-Commit `23860de`, Version ID `2575b45e-a20c-4261-9dc2-ed1066084cb5`. Ověřeno nejdřív proti
-lokálnímu `wrangler dev --local`, pak na ostré adrese.
+Živý stav: commit `2efcf57` (spojení hlaviček s origin/main), Version ID
+`585cd0f4-bd52-4260-a433-a31010f73b73`. Ověřeno nejdřív proti lokálnímu
+`wrangler dev --local`, pak na ostré adrese.
 
 | Kontrola | Výsledek |
 |---|---|
@@ -22,7 +23,8 @@ lokálnímu `wrangler dev --local`, pak na ostré adrese.
 | stránka `/h/<neplatný token>` | ✅ vykreslí „Neplatný odkaz.", 0 chyb konzole |
 | `/listy.html` bez přihlášení | ✅ „Nejsi přihlášen" (401 z API), 0 porušení CSP |
 | inline skripty ve `web/` | ✅ žádné — grep najde jen `<script src=…>`, nic co by CSP musela povolit |
-| ostrá adresa po nasazení | ✅ `/api/version` = `8d695ab`, `cisto: true`, HSTS 365 dní beze změny |
+| ostrá adresa po nasazení | ✅ `/api/version` = `2efcf57`, `cisto: true`, HSTS 365 dní beze změny |
+| funkce z origin/main po spojení | ✅ záložka *Pozice* je v `/`, `/api/pozice` odpoví `401` (existuje, jen chce přihlášení) — po zpackaném nasazení z neaktuálního stromu je to ta hlavní kontrola |
 | nonce pro skripty vstříknuté Cloudflarem | ✅ na ostré adrese nese `nonce` z hlavičky **beacon Web Analytics i inline bootstrap bot detekce**; vlastní skripty projdou přes `'self'` |
 | ostrá `/` v headless Edge | ✅ 0 porušení CSP, 0 chyb skriptů; jediné hlášky jsou 404 na `/logo.png` (klub ho nemá nahrané, aplikace s tím počítá — bylo tak i předtím) |
 
