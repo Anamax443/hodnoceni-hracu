@@ -1278,35 +1278,46 @@ async function smerovac(request: Request, env: Env): Promise<Response> {
  * 'unsafe-inline' potřebují: aplikace skládá HTML s atributem `style=`
  * na desítkách míst a stránky dokumentace mají styl přímo v hlavičce.
  * Bez 'unsafe-inline' by se rozsypal vzhled, ne bezpečnost.
+ *
+ * Dvě věci do stránky vkládá sama zóna Cloudflare, ne aplikace:
+ *  - beacon Web Analytics ze `static.cloudflareinsights.com` (proto je
+ *    v `script-src`; data posílá na vlastní doménu, `connect-src 'self'` stačí)
+ *  - bootstrap bot detekce, a ten je **inline** — proto nonce. Cloudflare si
+ *    ho vyzobne z týhle hlavičky a svým skriptům ho doplní; bez toho by se
+ *    musela povolit všechna inline skripty a CSP by ztratila smysl.
+ * Nonce proto musí být v každé odpovědi jiný.
  */
-const BEZPECNOSTNI_HLAVICKY: Record<string, string> = {
-    'content-security-policy': [
-        "default-src 'self'",
-        "script-src 'self'",
-        "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data:",
-        "connect-src 'self'",
-        "font-src 'self'",
-        "form-action 'self'",
-        "base-uri 'self'",
-        "object-src 'none'",
-        "frame-ancestors 'none'"
-    ].join('; '),
-    // frame-ancestors výše platí pro moderní prohlížeče, tohle pro ty staré.
-    'x-frame-options': 'DENY',
-    'x-content-type-options': 'nosniff',
-    // Odkaz na sebehodnocení nese token přímo v adrese — na cizí web se smí
-    // dostat nanejvýš samotná doména, nikdy celá cesta i s tokenem.
-    'referrer-policy': 'strict-origin-when-cross-origin',
-    'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-    // Starý XSS Auditor měl vlastní díry a moderní prohlížeče ho nemají;
-    // explicitní 0 zajistí, že ho nezapne ani zastaralý prohlížeč.
-    'x-xss-protection': '0'
-};
+function bezpecnostniHlavicky(): Record<string, string> {
+    const nonce = b64url(crypto.getRandomValues(new Uint8Array(16)));
+    return {
+        'content-security-policy': [
+            "default-src 'self'",
+            `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com`,
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data:",
+            "connect-src 'self'",
+            "font-src 'self'",
+            "form-action 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "frame-ancestors 'none'"
+        ].join('; '),
+        // frame-ancestors výše platí pro moderní prohlížeče, tohle pro ty staré.
+        'x-frame-options': 'DENY',
+        'x-content-type-options': 'nosniff',
+        // Odkaz na sebehodnocení nese token přímo v adrese — na cizí web se smí
+        // dostat nanejvýš samotná doména, nikdy celá cesta i s tokenem.
+        'referrer-policy': 'strict-origin-when-cross-origin',
+        'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+        // Starý XSS Auditor měl vlastní díry a moderní prohlížeče ho nemají;
+        // explicitní 0 zajistí, že ho nezapne ani zastaralý prohlížeč.
+        'x-xss-protection': '0'
+    };
+}
 
 function sBezpecnostnimiHlavickami(odpoved: Response): Response {
     const hlavicky = new Headers(odpoved.headers);
-    for (const [jmeno, hodnota] of Object.entries(BEZPECNOSTNI_HLAVICKY)) {
+    for (const [jmeno, hodnota] of Object.entries(bezpecnostniHlavicky())) {
         if (!hlavicky.has(jmeno)) hlavicky.set(jmeno, hodnota);
     }
     // Hlavičky odpovědi z fetch() (asset server) jsou jen ke čtení,
