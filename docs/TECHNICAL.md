@@ -686,6 +686,12 @@ si čtrnáctiletý odnese domů, ne nepřesnost, ale lež. Proto:
   sedmiúhelník. Radar je na počet os generický, takže to nic nestojí.
 - **Druhý polygon se kreslí jen tehdy, když stojí na týchž osách.** Jinak se vynechá
   a na listu je věta proč — překryv šestice a sedmice by chybějící osu položil do středu.
+  Přesněji: kreslí se, když má **hodnotu ke každé ose listu**. Opačný případ (druhý pohled
+  má osu navíc) polygon nezruší — kreslí se na osách listu a přebývající známka nemá kam
+  padnout. Ta se proto **vypíše větou pod grafem** (`list.osyNavic`, funkce `osyNavic()`).
+  Bez ní by hráč vyplnil kondici a na papíře po ní nebyla ani stopa; vynechat ji z grafu je
+  správně, zamlčet ji ne. V aplikaci (*Porovnání*) je vidět už dřív: tabulka jde podle
+  **aktuální** šablony, takže osa v ní je s `rozdil: null`.
 - Porovnání trenér × hráč počítá rozdíl **jen tam, kde známku dali oba** (`rozdil: null`
   jinak). Bez toho by `7 − 0 = +7` vyrobilo velký rozpor, o kterém by trenér s hráčem
   vedl rozhovor o něčem, co se nikdy nestalo.

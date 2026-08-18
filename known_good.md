@@ -5,6 +5,26 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-18 (31) — osa navíc v druhém pohledu se na listu vypíše
+
+Vykresleno skutečným `list.js` na datech odpovídajících ostrému stavu Bedřicha Grunda:
+trenérské leader hodnocení z 10. 8. (6 os) proti sebehodnocení hráče z 18. 8.
+(7 os, kondice 7).
+
+| Případ | Očekáváno | Výsledek |
+|---|---|---|
+| trenér 6 os, hráč 7 (ostrý případ) | věta o kondici 7/10 | ✅ CS i EN |
+| obojí sedmiosé | žádná věta | ✅ |
+| bez druhého pohledu | žádná věta | ✅ |
+| hráči osa naopak chybí | polygon se vynechá + věta „jiná sada os" | ✅ (chování beze změny) |
+| kumulovaný list (leader 6+7, pole 7+7) | věta jen u leader grafu | ✅ 1 věta |
+| i18n parita | 670 klíčů CS i EN, bez duplicit | ✅ |
+
+Ostrá data, ze kterých případ vznikl: `pole` 15 z 30 hodnocení s kondicí, `leader` 0 z 11,
+`brankar` 0 ze 3 (kondice přibyla 16. 8.).
+
+---
+
 ## 2026-08-18 (30) — 12 pozic včetně krajních záložníků
 
 | Kontrola | Výsledek |

@@ -2,6 +2,50 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-18 (51) — kondice, kterou hráč oznámkoval, mizela z listu beze slova
+
+**Dotaz uživatele nad vytištěným leader listem:** *„nevidím tam vrchol fyzická kondice…
+ale on ji hodnotil, ne?"* Obojí platí a je v tom rozdíl, který stálo za to dohledat.
+
+**Co ukázala ostrá data u Bedřicha Grunda:**
+
+| id | datum | kdo | šablona | kondice |
+|---|---|---|---|---|
+| 11 | 7. 8. | trenér | pole | ne |
+| 28 | 10. 8. | trenér | **leader** | **ne** |
+| 40 | 16. 8. | trenér | pole | ano, 6 |
+| 52 | 18. 8. | **hráč** | leader | **ano, 7** |
+| 53 | 18. 8. | hráč | pole | ano, 7 |
+
+Kondice přibyla jako sedmá osa **16. 8.** Trenérské leader hodnocení je z 10. 8., tedy
+o šesti osách — a protože se list kreslí osami **toho záznamu** (`osyZaznamu`, jinak by
+nehodnocená osa spadla na 0/10, nejhorší možnou známku), je na papíře šestiúhelník.
+Napříč kádrem: `pole` má kondici u 15 z 30 hodnocení, `leader` u 0 z 11, `brankar` u 0 ze 3.
+
+**Vada, kterou to odhalilo:** hráčovo sebehodnocení už sedm os má, jenže sedmá známka
+nemá na šestiosém grafu kam padnout — a **mizela beze slova**. Podmínka pro druhý polygon
+zní „má hodnotu ke každé ose listu", takže nadmnožina projde a kreslí se; to je správně
+(nic se nefalšuje). Zamlčet ji správně není: hráč vyplní kondici 7/10 a na papíře po ní
+není ani stopa.
+
+**Doplněno:** pod grafem je věta *„Druhý pohled (jak se vidí hráč) má navíc: Fyzická
+kondice 7/10. V hodnocení, ze kterého je graf, tahle osa ještě není — přibyla později —
+takže ji radar neukazuje."* Je i na kumulovaném listu, u toho grafu, kterého se týká.
+V aplikaci (*Porovnání*) to vidět bylo už dřív — tabulka jde podle aktuální šablony,
+takže osa v ní stojí s prázdným rozdílem.
+
+**Co to nespraví a co s tím:** aby vrchol na listu byl, musí ho oznámkovat trenér. Stačí
+v *Hodnotit* načíst předchozí verzi, doplnit kondici a uložit — vznikne nová verze, nic se
+nepřepíše, a list se vykreslí jako sedmiúhelník. Týká se 11 leader a 3 brankářských listů.
+
+**Otevřené:** kondice je na všech třech šablonách, takže hráč s *pole* i *leader* ji dostane
+oznámkovanou dvakrát a na dvou papírech téhož kluka můžou stát dvě různá čísla za jednu věc.
+Nabízené řešení (nechat kondici jen na herních šablonách) čeká na rozhodnutí uživatele.
+
+Doklad v `known_good.md` (31).
+
+---
+
 ## 2026-08-18 (50) — chyběl pravý a levý záložník
 
 **Uživatel při zakládání hráče:** *„myslím, že mi na pozicích chybí pravý a levý

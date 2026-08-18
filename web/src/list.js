@@ -14,6 +14,7 @@
    ===================================================================== */
 
 import { radar, vzorekRady } from './radar.js';
+import { MAX } from './sablony.js';
 import { t, osy, osyProZaznam, kotvy, ja, locale } from './i18n.js';
 
 /** Escapuje text z databáze, aby `&` nebo `<` v komentáři nerozbily HTML. */
@@ -44,6 +45,33 @@ function popisekPorovnani(h) {
     if (h.porovnaniRezim === 'hrac') return t('list.hracSeVidi');
     if (h.porovnaniRezim === 'minule') return h.porovnaniObdobi || t('list.minule');
     return '';
+}
+
+/**
+ * Osy, které má druhý pohled navíc proti osám tohohle listu — a věta o nich.
+ *
+ * Vzniká to přidáním osy uprostřed sezóny: graf se kreslí šesticí, se kterou
+ * vzniklo hodnocení trenéra, kdežto hráč vyplňoval sebehodnocení už o sedmi
+ * osách. Jeho sedmá známka pak nemá kam padnout a **tiše z listu zmizí** —
+ * hráč vyplní kondici a na papíře po ní není ani stopa.
+ *
+ * Vynechat ji z grafu je správně (vrchol, který v hodnocení trenéra není, by
+ * musel ležet ve středu, tedy na nule). Zamlčet ji správně není.
+ */
+function osyNavic(h, seznamOs) {
+    if (!h.porovnani) return [];
+    const naListu = new Set(seznamOs.map(o => o.klic));
+    return Object.keys(h.porovnani)
+        .filter(klic => !naListu.has(klic) && Number.isFinite(Number(h.porovnani[klic])))
+        .map(klic => `${t('osa.' + klic)} ${h.porovnani[klic]}/${MAX}`);
+}
+
+/** Věta o osách navíc, nebo prázdno. */
+function poznamkaOsyNavic(h, seznamOs) {
+    const navic = osyNavic(h, seznamOs);
+    return navic.length
+        ? `<p class="note-unfilled">${t('list.osyNavic', esc(popisekPorovnani(h)), esc(navic.join(' · ')))}</p>`
+        : '';
 }
 
 /**
@@ -105,6 +133,7 @@ export function list(h, nas) {
             ${druhyPolygon ? `<span>${vzorekRady(1)} ${esc(popisekPorovnani(h))}</span>` : ''}
         </div>
         ${nesouhlasnaSablona ? `<p class="note-unfilled">${t('list.jinaSestice')}</p>` : ''}
+        ${druhyPolygon ? poznamkaOsyNavic(h, seznamOs) : ''}
 
         <div class="blocks">
             <div class="block fyz">
@@ -204,6 +233,7 @@ export function listKumulovany(hraci, nas) {
                     <div class="chart-wrap">${radar(seznamOs, h.hodnoceni, druhy)}</div>
                     ${h.hodnoceni ? '' : `<p class="note-unfilled">${t('list.nevyplneno')}</p>`}
                     ${h.porovnani && !druhy ? `<p class="note-unfilled">${t('list.jinaSestice')}</p>` : ''}
+                    ${druhy ? poznamkaOsyNavic(h, seznamOs) : ''}
                 </div>`;
             }).join('')}
         </div>
