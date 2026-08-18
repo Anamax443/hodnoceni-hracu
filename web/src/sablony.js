@@ -45,10 +45,16 @@ export const SABLONY = {
    to na list; se šablonou os to nesouvisí (tu vybírá trenér u hodnocení).
    Zvláštní případ je brankář: kdo chytá, dává smysl hodnotit brankářskou
    šablonou — ale i on může být oznámkovaný jako hráč v poli. */
+/* Pořadí je sestava odzadu dopředu a v každé řadě zprava doleva, ať se
+   zaškrtávátka čtou jako rozestavení, ne jako abecední seznam. Krajní
+   záložník a křídlo jsou dvě různé pozice: v 1-4-4-2 hraje kraj zálohy
+   celou lajnu tam i zpátky, kdežto křídlo v 1-4-3-3 je útočná role. */
 export const POZICE = [
     'brankar',
     'pravy_bek', 'stoper', 'levy_bek',
-    'defenzivni_zaloznik', 'stredni_zaloznik', 'ofenzivni_zaloznik',
+    'defenzivni_zaloznik',
+    'pravy_zaloznik', 'stredni_zaloznik', 'levy_zaloznik',
+    'ofenzivni_zaloznik',
     'prave_kridlo', 'leve_kridlo',
     'hrotovy_utocnik'
 ];
@@ -69,7 +75,8 @@ export const POPISKY = {
         sablona: { pole: 'hráč v poli', brankar: 'brankář', leader: 'leader' },
         pozice: {
             brankar: 'brankář', pravy_bek: 'pravý bek', stoper: 'stoper', levy_bek: 'levý bek',
-            defenzivni_zaloznik: 'defenzivní záložník', stredni_zaloznik: 'střední záložník',
+            defenzivni_zaloznik: 'defenzivní záložník', pravy_zaloznik: 'pravý záložník',
+            stredni_zaloznik: 'střední záložník', levy_zaloznik: 'levý záložník',
             ofenzivni_zaloznik: 'ofenzivní záložník', prave_kridlo: 'pravé křídlo',
             leve_kridlo: 'levé křídlo', hrotovy_utocnik: 'hrotový útočník'
         },
@@ -96,7 +103,8 @@ export const POPISKY = {
         pozice: {
             brankar: 'goalkeeper', pravy_bek: 'right back', stoper: 'centre back',
             levy_bek: 'left back', defenzivni_zaloznik: 'defensive midfielder',
-            stredni_zaloznik: 'centre midfielder', ofenzivni_zaloznik: 'attacking midfielder',
+            pravy_zaloznik: 'right midfielder', stredni_zaloznik: 'centre midfielder',
+            levy_zaloznik: 'left midfielder', ofenzivni_zaloznik: 'attacking midfielder',
             prave_kridlo: 'right winger', leve_kridlo: 'left winger', hrotovy_utocnik: 'striker'
         },
         osa: {

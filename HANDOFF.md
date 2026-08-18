@@ -2,6 +2,36 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-18 (50) — chyběl pravý a levý záložník
+
+**Uživatel při zakládání hráče:** *„myslím, že mi na pozicích chybí pravý a levý
+záložník."* Sedí — v seznamu byl defenzivní, střední a ofenzivní záložník, tedy jen
+středová osa, a kraj zálohy zastupovalo křídlo. **To ale není totéž:** v 1-4-4-2 hraje
+krajní záložník celou lajnu tam i zpátky, kdežto křídlo v 1-4-3-3 je útočná role.
+Kdo hraje pravou zálohu, měl na výběr buď „pravé křídlo" (jiná role), nebo nic.
+
+Přidány `pravy_zaloznik` a `levy_zaloznik`, celkem tedy **12 pozic**. Klíč se nikde
+nepřepočítává, ukládá se do `players.pozice` jako řetězec — **žádná migrace**, starým
+hráčům se nic nemění.
+
+**Pořadí seznamu je nově sestava odzadu dopředu a v každé řadě zprava doleva:** brankář,
+obrana, defenzivní záložník, pravý–střední–levý záložník, ofenzivní záložník, křídla,
+hrot. Zaškrtávátka se tak čtou jako rozestavení. Je to jen zobrazení — pořadí v `POZICE`
+neurčuje nic uloženého.
+
+Popisky doplněné na **čtyřech** místech, protože každé slouží k něčemu jinému: `i18n.js`
+(CS+EN pro obrazovku a tiskový list) a `POPISKY` v `sablony.js` (CS+EN pro Excel).
+Bez druhého by export napsal do buňky `pravy_zaloznik` a **import by takový soubor
+nepřijal zpátky**.
+
+Ověřeno strojově, že každá z 12 pozic má popisek ve všech čtyřech slovnících a že se
+z popisku trefí zpátky klíč — včetně toho, jak to člověk napíše do Excelu
+(„pravy zaloznik", „Levý Záložník", „RIGHT MIDFIELDER"). Proklikáno v headless Edge:
+formulář osoby i záložka Pozice nabízejí 12 pozic ve správném pořadí, 0 chyb.
+Doklad v `known_good.md` (30).
+
+---
+
 ## 2026-08-17 (49) — bezpečnostní hlavičky na každé odpovědi + security.txt
 
 **Commity:** `23860de` (hlavičky) → `59260fd` (dokumentace) → `8d695ab` (nonce pro

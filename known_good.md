@@ -5,6 +5,23 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-18 (30) — 12 pozic včetně krajních záložníků
+
+| Kontrola | Výsledek |
+|---|---|
+| `POZICE` | ✅ 12 klíčů v pořadí brankář → obrana → DZ → pravý/střední/levý záložník → OZ → křídla → hrot |
+| popisky u všech 12 | ✅ i18n CS, i18n EN, export CS, export EN — nic nechybí |
+| popisek → klíč (import) | ✅ u všech 12 v obou jazycích |
+| jak to napíše člověk | ✅ `pravý záložník`, `Levý Záložník`, `pravy zaloznik`, `right midfielder`, `LEFT MIDFIELDER`, `levy_zaloznik` → správné klíče |
+| `zkontrolujPozice` | ✅ celý seznam projde; `stredni_utocnik` odmítnut jmenovitě |
+| i18n parita | ✅ 669 klíčů CS i EN, bez duplicit |
+| proklik headless Edge (lokální dev) | ✅ formulář osoby nabízí 12 pozic, záložka Pozice 12 voleb ve stejném pořadí, 0 chybových hlášek |
+
+Změna je aditivní: klíč se ukládá do `players.pozice` jako řetězec, takže žádná migrace
+a starým hráčům se nic nemění.
+
+---
+
 ## 2026-08-17 (29) — bezpečnostní hlavičky a CSP nerozbily aplikaci
 
 Živý stav: commit `2efcf57` (spojení hlaviček s origin/main), Version ID
