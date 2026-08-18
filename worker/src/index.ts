@@ -955,8 +955,13 @@ async function shoda(env: Env, playerId: number, obdobi: string, sablona: string
     return {
         obdobi, sablona, tolerance, cekaNaTebe: false,
         chybi: chybi.map(c => c.jmeno),
+        /* `hodnoty` jsou tu kvůli překryvu obrysů v aplikaci: tabulka níž počítá
+           shodu jen z povinných trenérů, ale vidět přes sebe má být každý, kdo
+           se vyjádřil. Nic nového to neodhaluje — kdo se sem dostane, vidí
+           i tabulku; blind guard výš platí beze změny. */
         odevzdali: odevzdali.map(o => ({
             id: o.id, jmeno: o.jmeno, povinny: (povinni ?? []).some(p => p.id === o.id),
+            hodnoty: o.hodnoty,
             fyzicky: o.fyzicky, hlavou: o.hlavou, parta: o.parta, cile: o.cile
         })),
         osy,

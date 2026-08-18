@@ -10,7 +10,8 @@
 
 import { SABLONY, MAX, POZICE } from './src/sablony.js';
 import { esc } from './src/list.js';
-import { t, jazyk, nastavJazyk, druhyJazyk, osy, kotvy, locale } from './src/i18n.js';
+import { radarVice, vzorekRady, stylRady } from './src/radar.js';
+import { t, jazyk, nastavJazyk, druhyJazyk, osy, osyProZaznam, kotvy, locale } from './src/i18n.js';
 import { dokumentaceHtml } from './src/dokumentace.js';
 import { ZDROJ_FA, ZDROJ_ES, ZDROJ_ES_EN, ZDROJ_FA_VIDEO, ZDROJ_ES_VIDEO } from './src/zdroje.js';
 
@@ -1722,6 +1723,57 @@ function vykresliShodu(kam, s, hracId) {
     const popisky = Object.fromEntries(osy(s.sablona).map(o => [o.klic, o.popis]));
     const treneri = s.odevzdali.filter(o => o.povinny);
 
+    /* Překryv obrysů: co hodnotitel, to jeden obrys. Tabulka pod tím říká čísla
+       přesně, graf říká TVAR — kde se pohledy rozcházejí, je vidět na první
+       pohled a nemusí se to hledat po řádcích.
+
+       Osy se berou z hodnocení, ne z dnešní šablony (`osyProZaznam`): kdo
+       hodnotil dřív, než osa přibyla, ji nemá a dokreslit ji na nulu by z něj
+       udělalo nejpřísnějšího trenéra v mužstvu. Řada, které nějaká osa chybí,
+       se proto do překryvu nebere a je pod grafem napsané, kdo to je a proč.
+
+       Tenhle graf je jen na obrazovce. Na tiskovém listu platí dál pravidlo
+       dvou polygonů (ZADANI §6) — tři a víc obrysů na papíře nikdo nepřečte. */
+    const kandidati = [...s.odevzdali,
+        ...(s.uzavrena ? [{ jmeno: t('shoda.rada.uzavrena'), hodnoty: s.uzavrena.hodnoty }] : [])];
+
+    /* Do jednoho grafu jdou jen řady se STEJNOU sadou os — ne nadmnožina, ne
+       podmnožina. Nadmnožina by se vešla, ale její osa navíc by se neměla kam
+       vykreslit a tiše by zmizela; podmnožině by chyběl vrchol. Vybere se
+       proto nejpočetnější skupina (při rovnosti ta bohatší, tedy novější)
+       a zbytek se pod grafem vypíše jmenovitě. */
+    const skupiny = new Map();
+    for (const k of kandidati) {
+        const oso = osyProZaznam(s.sablona, k.hodnoty);
+        const podpis = oso.map(o => o.klic).join('|');
+        if (!skupiny.has(podpis)) skupiny.set(podpis, { osy: oso, cleny: [] });
+        skupiny.get(podpis).cleny.push(k);
+    }
+    const nejvetsi = [...skupiny.values()]
+        .sort((a, b) => b.cleny.length - a.cleny.length || b.osy.length - a.osy.length)[0];
+    const osyPrekryvu = nejvetsi?.osy ?? [];
+    const rady = nejvetsi?.cleny ?? [];
+    const mimoPrekryv = kandidati.filter(k => !rady.includes(k)).map(k => k.jmeno);
+
+    /* Karta se ukazuje, jakmile je co překrývat — i když se nakonec nekreslí.
+       Kdyby zmizela celá, zůstala by po dvou trenérech s různou sadou os prázdná
+       stránka bez vysvětlení, a to vypadá jako porouchaná aplikace. */
+    const prekryv = kandidati.length < 2 ? '' : `
+        <div class="karta">
+            <h2>${t('shoda.prekryv')}</h2>
+            ${rady.length >= 2 ? `
+                <p class="popis">${t('shoda.prekryv.popis')}</p>
+                <div class="chart-wrap">${radarVice(osyPrekryvu, rady.map(r => ({ hodnoty: r.hodnoty })))}</div>
+                <div class="legend">
+                    ${rady.map((r, i) => `<span>${vzorekRady(i, stylRady(i).barva)} ${esc(r.jmeno)}${
+                        r.povinny === false ? ` <span class="popis">(${t('shoda.rada.nepovinny')})</span>` : ''}</span>`).join('')}
+                </div>`
+              : `<div class="hlaska pozor">${t('shoda.prekryv.nelze')}</div>`}
+            ${mimoPrekryv.length
+                ? `<p class="popis">${t('shoda.prekryv.mimo', esc(mimoPrekryv.join(', ')))}</p>`
+                : ''}
+        </div>`;
+
     const radky = s.osy.map(o => {
         const bunky = treneri.map(tr => {
             const h = o.hodnoty.find(x => x.trener === tr.jmeno);
@@ -1754,6 +1806,8 @@ function vykresliShodu(kam, s, hracId) {
                 <tbody>${radky}</tbody>
             </table>
         </div>
+
+        ${prekryv}
 
         <div class="karta">
             <h2>${t('shoda.texty')}</h2>

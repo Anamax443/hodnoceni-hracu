@@ -189,6 +189,22 @@ label { display: block; margin-bottom: 3px; color: var(--seda); font-size: 13px;
 }
 .pozice-vyber input { width: auto; }
 
+/* ===== radar v aplikaci (překryv hodnotitelů) =====
+   Kreslí ho tytéž funkce jako tiskový list, a ten je papír: mřížka bílá,
+   popisky os tmavě šedé. V tmavém vzhledu by tmavý text ležel na tmavém
+   pozadí, proto graf sedí na bílé podložce v obou vzhledech — vypadá tak,
+   jak by vypadal vytištěný. */
+.chart-wrap {
+    background: #ffffff; border: 1px solid var(--linka); border-radius: 6px;
+    padding: 8px; margin: 6px 0 10px;
+}
+.legend {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    font-size: .9em; color: var(--seda); margin-bottom: 4px;
+}
+.legend span { display: flex; align-items: center; gap: 5px; }
+.vzorek { flex: 0 0 auto; display: block; overflow: visible; }
+
 /* ===== hlášky ===== */
 .hlaska { padding: 9px 12px; border-radius: 4px; margin-bottom: 14px; border: 1px solid; }
 .hlaska.info  { background: var(--info-poz);  border-color: var(--info-linka);  color: var(--info-text); }

@@ -487,6 +487,29 @@ přežijí obojí. Tabulka má čtyři řady — plná/kruh, čárkovaná/čtver
 Značky porovnávacích řad se kreslí **bílou výplní s obrysem**: plná značka by pod sebou
 schovala tu druhou právě v místě, kde se řady kříží a kde na tom nejvíc záleží.
 
+### Překryv víc hodnotitelů (`radarVice`) — jen v aplikaci
+
+Záložka *Shoda* kreslí **jeden obrys na každého, kdo hodnotil**, plus uzavřenou shodu.
+Je to samostatná funkce, ne parametr `radar()`, protože platí jiná pravidla: **žádná
+výplň** (řady jsou si rovné a poloprůhledné plochy přes sebe dají tolik odstínů, kolik je
+průsečíků) a **u os nestojí číslo** (u čtyř řad by tam byla čtyři čísla, což je tabulka,
+ne graf — čísla zůstávají v tabulce nad grafem). Rozlišení nese tvar jako jinde, barva
+(`BARVY_RAD`) je druhý signál navíc; graf se dívá na obrazovce, kde barva je.
+
+**Do jednoho grafu jdou jen řady se stejnou sadou os** — ne nadmnožina, ne podmnožina.
+Nadmnožina by se vešla, ale osa navíc by se neměla kam vykreslit a tiše by zmizela.
+Vybere se nejpočetnější skupina (při rovnosti ta bohatší, tedy novější) a zbytek se pod
+grafem **vypíše jmenovitě**. Když nejsou aspoň dvě řady se stejnou sadou, karta zůstane
+a řekne proč — zmizet nesmí, prázdná stránka vypadá jako porouchaná aplikace.
+
+**Na tiskovém listu tohle neplatí a nemá** — tam dál platí pravidlo dvou polygonů
+(ZADANI §6). Tři a víc obrysů na papíře nikdo nepřečte.
+
+Radar je první graf uvnitř aplikace (dřív žil jen na tiskové stránce), takže `app.css`
+dostalo `.chart-wrap`, `.legend` a `.vzorek`. Graf sedí na **bílé podložce v obou
+vzhledech**: kreslí se papírovými barvami a v tmavém vzhledu by tmavé popisky os ležely
+na tmavém pozadí.
+
 Výplň má **jen hlavní řada**, a to 18 %. Dvě poloprůhledné výplně přes sebe daly na papíře
 tři odstíny šedi, ve kterých nešlo poznat, čí je která; silnější výplň (zkoušeno 28 %)
 navíc na tisku zalila mřížku a graf ztěžkl.

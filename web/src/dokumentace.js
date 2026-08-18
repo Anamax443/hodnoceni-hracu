@@ -264,6 +264,14 @@ u každé osy řekne, jestli se shodli, nebo o kolik se rozcházejí. Vybere se
 výsledná hodnota a jedno finální slovní znění, které jde na list. Trenéra lze
 označit jako <b>povinného</b> — dokud neodevzdá, ostatní jeho čísla nevidí a
 dostanou jen informaci, že se čeká na něj.</p>
+<p>Pod tabulkou jsou <b>všichni hodnotitelé přes sebe</b> — co hodnotitel, to
+jeden obrys, plus uzavřená shoda, jakmile je. Tabulka říká čísla přesně, graf
+říká tvar: kde se pohledy rozcházejí, je vidět na první pohled. Do jednoho
+grafu jdou jen hodnocení se <b>stejnou sadou os</b>; kdo hodnotil dřív, než
+osa přibyla, se do překryvu nevejde a je pod grafem jmenovitě uvedený —
+dokreslit mu chybějící osu na nulu by z něj udělalo nejpřísnějšího trenéra
+v mužstvu. Na <b>tiskovém listu</b> zůstávají nejvýš dva polygony: tři a víc
+obrysů na papíře nikdo nepřečte.</p>
 
 <h2>Listy a tisk</h2>
 <p>Tiskový list A4 s radarem. Druhý polygon se dá přepnout: minulé hodnocení
@@ -780,6 +788,14 @@ matrix and marks where they agree. You pick the resulting value and one final
 wording for the sheet. A coach can be marked as <b>required</b>: until they
 submit, they see no numbers from the others, only a note that they are the
 one being waited for.</p>
+<p>Below the table sit <b>all evaluators on top of each other</b> — one outline
+per evaluator, plus the closed agreement once it exists. The table gives the
+exact numbers, the chart gives the shape: where the views differ is obvious at
+a glance. Only evaluations with the <b>same set of axes</b> go into one chart;
+whoever scored before an axis was added is left out and named below the chart —
+drawing their missing axis as a zero would make them the harshest coach in the
+team. The <b>printed sheet</b> keeps at most two polygons: three or more
+outlines on paper are unreadable.</p>
 
 <h2>Sheets and printing</h2>
 <p>A printable A4 sheet with the radar. The second polygon can be switched:

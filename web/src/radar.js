@@ -87,6 +87,18 @@ export function vzorekRady(poradi, barva = SEDA) {
         + `</svg>`;
 }
 
+/* Barvy pro překryv víc hodnotitelů. Tvar (čára + značka) rozlišuje řady sám,
+   tohle je druhý signál navíc — překryv se dívá na obrazovce, kde barva je,
+   a čtyři obrysy v jednom odstínu se čtou hůř než čtyři barevné. Na papíře
+   listu se tenhle graf nekreslí; tam platí dál pravidlo dvou polygonů. */
+const BARVY_RAD = ['#1565C0', '#AD1457', '#00838F', '#EF6C00', '#4527A0', '#2E7D32'];
+
+/** Barva a styl i-té řady překryvu. Víc řad než stylů = styly se opakují,
+    ale barva je pořád jiná, takže se řady nespojí v jednu. */
+export function stylRady(i) {
+    return { ...STYLY_RAD[i % STYLY_RAD.length], barva: BARVY_RAD[i % BARVY_RAD.length] };
+}
+
 /** Souřadnice bodu na ose i (osa 0 = nahoře, dál po směru hodin) */
 export function bod(cx, cy, r, i, n) {
     const uhel = (Math.PI * 2 * i / n) - Math.PI / 2;
@@ -201,6 +213,71 @@ export function radar(osy, hodnoceni, porovnani) {
             svg += bodRady(s.bod, p.x, p.y, OBRYS);
         });
     }
+
+    svg += '</svg>';
+    return svg;
+}
+
+/**
+ * Překryv LIBOVOLNÉHO počtu řad — samé obrysy, žádná výplň.
+ *
+ * Odlišnosti proti `radar()` výš, a všechny mají důvod:
+ * - **žádná výplň.** Tady si nejsou řady nadřazená a podřízená, jsou to
+ *   rovnocenné pohledy několika trenérů. Poloprůhledné plochy přes sebe navíc
+ *   dají tolik odstínů, kolik je průsečíků, a graf zšedne.
+ * - **u os nestojí číslo.** U dvou řad se dá číslo hlavní z nich napsat vedle
+ *   popisku; u čtyř by tam musely být čtyři a to je tabulka, ne graf. Čísla
+ *   zůstávají v tabulce pod grafem, kde jsou i tak.
+ * - **rozlišuje tvar i barva** (viz `stylRady`).
+ *
+ * Chybějící hodnota se kreslí jako 0, ale jen tehdy, když ostatní osy řada má —
+ * volající proto smí posílat jen řady, které mají hodnotu ke každé ose.
+ *
+ * @param {Array} osy   pole {klic, popis}
+ * @param {Array} rady  [{hodnoty:{klic:1..10}, popis:string}] v pořadí kreslení
+ */
+export function radarVice(osy, rady) {
+    const n = osy.length;
+    const W = 470, H = 300, cx = 235, cy = 148, R = 100;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Překryv hodnocení">`;
+
+    for (let k = KRUHY; k >= 1; k--) {
+        const r = R * k / KRUHY;
+        const body = [];
+        for (let i = 0; i < n; i++) {
+            const p = bod(cx, cy, r, i, n);
+            body.push(p.x.toFixed(1) + ',' + p.y.toFixed(1));
+        }
+        svg += `<polygon points="${body.join(' ')}" fill="${k % 2 ? '#ffffff' : '#fafafa'}" stroke="#cccccc" stroke-width="1"/>`;
+    }
+
+    for (let i = 0; i < n; i++) {
+        const p = bod(cx, cy, R, i, n);
+        svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="#cccccc" stroke-width="1"/>`;
+
+        const l = bod(cx, cy, R + 22, i, n);
+        let anchor = 'middle';
+        if (l.x > cx + 6) anchor = 'start';
+        if (l.x < cx - 6) anchor = 'end';
+
+        const radky = zalom(osy[i].popis);
+        const yStart = l.y - (radky.length - 1) * 5;
+        radky.forEach((r, ri) => {
+            svg += `<text x="${l.x.toFixed(1)}" y="${(yStart + ri * 10).toFixed(1)}" text-anchor="${anchor}" font-size="9.5" font-family="Arial" fill="#444444">${r}</text>`;
+        });
+    }
+
+    rady.forEach((rada, poradi) => {
+        const s = stylRady(poradi);
+        const h = osy.map(o => Number(rada.hodnoty?.[o.klic]) || 0);
+        svg += `<polygon points="${polygon(cx, cy, R, h, n)}" fill="none" `
+            + `stroke="${s.barva}" stroke-width="${s.sirka}" stroke-linejoin="round"`
+            + `${s.cara ? ` stroke-dasharray="${s.cara}"` : ''}/>`;
+        h.forEach((v, i) => {
+            const p = bod(cx, cy, R * v / MAX, i, n);
+            svg += bodRady(s.bod, p.x, p.y, s.barva);
+        });
+    });
 
     svg += '</svg>';
     return svg;

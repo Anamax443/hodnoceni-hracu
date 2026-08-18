@@ -2,6 +2,49 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
+## 2026-08-18 (52) — všichni hodnotitelé přes sebe (Shoda)
+
+**Zadání uživatele:** *„v zobrazení by bylo dobré vidět všechny obrysy hodnocení přes sebe
+od všech aktivních hodnotitelů."*
+
+**Kde to je: v aplikaci, ne na papíře.** Záložka *Shoda* má pod tabulkou novou kartu
+s překryvem — co hodnotitel, to jeden obrys, plus uzavřená shoda, jakmile je. Na tiskovém
+listu platí dál pravidlo dvou polygonů (ZADANI §6): tři a víc obrysů na A4 nikdo nepřečte,
+kdežto na obrazovce je barva a graf se dá zvětšit.
+
+**Proč to má cenu vedle tabulky, která tam už je:** tabulka říká čísla přesně, graf říká
+**tvar**. Kde se dva trenéři rozcházejí a kde jdou spolu, je na překryvu vidět na první
+pohled, místo aby se to hledalo po řádcích.
+
+**`radarVice()` je samostatná funkce, ne parametr `radar()`** — platí pro ni jiná pravidla:
+žádná výplň (řady jsou si rovné; poloprůhledné plochy přes sebe dají tolik odstínů, kolik
+je průsečíků) a u os nestojí číslo (u čtyř řad by tam byla čtyři čísla, což je tabulka,
+ne graf). Rozlišení nese tvar jako jinde, barva je druhý signál navíc.
+
+**Pravidlo, které dalo nejvíc přemýšlení: do jednoho grafu jdou jen řady se STEJNOU sadou
+os** — ne nadmnožina, ne podmnožina. Podmnožině by chyběl vrchol; nadmnožina by se sice
+vešla, ale její osa navíc by se neměla kam vykreslit a **tiše by zmizela** — přesně ta
+vada, kterou jsme o hodinu dřív opravovali na tiskovém listu. Vybere se nejpočetnější
+skupina (při rovnosti ta bohatší, tedy novější) a zbytek je pod grafem jmenovitě. Když
+nejsou aspoň dvě řady se stejnou sadou, karta zůstane a řekne proč — zmizet nesmí,
+prázdná stránka vypadá jako porouchaná aplikace.
+
+**Server:** `/api/shoda` nově vrací u každého, kdo odevzdal, i jeho `hodnoty`. Tabulka
+počítá shodu dál jen z **povinných** trenérů, ale vidět přes sebe má být každý, kdo se
+vyjádřil. Nic nového to neodhaluje — blind guard (kdo neodevzdal, nevidí cizí čísla)
+platí beze změny a je nad tím.
+
+**Radar je první graf uvnitř aplikace** (dřív žil jen na tiskové stránce), takže `app.css`
+dostalo `.chart-wrap`, `.legend` a `.vzorek`. Graf sedí na **bílé podložce v obou
+vzhledech**: kreslí se papírovými barvami a v tmavém by tmavé popisky os ležely na tmavém.
+
+Ověřeno pěti případy skládání řad, kontrolou SVG (tři obrysy, tři barvy, nula výplní)
+a proklikem v headless Edge nad třemi trenéry — dva šestiosí se vykreslili, třetí
+sedmiosý je pod grafem jmenovitě. Snímek ve světlém i tmavém vzhledu. Doklad
+v `known_good.md` (32).
+
+---
+
 ## 2026-08-18 (51) — kondice, kterou hráč oznámkoval, mizela z listu beze slova
 
 **Dotaz uživatele nad vytištěným leader listem:** *„nevidím tam vrchol fyzická kondice…

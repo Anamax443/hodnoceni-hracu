@@ -5,6 +5,35 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-18 (32) — překryv obrysů všech hodnotitelů
+
+Skládání řad (pravidlo „do grafu jen stejná sada os"):
+
+| Případ | Výsledek |
+|---|---|
+| tři trenéři, všichni šestiosí | ✅ 6 os, 3 řady, nikdo mimo |
+| dva šestiosí + jeden sedmiosý | ✅ 6 os, 2 řady, mimo: ten sedmiosý |
+| dva sedmiosí + jeden šestiosý | ✅ 7 os, 2 řady, mimo: ten šestiosý |
+| jeden proti jednomu, různá sada | ✅ vyhraje bohatší sada, druhý jmenovitě + karta řekne, že se nedá překrýt |
+| trenéři + uzavřená shoda | ✅ 3 řady včetně shody |
+
+SVG: ✅ tři obrysy, tři různé barvy, **nula výplní**, plná čára bez `dasharray`.
+
+Proklik v headless Edge nad lokálním dev serverem (tři trenéři nad jedním hráčem,
+šablona leader, dva šestiosí + jeden sedmiosý):
+
+| Kontrola | Výsledek |
+|---|---|
+| karta *Všichni hodnotitelé přes sebe* | ✅ je, mezi tabulkou a slovními bloky |
+| obrysy | ✅ 2 (`#1565C0` plná/kolečko, `#AD1457` čárkovaná/čtvereček) |
+| legenda | ✅ jména obou trenérů se vzorkem skutečné čáry |
+| poznámka pod grafem | ✅ „Do překryvu se nevešli: Zkouška Maso…" |
+| výplně v SVG | ✅ 0 |
+| chybové hlášky na stránce | ✅ 0 |
+| tmavý vzhled | ✅ graf na bílé podložce, popisky os čitelné (snímek) |
+
+---
+
 ## 2026-08-18 (31) — osa navíc v druhém pohledu se na listu vypíše
 
 Vykresleno skutečným `list.js` na datech odpovídajících ostrému stavu Bedřicha Grunda:
