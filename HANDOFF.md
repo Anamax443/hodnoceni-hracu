@@ -2,15 +2,16 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
-> **Stav k 19. 8. 2026:** živě běží pořád `f47c205` (nasazeno 17. 8.). Záznamy **50, 51
-> a 52** jsou hotové, ověřené a **pushnuté na GitHub, ale NENASAZENÉ** — v běžící aplikaci
-> tedy nejsou krajní záložníci, věta o ose navíc na listu ani překryv hodnotitelů ve Shodě.
-> Nasazení čeká na rozhodnutí uživatele; pustí se `npm run deploy` a živý commit se ověří
-> na `/api/version`.
+> **Stav k 20. 8. 2026:** živě běží `69d8afb`, Version ID `79d1abd7-7ecf-425c-b72d-3ab790291d56`.
+> Tím se nasadily záznamy **50, 51 i 52** najednou — krajní záložníci, věta o ose navíc
+> na listu i překryv hodnotitelů ve Shodě jsou v běžící aplikaci.
 
 ## 2026-08-18 (52) — všichni hodnotitelé přes sebe (Shoda)
 
-**Commit:** `73b2ac4` · **nenasazeno** (živě `f47c205`).
+**Commit:** `73b2ac4` · **NASAZENO** 2026-08-20 v `69d8afb`, Version ID
+`79d1abd7-7ecf-425c-b72d-3ab790291d56`. Ověřeno živě: servírovaný `app.js` nese `radarVice`
+i klíč `shoda.prekryv`, `src/radar.js` má `export function radarVice`, `/api/shoda` bez
+přihlášení `401`.
 
 **Zadání uživatele:** *„v zobrazení by bylo dobré vidět všechny obrysy hodnocení přes sebe
 od všech aktivních hodnotitelů."*
@@ -55,7 +56,8 @@ v `known_good.md` (32).
 
 ## 2026-08-18 (51) — kondice, kterou hráč oznámkoval, mizela z listu beze slova
 
-**Commit:** `b150d2d` · **nenasazeno** (živě `f47c205`).
+**Commit:** `b150d2d` · **NASAZENO** 2026-08-20 v `69d8afb`. Ověřeno živě: servírovaný
+`src/list.js` nese `function osyNavic`.
 
 **Dotaz uživatele nad vytištěným leader listem:** *„nevidím tam vrchol fyzická kondice…
 ale on ji hodnotil, ne?"* Obojí platí a je v tom rozdíl, který stálo za to dohledat.
@@ -101,7 +103,8 @@ Doklad v `known_good.md` (31).
 
 ## 2026-08-18 (50) — chyběl pravý a levý záložník
 
-**Commit:** `bfa477e` · **nenasazeno** (živě `f47c205`).
+**Commit:** `bfa477e` · **NASAZENO** 2026-08-20 v `69d8afb`. Ověřeno živě: servírovaný
+`src/sablony.js` nese `pravy_zaloznik` i `levy_zaloznik`.
 
 **Uživatel při zakládání hráče:** *„myslím, že mi na pozicích chybí pravý a levý
 záložník."* Sedí — v seznamu byl defenzivní, střední a ofenzivní záložník, tedy jen
