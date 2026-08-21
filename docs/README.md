@@ -335,6 +335,13 @@ v záhlaví označí a odznačí všechno.
 šablony vedle sebe, každý podepsaný, slovní bloky a cíle poskládané ze všech (u každého
 kusu je napsáno, ze které šablony je). Bez zaškrtnutí má každá šablona vlastní stránku.
 
+**Sebehodnocení hráče v čase** (nabídka *Co tisknout*) je jiný papír: řada vyplnění od hráče,
+jak šla po sobě. V grafu je **první a poslední** vyplnění, pod ním tabulka osa × datum se
+všemi a pod ní poznámky, co si hráč u kterého vyplnění napsal. Známky trenéra na něm nejsou —
+ukazuje jeden pohled v čase, ne dva proti sobě. Šipky ani věty o zlepšení tam schválně nejsou;
+čísla s datem mluví sama a papír nad hráčem nemá vynášet soud. Řadu přes víc sezón dostaneš
+volbou *Období* → „všechna".
+
 **Vysvětlivky os** (druhé zaškrtávátko) přidají na konec **jednu stránku navíc**: co která
 osa měří a jak vypadá zvládnutá — větou z pohledu hráče, tou samou, kterou vidí ve svém
 sebehodnocení. Na list hráče se to nevejde a nemá: *jeden hráč = jedna A4* je pravidlo.
@@ -435,8 +442,13 @@ zmátlo, který z nich platí.
 kanály má nastavené jen na trenéry a nesou pouze „kdo a co", nikdy obsah. Posílej odkaz
 konkrétnímu hráči, ne do týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.
 
-Odkaz je jednorázový — po odeslání už podruhé nejde. Posílej ho **konkrétnímu hráči**, ne do
-týmové skupiny: kdo odkaz má, může sebehodnocení vyplnit za něj.
+**Odkaz se dá vyplnit opakovaně.** Každé odeslání se uloží zvlášť a nic staršího nepřepíše —
+teprve z několika vyplnění je vidět, jak se to za pár měsíců pohnulo. Ve výpisu je u každého
+odkazu vidět, kolikrát byl vyplněný a kdy naposledy. Hráč přitom svá dřívější čísla nevidí
+ani při druhém vyplňování; ví jen, kolikáté to bude.
+
+Posílej odkaz **konkrétnímu hráči**, ne do týmové skupiny: kdo odkaz má, může sebehodnocení
+vyplnit za něj. Když má někdo přestat vyplňovat, odkaz *Zneplatni* nebo nech vypršet platnost.
 
 Když hráč odkaz ztratí, starý zneplatni a vygeneruj nový.
 

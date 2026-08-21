@@ -19,7 +19,8 @@ verified, and what is missing. Reasons and decisions are in [HANDOFF.md](../HAND
 | Coach evaluation | ✅ | **7 axes** 1–10, append-only, templates `pole` / `brankar` / `leader` |
 | Bulk evaluation | ✅ | one score for several players, merged into the latest record |
 | Editing an evaluation | ✅ | load, correct, save = **a new version**; own records only, blind scoring still holds |
-| Player self-evaluation | ✅ | single-use link, blind guard verified live |
+| Player self-evaluation | ✅ | **the link can be filled in repeatedly**, every fill-in is archived; blind guard verified live |
+| Self-evaluation over time | ✅ | printable sheet with the run of fill-ins (chart: first × latest, table: all) |
 | Coach × player comparison | ✅ | tolerance, sign, trend, version history |
 | Player × player comparison | ✅ | axis × player table with the gap |
 | Compare anything with anything | ✅ | 2–8 records (player × period × author) side by side; across periods and authors, within one template |
@@ -74,9 +75,12 @@ Snapshot of the production database as of **16 Aug 2026** (counts only — no na
 
 **The first conversation over the gap between the two views has something to stand on.**
 One player filled his in, so both polygons are drawn on his sheet. Links go out **by hand
-over WhatsApp**, which is a perfectly good route: the link is single-use and it does not
-matter how it reached the player. The channels in the app are convenience, not a
-precondition.
+over WhatsApp**, which is a perfectly good route: it does not matter how it reached the
+player. The channels in the app are convenience, not a precondition.
+
+**The link is no longer single-use** (21 Aug 2026): the same link can be filled in
+repeatedly and every fill-in is archived, so a run over time builds up. This applies to
+links sent out earlier too — the one already used opened up again on deploy.
 
 ## What has been verified live
 
@@ -94,6 +98,9 @@ Evidence and numbers in [known_good.md](../known_good.md). In short:
   printed to PDF fits **one A4**, three pages without the switch
 - written notes and goals do not travel between templates: 5 checks (an empty form switches
   without asking; with text typed it asks, and the text stays with its own template)
+- repeated fill-ins of a link: 15 API checks + 22 click-through checks (locally) — an
+  already-used link opens, a second and third submission go through, the archive keeps a
+  record per fill-in; the self-evaluation-over-time sheet printed to PDF fits **one A4**
 - **SMS for real (9 Aug 2026)**: dry run `ok`, seven seconds later a real message `ok` and
   delivered to the handset. The text stored in the log matches what went out, character for
   character

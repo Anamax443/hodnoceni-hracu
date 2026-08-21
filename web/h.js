@@ -1,8 +1,13 @@
 /* =====================================================================
-   SEBEHODNOCENÍ HRÁČE — veřejná stránka za jednorázovým odkazem /h/<token>
+   SEBEHODNOCENÍ HRÁČE — veřejná stránka za odkazem /h/<token>
 
-   Hráč tady nikdy neuvidí hodnocení trenéra ani svoje předchozí hodnoty.
-   Hlídá to Worker (§7.1, §7.2), tahle stránka o nich ani neví.
+   Odkaz se dá vyplnit opakovaně: každé odeslání je nový záznam s datem,
+   takže je z čeho složit řadu v čase. Přepsat starší vyplnění nejde.
+
+   Hráč tady nikdy neuvidí hodnocení trenéra ani svoje předchozí hodnoty —
+   ani ta vlastní ne (§7.2): loňská sedmička přitáhne novou k sobě stejně
+   jako cizí. Ví jen, kolikáté vyplnění to bude. Hlídá to Worker, tahle
+   stránka o žádných starších číslech neví.
    ===================================================================== */
 
 import { MAX } from './src/sablony.js';
@@ -86,15 +91,14 @@ function vykresli() {
         ? `<span class="znacka sab-${esc(data.sablona)}">${t('sablona.' + data.sablona)}</span>`
         : '';
 
-    if (data.pouzit) {
-        obsah.innerHTML = `<div class="karta"><div class="hlaska ok">${t('self.jizOdeslano')}</div></div>`;
-        return;
-    }
-
     obsah.innerHTML = `
         <div class="karta">
             <h2>${t('self.ahoj', esc(osloveni(data.jmeno, data.prezdivka)))}</h2>
             <p class="popis">${t('self.popis')}</p>
+            ${data.pouziti ? `<div class="hlaska info">${
+                t('self.pokolikate', data.pouziti + 1)}${data.naposledy
+                    ? ' ' + t('self.naposledy', esc(new Date(data.naposledy + 'Z').toLocaleDateString(locale())))
+                    : ''} ${t('self.znovu.proc')}</div>` : ''}
             <div class="kotvy">${kotvy().map(k => `<span><b>${k[0]}</b> – ${k[1]}</span>`).join('')}</div>
         </div>
 
@@ -137,7 +141,18 @@ async function odesli(e) {
         });
         const v = await r.json();
         if (!r.ok) throw new Error(v?.chyba || t('chyba.server', r.status));
-        obsah.innerHTML = `<div class="karta"><div class="hlaska ok">${t('self.hotovo')}</div></div>`;
+
+        // Odkaz zůstává v platnosti, takže po odeslání nekončí cesta — hráč se
+        // sem může vrátit za měsíc a vyplnit znovu. Ať to ví.
+        data.pouziti = v.poradi ?? (data.pouziti ?? 0) + 1;
+        data.naposledy = null;
+        obsah.innerHTML = `
+            <div class="karta">
+                <div class="hlaska ok">${t('self.hotovo')}</div>
+                <p class="popis">${t('self.hotovo.znovu')}</p>
+                <button class="vedlejsi" id="znovu" title="${t('self.znovu.tip')}">${t('self.znovu')}</button>
+            </div>`;
+        $('#znovu').onclick = () => vykresli();
     } catch (err) {
         tlacitko.disabled = false;
         alert(err.message);
@@ -149,7 +164,7 @@ async function odesli(e) {
 $('#themeBtn').onclick = () => nastavVzhled(vzhled() === 'dark' ? 'light' : 'dark');
 $('#jazykBtn').onclick = () => {
     // rozepsané odpovědi se při přepnutí jazyka nesmí ztratit
-    const ulozene = data && !data.pouzit ? zapamatujOdpovedi() : null;
+    const ulozene = data && obsah.querySelector('.stupnice') ? zapamatujOdpovedi() : null;
     nastavJazyk(druhyJazyk());
     vykresli();
     verze();

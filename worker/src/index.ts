@@ -1541,12 +1541,13 @@ async function self(request: Request, env: Env, token: string): Promise<Response
     // Šablona je na tokenu, ne na osobě: hráč musí vyplnit tytéž osy, které
     // známkoval trenér, jinak by se porovnávaly dvě různé šestice.
     const t = await env.DB.prepare(
-        `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do, t.sablona,
-                p.jmeno, p.prezdivka
+        `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.pouziti, t.naposledy,
+                t.platny_do, t.sablona, p.jmeno, p.prezdivka
            FROM tokens t JOIN players p ON p.id = t.player_id
           WHERE t.token = ?`
     ).bind(token).first<{
         token: string; player_id: number; obdobi: string; pouzit: number;
+        pouziti: number; naposledy: string | null;
         platny_do: string | null; jmeno: string; prezdivka: string | null; sablona: string;
     }>();
 
@@ -1564,12 +1565,21 @@ async function self(request: Request, env: Env, token: string): Promise<Response
             obdobi: t.obdobi,
             sablona: t.sablona,
             osy: klice(t.sablona),      // jen klíče, popisy si přeloží prohlížeč
-            pouzit: !!t.pouzit
+            // Kolikrát už hráč odeslal. Formulář z toho udělá „tohle bude tvoje
+            // třetí vyplnění" — čísla ani osy z minula se ale neukazují (§7.2):
+            // vlastní loňská sedmička přitáhne novou k sobě stejně jako cizí.
+            pouzit: !!t.pouzit,
+            pouziti: t.pouziti ?? 0,
+            naposledy: t.naposledy ?? null
         });
     }
 
     if (request.method !== 'POST') return chyba('Nepodporovaná metoda.', 405);
-    if (t.pouzit) return chyba('Sebehodnocení už jsi jednou odeslal. Podruhé to nejde.', 409);
+    /* Odkaz se vyplňuje opakovaně. Dřív tu byl zámek na jedno odeslání; z jednoho
+       čísla ale progres nepoznáš, a půl roku stará sedmička není dnešní sedmička.
+       Každé odeslání zakládá nový řádek, takže archiv vzniká sám a přepsat starší
+       vyplnění nejde. Platí to i pro odkazy vydané dřív — už jednou vyplněný
+       odkaz tímhle ožívá. Zastavit ho jde platností nebo tlačítkem Zneplatnit. */
 
     const telo = await request.json<{ hodnoty?: Record<string, number>; poznamka?: string }>();
     const problem = zkontrolujHodnoty(t.sablona, telo.hodnoty);
@@ -1582,11 +1592,14 @@ async function self(request: Request, env: Env, token: string): Promise<Response
             `INSERT INTO evaluations (player_id, obdobi, autor, sablona, hodnoty, poznamka)
              VALUES (?, ?, 'hrac', ?, ?, ?)`
         ).bind(t.player_id, t.obdobi, t.sablona, JSON.stringify(telo.hodnoty), poznamka),
-        env.DB.prepare('UPDATE tokens SET pouzit = 1 WHERE token = ?').bind(token)
+        env.DB.prepare(
+            `UPDATE tokens SET pouzit = 1, pouziti = pouziti + 1, naposledy = datetime('now')
+              WHERE token = ?`
+        ).bind(token)
     ]);
 
     await zapisUdalost(env, 'sebehodnoceni', t.player_id, t.obdobi, null);
-    return json({ ulozeno: true });
+    return json({ ulozeno: true, poradi: (t.pouziti ?? 0) + 1 });
 }
 
 /* ===================== obnova zapomenutého hesla ===================== */
@@ -3614,6 +3627,61 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         // ne vždycky všechno, co u sebe má. Viz `rozeberIds`.
         const vyber = rozeberIds(ids);
 
+        /* ---------- sebehodnocení v čase ----------
+           Jiný list než hodnocení trenéra: nese ŘADU vyplnění od hráče, ne jedno
+           číslo. Od té doby, co jde odkaz vyplnit opakovaně, je z čeho ji složit —
+           a je to jediný pohled, kde je progres vidět hráčovýma očima.
+
+           Trenérova čísla tu schválně nejsou: tenhle papír je o tom, jak se vidí
+           on sám. Porovnání obou pohledů má vlastní list i vlastní záložku.       */
+        if (q.get('pohled') === 'sebehodnoceni') {
+            const { results: hraci } = await env.DB.prepare(
+                `SELECT id, jmeno, prezdivka, post, pozice, sablona, sablony FROM players
+                  WHERE role = 'hrac' AND aktivni = 1 ORDER BY jmeno`
+            ).all<{ id: number; jmeno: string; prezdivka: string | null; post: string | null;
+                    pozice: string; sablona: string; sablony: string }>();
+
+            const rady = [];
+            for (const h of (hraci ?? []).filter(h => !vyber || vyber.some(v => v.id === h.id))) {
+                const jenTyto = sablonyZVyberu(vyber, h.id);
+                for (const sablona of sablonyOsoby(h)) {
+                    if (jenTyto && !jenTyto.has(sablona)) continue;
+
+                    // Napříč obdobími, nebo jen to vybrané. Progres se pozná
+                    // z pořadí v čase, takže se řadí od nejstaršího.
+                    const { results: vyplneni } = await env.DB.prepare(
+                        `SELECT id, datum, obdobi, hodnoty, poznamka FROM evaluations
+                          WHERE player_id = ? AND autor = 'hrac' AND sablona = ?
+                                ${vseObdobi ? '' : 'AND obdobi = ?'}
+                          ORDER BY datum, id`
+                    ).bind(...[h.id, sablona, ...(vseObdobi ? [] : [obdobi])])
+                     .all<{ id: number; datum: string; obdobi: string; hodnoty: string; poznamka: string | null }>();
+
+                    rady.push({
+                        player_id: h.id,
+                        jmeno: h.jmeno,
+                        prezdivka: h.prezdivka,
+                        post: h.post,
+                        pozice: JSON.parse(h.pozice ?? '[]'),
+                        obdobi: vseObdobi ? nas.obdobi : obdobi,
+                        sablona,
+                        sebehodnoceni: (vyplneni ?? []).map(v => ({
+                            id: v.id, datum: v.datum, obdobi: v.obdobi,
+                            hodnoty: JSON.parse(v.hodnoty) as Record<string, number>,
+                            poznamka: v.poznamka
+                        }))
+                    });
+                }
+            }
+
+            return json({
+                nastaveni: { ...nas, obdobi: vseObdobi ? nas.obdobi : obdobi },
+                vsechnaObdobi: vseObdobi,
+                pohled: 'sebehodnoceni',
+                listy: rady
+            });
+        }
+
         const { results: hraci } = await env.DB.prepare(
             `SELECT id, jmeno, prezdivka, post, pozice, sablona, sablony FROM players
               WHERE role = 'hrac' AND aktivni = 1 ORDER BY jmeno`
@@ -4330,8 +4398,8 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
         if (metoda === 'GET') {
             const obdobi = q.get('obdobi') || (await nastaveni(env)).obdobi;
             const { results } = await env.DB.prepare(
-                `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.platny_do, t.sablona,
-                        p.jmeno, p.prezdivka
+                `SELECT t.token, t.player_id, t.obdobi, t.pouzit, t.pouziti, t.naposledy,
+                        t.platny_do, t.sablona, p.jmeno, p.prezdivka
                    FROM tokens t JOIN players p ON p.id = t.player_id
                   WHERE t.obdobi = ? ORDER BY p.jmeno`
             ).bind(obdobi).all();
@@ -4365,9 +4433,13 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
             // Odkaz je na jednu šesticí os. Hráč s víc šablonami (chytá i hraje
             // v poli) dostane odkaz na každou — jeden formulář by se jinak ptal
             // jen na jednu řadu a zbytek by tiše chyběl.
+            /* Odkaz jde vyplnit opakovaně, takže „už je vyplněný" není důvod dělat
+               další — dokud platí ten stávající, druhý by jen zmátl, který z nich
+               je ten pravý. Nový vznikne po vypršení platnosti nebo po Zneplatnit. */
             const { results: uzJsou } = await env.DB.prepare(
-                'SELECT player_id, sablona FROM tokens WHERE obdobi = ? AND pouzit = 0'
-            ).bind(obdobi).all<{ player_id: number; sablona: string }>();
+                `SELECT player_id, sablona FROM tokens
+                  WHERE obdobi = ? AND (platny_do IS NULL OR platny_do > ?)`
+            ).bind(obdobi, new Date().toISOString()).all<{ player_id: number; sablona: string }>();
 
             const nove = [];
             let preskoceno = 0;
@@ -4377,8 +4449,7 @@ async function admin(request: Request, env: Env, url: URL, kdo: Session): Promis
                     ? [telo.sablona]
                     : [...(sablonyZVyberu(vyber, c.id) ?? new Set(sablonyOsoby(c)))];
                 for (const sablona of sablony) {
-                    // Nevyplněný odkaz na tutéž šablonu už visí — druhý by jen
-                    // zmátl, který z nich platí.
+                    // Platný odkaz na tutéž šablonu už visí.
                     if ((uzJsou ?? []).some(t => t.player_id === c.id && t.sablona === sablona)) {
                         preskoceno++;
                         continue;

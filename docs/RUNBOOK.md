@@ -74,7 +74,7 @@ Plus Cloudflare dashboard → Workers → Logs. `observability` je v `wrangler.j
 | lišta hlásí nový commit, ale aplikace se chová postaru | verze je v bundlu, `app.js` jde přes cache zóny a chvíli po nasazení bývá starý | počkat pár minut a Ctrl+F5; ověřit `curl https://hodnoceni.maxferit.cz/app.js` proti `…workers.dev/app.js` (stejný ETag = srovnané) |
 | aplikace je celá anglicky | jazyk prohlížeče nebo dřívější volba | tlačítko **Čeština** v horní liště, nebo adresa s `?lang=cs` |
 | po přepnutí jazyka zmizely rozepsané známky | u hráče se zachovají, u trenéra ne | trenér ať si jazyk zvolí před vyplňováním formuláře |
-| hráči odkaz nefunguje | vypršel, byl zneplatněn, nebo už ho vyplnil | Odkazy → zneplatnit starý → vygenerovat nový |
+| hráči odkaz nefunguje | vypršel nebo byl zneplatněn (vyplněný odkaz funguje dál — jde vyplnit opakovaně) | Odkazy → zneplatnit starý → vygenerovat nový |
 | ve formuláři nejde vybrat brankář (nebo leader) | hráč tu šesticí os nemá zaškrtnutou; nabízejí se jen přiřazené | Lidé → hráč → zaškrtnout šablonu → Uložit |
 | na úvodní stránce chybí znak klubu | v repozitáři není `web/logo.png` (obrázek se schová schválně) | nahrát logo jako `web/logo.png` a nasadit (`npm run deploy`) |
 | „… má v databázi 4× hodnocení — smazat to nejde" | mazat jde jen člověk bez historie; jeho čísla by z listů zmizela | odškrtnout *aktivní* (zůstane i s historií), místo mazání |
@@ -177,6 +177,23 @@ Co od modelu čekat a co ne:
 Na souhrny stačí model zdarma (Workers AI). Na formulace k rozhovoru je znát rozdíl —
 tam se hodí silnější model, případně Claude (`ANTHROPIC_API_KEY`, kaskáda je postavená
 a při vyčerpaném kreditu spadne zpátky na model zdarma).
+
+---
+
+## 4c. Sebehodnocení opakovaně a progres hráče
+
+**Odkaz na sebehodnocení není jednorázový.** Hráč ho může vyplnit, kdykoli ho pošleš zpátky
+(nebo si ho najde ve svých zprávách) — každé vyplnění se uloží zvlášť a nic staršího nepřepíše.
+V Odkazech je u každého vidět, **kolikrát** byl vyplněný a **kdy naposledy**.
+
+Platí to i pro odkazy rozeslané dřív; jednou vyplněný odkaz se nasazením zase otevřel.
+Když má někdo odkaz přestat používat: Odkazy → *Zneplatnit*, případně nechat vypršet platnost.
+
+**Vytisknout progres:** Listy → *Co tisknout* = **Sebehodnocení hráče v čase**. V grafu je
+první a poslední vyplnění, pod ním tabulka se všemi. Chceš-li řadu přes víc sezón, vyber
+v *Období* volbu „všechna".
+
+Druhý polygon ani kumulovaný list se u tohohle pohledu neuplatní — proto se v nabídce zašednou.
 
 ---
 

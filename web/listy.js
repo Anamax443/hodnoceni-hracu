@@ -1,7 +1,9 @@
 /* Tiskové listy sestavené z databáze. Parametry v URL:
    ?obdobi=2025/2026 zima|vse&porovnani=minule|hrac|zadne&ids=vse|1,2,3
    `obdobi=vse` vytiskne celou historii — hráč pak dostane papír za každé
-   období, ve kterém hodnocení má.                                        */
+   období, ve kterém hodnocení má.
+   `pohled=sebehodnoceni` tiskne místo hodnocení trenéra řadu vyplnění od
+   hráče, jak šla po sobě.                                                */
 
 import { vykresli, esc } from './src/list.js';
 import { t, jazyk, nastavJazyk, druhyJazyk, locale } from './src/i18n.js';
@@ -28,6 +30,7 @@ function popisky() {
 
 const kumulovane = p.get('kumulovane') === '1';
 const sVysvetlivkami = p.get('vysvetlivky') === '1';
+const pohled = p.get('pohled') === 'sebehodnoceni' ? 'sebehodnoceni' : 'hodnoceni';
 
 function nakresli() {
     popisky();
@@ -41,7 +44,17 @@ function nakresli() {
             obdobi: t('tisk.vsechnaObdobi', new Set(data.listy.map(h => h.obdobi)).size) }
         : data.nastaveni;
 
-    const pocet = vykresli(data.listy, nas, $('#output'), kumulovane, sVysvetlivkami);
+    const pocet = vykresli(data.listy, nas, $('#output'), kumulovane, sVysvetlivkami, pohled);
+
+    if (pohled === 'sebehodnoceni') {
+        // „Bez hodnocení" tady znamená „hráč zatím nic nevyplnil" — jiná věta
+        // než u trenérského listu, ať nevypadá, že chybí známky trenéra.
+        const bez = data.listy.filter(h => !(h.sebehodnoceni ?? []).length).length;
+        $('#stav').textContent = t('tisk.stavProgres', nas.obdobi, pocet)
+            + (bez ? t('tisk.bezSebehodnoceni', bez) : '');
+        return;
+    }
+
     const bez = data.listy.filter(h => !h.hodnoceni).length;
     $('#stav').textContent = t('tisk.stav', nas.obdobi, pocet)
         + (bez ? t('tisk.bez', bez) : '')
@@ -61,7 +74,8 @@ try {
         : new URLSearchParams({
             obdobi: p.get('obdobi') || '',
             porovnani: p.get('porovnani') || 'minule',
-            ids: p.get('ids') || 'vse'
+            ids: p.get('ids') || 'vse',
+            ...(pohled === 'sebehodnoceni' ? { pohled } : {})
         });
 
     const odpoved = await fetch(`/api/listy?${dotaz}`, { credentials: 'same-origin' });

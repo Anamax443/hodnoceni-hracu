@@ -271,6 +271,14 @@ The **Combined sheet** tick box puts them on **one page**: the radars side by si
 captioned, with the written notes and goals merged from all templates (each part says which
 template it came from). Unticked, every template gets its own page.
 
+**Player self-evaluation over time** (the *What to print* selector) is a different paper: the
+run of the player's own fill-ins in order. The chart holds the **first and the latest**, below
+it a table of axis × date with all of them, and under that the notes the player wrote each
+time. No coach scores appear on it — it shows one view over time, not two views against each
+other. There are deliberately no arrows and no sentences about improvement; dated numbers
+speak for themselves and the paper is not there to pass judgement. For a run across seasons,
+pick *Period* → "all".
+
 The second tick box, **Add a page explaining the axes**, appends **one extra page**: what
 each axis measures and what mastering it looks like, written from the player's point of
 view — the same sentence they see in their self-evaluation. It does not belong on the player
@@ -347,9 +355,15 @@ a gap column takes its place.
 
 ### Links
 
-Single-use self-evaluation links for the active players in the period, with *Copy* and
-*Invalidate* and the state (waiting / filled in). Send the link **to the individual player**,
+Self-evaluation links for the active players in the period, with *Copy* and *Invalidate* and
+the state (waiting / how many times filled in). Send the link **to the individual player**,
 not to a team group: whoever has it can fill the self-evaluation in for them.
+
+**A link can be filled in repeatedly.** Every submission is stored separately and overwrites
+nothing — it takes a few of them before you can see how things moved over a couple of months.
+The list shows how many times each link was used and when last. The player still never sees
+their earlier numbers, only which fill-in this will be. To stop someone from filling it in,
+*Invalidate* the link or let it expire.
 
 **A link carries one set of axes**, so a player with several templates gets one link per
 template — the *Template* column says which is which. An unused link for the same template is

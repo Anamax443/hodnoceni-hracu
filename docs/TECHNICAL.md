@@ -799,6 +799,7 @@ Migrace, které přibyly:
 | `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (viz kap. 3) |
 | `012_uprava.sql` | `evaluations.uprava_id` — ze které verze nová vznikla |
 | `013_sablony.sql` | `players.sablony` — víc šablon u jednoho hráče (JSON pole) |
+| `014_odkaz_opakovane.sql` | `tokens.pouziti`, `tokens.naposledy` — odkaz jde vyplnit opakovaně |
 
 ### Čísla osob se nerecyklují
 
@@ -958,7 +959,8 @@ GET    /api/ai/modely                             admin — nabídka pro Nastave
 GET    /api/analyzy?obdobi=                       admin — spočítané podklady, BEZ modelu
 POST   /api/ai/analyza    {otazka,obdobi,popisky} admin — otázka nad plnými daty (viz 3e)
 
-GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu;
+GET    /api/listy?obdobi=&porovnani=&ids=         admin — jeden záznam na hráče × šablonu
+GET    /api/listy?pohled=sebehodnoceni&ids=       admin — řada vyplnění od hráče, od nejstaršího;
                                                   `obdobi=vse` = celá historie, list nese
                                                   vlastní `obdobi` a odpověď `vsechnaObdobi`
 GET    /api/porovnani?player_id=&obdobi=          admin — rozdíly trenér vs. hráč

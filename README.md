@@ -35,7 +35,8 @@ se nikdy neznámkují.
 | **Listy** | tiskové A4 z databáze, list na každou šablonu, volitelně **kumulovaný list** (všechny šablony hráče na jedné stránce), druhý polygon volitelně; **každá šablona má svou barvu a název v hlavičce** |
 | **Porovnání** | rozdíly trenér vs. hráč se znaménkem a tolerancí, srovnání hráčů mezi sebou, vývoj v čase, historie verzí |
 | **Analýzy** | souhrny za celý kádr (nejslabší osy, největší rozpory) počítané v aplikaci; čísla, proti kterým se ověřuje odpověď modelu |
-| **Odkazy** | jednorázové odkazy na sebehodnocení; odkaz nese jednu šestici os, takže hráč s víc šablonami dostane odkaz na každou |
+| **Odkazy** | odkazy na sebehodnocení, **opakovaně vyplnitelné**; každé vyplnění se archivuje, odkaz nese jednu šestici os (hráč s víc šablonami dostane odkaz na každou) |
+| **Sebehodnocení v čase** | tiskový list s řadou vyplnění od hráče — graf první × poslední, tabulka všechna, poznámky hráče |
 | **Nastavení** | tolerance, období, hlavička listu, změna hesla, souhrnné notifikace, jazykový model |
 | **Notifikace** | souhrn na Telegram, e-mail a SMS; zvlášť interval „když se něco děje" a „když se nic neděje" |
 | **Příkazový řádek** | **jedno pole na povely i otázky, nad každou záložkou**: „Robin" → Hodnotit / Porovnat / Listy, „kolik máme hráčů" → odpověď rovnou v liště; rozřazení dělá prohlížeč, model až na zapeklité věty a na otázky |

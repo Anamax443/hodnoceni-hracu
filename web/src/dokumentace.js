@@ -205,10 +205,18 @@ doplnit — a vypíše se jmenovitě, ať ho doplníš jednotlivě. Základ se b
 z <b>tvých</b> hodnocení, aby se tiše nesmíchaly dva pohledy.</p>
 
 <h2>Sebehodnocení hráče</h2>
-<p>V záložce <b>Odkazy</b> se hráči vygeneruje jednorázový odkaz. Osy jsou
-formulované v první osobě a na konci je nepovinná otázka, na čem chce hráč
-pracovat. Odkaz nese i šablonu, aby hráč vyplňoval tytéž osy, které známkoval
-trenér.</p>
+<p>V záložce <b>Odkazy</b> se hráči vygeneruje odkaz. Osy jsou formulované
+v první osobě a na konci je nepovinná otázka, na čem chce hráč pracovat. Odkaz
+nese i šablonu, aby hráč vyplňoval tytéž osy, které známkoval trenér.</p>
+<p><b>Odkaz se vyplňuje opakovaně.</b> Každé odeslání se uloží jako vlastní
+záznam s datem a nic staršího nepřepíše — teprve z několika vyplnění je vidět,
+jak se to za pár měsíců pohnulo. Ve výpisu odkazů je vidět, kolikrát byl který
+vyplněný a kdy naposledy. Platí to i pro odkazy rozeslané dřív.</p>
+<p><b>Hráč svá dřívější čísla nevidí ani při druhém vyplňování.</b> Ví jen,
+kolikáté vyplnění to bude. Vlastní loňská sedmička přitáhne novou k sobě stejně
+jako cizí, a řada by tím přišla o smysl.</p>
+<p>Když má někdo přestat vyplňovat, odkaz se <i>Zneplatní</i>, nebo se nechá
+vypršet platnost.</p>
 <p><b>Vybírá se po odkazech, ne po hráčích.</b> V tabulce <i>Komu vygenerovat</i>
 má každá kombinace hráč + šablona vlastní zaškrtávátko, takže jde vygenerovat
 jen brankářský odkaz, i když má hráč šablony tři. Ve výchozím stavu je
@@ -296,6 +304,17 @@ list, zbylé dva odškrtneš. Zaškrtávátko v záhlaví označí a odznačí v
 vedle sebe, každý podepsaný svou šablonou, slovní bloky a cíle poskládané ze
 všech šablon (a je u nich napsáno, ze které jsou). Radary zůstávají oddělené
 i tady — sloučit dvanáct os do jednoho obrazce by nedávalo smysl.</p>
+<h3>Sebehodnocení hráče v čase</h3>
+<p>Nabídka <b>Co tisknout</b> přepne na jiný papír: <b>řadu vyplnění od hráče</b>,
+jak šla po sobě. V grafu je <b>první a poslední</b> vyplnění (pravidlo dvou
+polygonů platí dál), pod ním tabulka osa × datum se všemi a pod ní poznámky,
+co si hráč u kterého vyplnění napsal.</p>
+<p>Známky trenéra ani slovní bloky na něm nejsou — ukazuje <i>jeden</i> pohled
+v čase, ne dva proti sobě. <b>Šipky ani věty o zlepšení tam schválně nejsou</b>:
+čísla s datem mluví sama a papír, který si odnáší čtrnáctiletý domů, nad ním
+nemá vynášet soud. Řadu přes víc sezón dostaneš volbou <i>Období</i> →
+„všechna“. Druhý polygon ani kumulace se u tohohle pohledu neuplatní, proto se
+v nabídce zašednou.</p>
 <p><b>Každá šablona má svou barvu</b>, ať se na hromádce vytištěných listů
 pozná na první pohled, co je co: <b>hráč v poli modrá</b>, <b>brankář
 petrolejová</b>, <b>leader vínová</b>. Barvu nese hlavička, jméno hráče, radar
@@ -522,8 +541,8 @@ Cloudflare a <b>SMS je od 9. 8. 2026 ověřená naostro</b> — zkouška naneči
 i skutečně doručená zpráva. Do té doby účet u brány neprošel a zprávy končily
 chybou.</p>
 <p>Odkaz na sebehodnocení se dá <b>zkopírovat a poslat čímkoliv</b> — WhatsAppem,
-Messengerem, na papírku. Kanály v aplikaci jsou pohodlí, ne podmínka; odkaz je
-jednorázový a platí bez ohledu na to, kudy se k hráči dostal.</p>
+Messengerem, na papírku. Kanály v aplikaci jsou pohodlí, ne podmínka; odkaz platí
+bez ohledu na to, kudy se k hráči dostal, a dá se vyplnit opakovaně.</p>
 
 <h3>Co zbývá</h3>
 <p>Dohodnotit zbytek kádru, doplnit hráčům pozice, které se tisknou na list,
@@ -727,10 +746,20 @@ base is taken from <b>your own</b> evaluations only, so two viewpoints never get
 silently mixed.</p>
 
 <h2>Player self-evaluation</h2>
-<p>Under <b>Links</b> you generate a single-use link for a player. The axes are
-phrased in the first person and there is an optional question about what the
-player wants to work on. The link also carries the template, so the player fills
-in the same axes the coach scored.</p>
+<p>Under <b>Links</b> you generate a link for a player. The axes are phrased in
+the first person and there is an optional question about what the player wants to
+work on. The link also carries the template, so the player fills in the same axes
+the coach scored.</p>
+<p><b>The link can be filled in repeatedly.</b> Every submission is stored as its
+own dated record and overwrites nothing — it takes a few of them before you can
+see how things moved over a couple of months. The list of links shows how many
+times each was used and when last. This applies to links sent out earlier too.</p>
+<p><b>The player does not see their earlier numbers even on a repeat fill-in.</b>
+They only learn which fill-in this will be. Their own last-season seven pulls the
+new one towards itself just as somebody else's would, and the run would lose its
+meaning.</p>
+<p>To stop someone from filling it in, <i>Invalidate</i> the link or let it
+expire.</p>
 <p><b>You pick links, not players.</b> In the <i>Generate for whom</i> table every
 player + template combination has its own tick box, so you can generate just the
 goalkeeper link even for a player with three templates. Everything is ticked by
@@ -813,6 +842,17 @@ sheet, untick the other two. The tick box in the header toggles everything.</p>
 by side, each captioned with its template, and the written notes and goals merged
 from all templates (saying which one each part came from). The radars stay
 separate here too — merging twelve axes into one shape would mean nothing.</p>
+<h3>Player self-evaluation over time</h3>
+<p>The <b>What to print</b> selector switches to a different paper: <b>the run of
+fill-ins from the player</b>, in order. The chart holds the <b>first and the
+latest</b> (the two-polygon rule still applies), below it a table of axis × date
+with all of them, and under that the notes the player wrote each time.</p>
+<p>No coach scores and no written blocks appear on it — it shows <i>one</i> view
+over time, not two against each other. <b>There are deliberately no arrows and no
+sentences about improvement</b>: dated numbers speak for themselves, and a paper a
+fourteen-year-old takes home is not there to pass judgement. For a run across
+seasons pick <i>Period</i> → “all”. The second polygon and the combined sheet do
+not apply here, so they grey out in the form.</p>
 <p><b>Every template has its own colour</b>, so that a stack of printed sheets
 can be told apart at a glance: <b>outfield blue</b>, <b>goalkeeper teal</b>,
 <b>leader crimson</b>. The colour is carried by the header, the player's name,
@@ -1038,8 +1078,8 @@ account had not cleared and messages failed.</p>
 
 <p>A self-evaluation link can be <b>copied and sent by any means</b> — WhatsApp,
 Messenger, a scrap of paper. The channels in the app are convenience, not a
-precondition; the link is single-use and works no matter how it reached the
-player.</p>
+precondition; the link works no matter how it reached the player, and it can be
+filled in repeatedly.</p>
 
 <h3>What is left</h3>
 <p>Evaluate the rest of the squad, fill in the positions that get printed on the

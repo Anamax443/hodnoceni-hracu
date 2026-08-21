@@ -329,15 +329,126 @@ export function vysvetlivky(sablony, nas) {
 }
 
 /**
+ * List sebehodnocení v čase: jak se hráč viděl on sám, vyplnění po vyplnění.
+ *
+ * Odkaz jde vyplňovat opakovaně, takže tahle řada roste — a je to jediné místo,
+ * kde je progres vidět hráčovýma očima. Trenérova čísla tu schválně nejsou:
+ * tenhle papír neporovnává dva pohledy, ukazuje jeden v čase.
+ *
+ * Graf drží pravidlo dvou polygonů (tři jsou nečitelné): kreslí se **první
+ * a poslední** vyplnění. Celá řada je pod ním v tabulce, takže se nic neztratí.
+ *
+ * Šipky ani věty o zlepšení tu nejsou (ZADANI §7.5) — čísla s datem si čtenář
+ * porovná sám a papír nad ním nevynáší soud.
+ *
+ * @param {Object} h {jmeno, prezdivka, post, pozice, obdobi, sablona, sebehodnoceni[]}
+ */
+export function listProgres(h, nas) {
+    const rada = h.sebehodnoceni ?? [];
+    // Osy podle nejnovějšího vyplnění: kdyby osa uprostřed sezóny přibyla,
+    // kreslí se ta šestice, kterou hráč vyplňoval naposledy.
+    const seznamOs = osyProZaznam(h.sablona, rada.length ? rada[rada.length - 1].hodnoty : null);
+    if (!seznamOs.length) throw new Error(t('list.neznamaSablona', h.jmeno, h.sablona));
+
+    const datum = new Date().toLocaleDateString(locale());
+    const den = d => new Date(d + 'Z').toLocaleDateString(locale());
+
+    const prvni = rada[0] ?? null;
+    const posledni = rada.length > 1 ? rada[rada.length - 1] : null;
+
+    // Sloupců v tabulce může být hodně; na papír se vejde jen rozumný počet,
+    // proto se u dlouhé řady tiskne prvních a posledních pár a mezera se přizná.
+    const MAX_SLOUPCU = 8;
+    const zkracena = rada.length > MAX_SLOUPCU;
+    const sloupce = zkracena
+        ? [...rada.slice(0, 2), ...rada.slice(-(MAX_SLOUPCU - 2))]
+        : rada;
+
+    const poznamky = rada.filter(v => (v.poznamka ?? '').trim());
+
+    return `
+    <div class="page sab-${esc(h.sablona)}">
+        <div class="header">
+            <div>
+                <div class="club">${esc(nas.klub)}</div>
+                <h1>${t('list.progres.nadpis')}</h1>
+                ${znacka(h.sablona)}
+            </div>
+            <div class="meta">
+                ${esc(nas.kategorie)} &bull; ${t('list.sezona')} ${esc(nas.sezona)}<br>
+                ${esc(obdobiListu(h, nas))}<br>
+                ${t('list.vystaveno')}: ${datum}
+            </div>
+        </div>
+
+        <div class="playerbar">
+            <span class="name">${esc(h.jmeno)}${h.prezdivka ? ' &bdquo;' + esc(h.prezdivka) + '&ldquo;' : ''}</span>
+            <span class="role">${esc(popisPostu(h))}</span>
+        </div>
+
+        ${!rada.length ? `<p class="note-unfilled">${t('list.progres.nic')}</p>` : ''}
+        ${rada.length === 1 ? `<p class="note-unfilled">${t('list.progres.jedno')}</p>` : ''}
+
+        <div class="chart-wrap">${radar(seznamOs, posledni?.hodnoty ?? prvni?.hodnoty ?? null,
+            posledni ? prvni.hodnoty : null)}</div>
+        <div class="legend">
+            ${prvni ? `<span>${vzorekRady(0, 'var(--sab-tmava, #1565C0)')} ${
+                posledni ? t('list.progres.naposledy', esc(den(posledni.datum)))
+                         : t('list.progres.jedine', esc(den(prvni.datum)))}</span>` : ''}
+            ${posledni ? `<span>${vzorekRady(1)} ${t('list.progres.poprve', esc(den(prvni.datum)))}</span>` : ''}
+        </div>
+
+        ${rada.length ? `
+        <table class="progres-tabulka">
+            <thead><tr><th>${t('porovnani.osa')}</th>
+                ${sloupce.map((v, i) => `<th class="cisla">${
+                    zkracena && i === 2 ? '… ' : ''}${esc(den(v.datum))}</th>`).join('')}</tr></thead>
+            <tbody>
+                ${seznamOs.map(o => `<tr>
+                    <td>${esc(o.popis)}</td>
+                    ${sloupce.map(v => `<td class="cisla">${
+                        Number.isFinite(Number(v.hodnoty[o.klic])) ? v.hodnoty[o.klic] : '&mdash;'}</td>`).join('')}
+                </tr>`).join('')}
+            </tbody>
+        </table>
+        ${zkracena ? `<p class="popis-listu">${t('list.progres.zkraceno', rada.length, MAX_SLOUPCU)}</p>` : ''}` : ''}
+
+        ${poznamky.length ? `
+        <div class="goals">
+            <h4>&#128172; ${t('list.progres.poznamky')}</h4>
+            <ol>${poznamky.map(v => `<li><b>${esc(den(v.datum))}:</b> ${esc(v.poznamka)}</li>`).join('')}</ol>
+        </div>` : ''}
+
+        <div class="scale">
+            <b>${t('list.jakCist')}</b>
+            ${kotvy().map(k => `<span><b>${k[0]} ${k[2]}</b> &ndash; ${k[1]}</span>`).join('')}
+        </div>
+
+        <div class="footer">
+            <div>${t('list.progres.paticka')}</div>
+            <div class="sign">${t('list.podpis')}</div>
+        </div>
+    </div>`;
+}
+
+/**
  * Vykreslí listy. Bez `kumulovane` platí jeden list = jedna stránka (hráč ×
  * šablona); s ním má hráč jednu stránku se všemi svými šablonami.
  * `sVysvetlivkami` přidá na konec jednu stránku s významem os — nepočítá se
  * do návratové hodnoty, není to ničí list.
  */
-export function vykresli(listy, nastaveni, cil, kumulovane = false, sVysvetlivkami = false) {
+export function vykresli(listy, nastaveni, cil, kumulovane = false, sVysvetlivkami = false,
+                         pohled = 'hodnoceni') {
     const dodatek = sVysvetlivkami && listy.length
         ? vysvetlivky([...new Set(listy.map(h => h.sablona))], nastaveni)
         : '';
+
+    // Sebehodnocení v čase je jiný druh papíru: nemá slovní bloky ani cíle
+    // a kumulovat se nedá — každá šestice os má vlastní řadu v čase.
+    if (pohled === 'sebehodnoceni') {
+        cil.innerHTML = listy.map(h => listProgres(h, nastaveni)).join('') + dodatek;
+        return listy.length;
+    }
 
     if (!kumulovane) {
         cil.innerHTML = listy.map(h => list(h, nastaveni)).join('') + dodatek;

@@ -202,6 +202,22 @@ body {
 }
 .osy-tabulka td { padding: 4px 0; vertical-align: top; border-bottom: 1px solid #e0e0e0; color: #444; }
 
+/* ===== SEBEHODNOCENÍ V ČASE =====
+   Řada vyplnění pod grafem. Sloupec je jedno odeslání, řádek jedna osa —
+   z čísel s datem si čtenář posun přečte sám. Šipky ani hodnotící věty tu
+   schválně nejsou (ZADANI §7.5): tenhle papír si odnáší domů čtrnáctiletý. */
+.progres-tabulka { width: 100%; border-collapse: collapse; font-size: .9em; margin-bottom: 6px; }
+.progres-tabulka th {
+    text-align: left; padding: 4px 6px 4px 0; font-weight: bold;
+    color: var(--sab-tmava, #1565C0); border-bottom: 1px solid #e0e0e0; white-space: nowrap;
+}
+.progres-tabulka th.cisla, .progres-tabulka td.cisla { text-align: center; }
+.progres-tabulka td {
+    padding: 4px 6px 4px 0; color: #444; border-bottom: 1px solid #f0f0f0;
+}
+/* Poslední sloupec je to nejnovější vyplnění — ať se v řadě čísel neztratí. */
+.progres-tabulka th:last-child, .progres-tabulka td:last-child { font-weight: bold; color: #222; }
+
 /* ===== PATIČKA ===== */
 .footer {
     /* Sedne až na spodek listu; nad podpisem tak zůstane místo na poznámky

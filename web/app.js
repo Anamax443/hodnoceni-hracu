@@ -1900,10 +1900,11 @@ function stupniceMala(klic, predvyplneno) {
 /* ===================== záložka: Listy ===================== */
 
 function otevriListy({ ids = 'vse', porovnani = 'minule', obdobi = stav.nastaveni.obdobi,
-                       kumulovane = false, vysvetlivky = false } = {}) {
+                       kumulovane = false, vysvetlivky = false, pohled = 'hodnoceni' } = {}) {
     const p = new URLSearchParams({ obdobi, porovnani, ids });
     if (kumulovane) p.set('kumulovane', '1');
     if (vysvetlivky) p.set('vysvetlivky', '1');
+    if (pohled === 'sebehodnoceni') p.set('pohled', pohled);
     window.open(`listy.html?${p}`, '_blank');
 }
 
@@ -1952,6 +1953,12 @@ async function listy(kam) {
                         <option value="hrac">${t('listy.polygon.hrac')}</option>
                         <option value="zadne">${t('listy.polygon.zadne')}</option>
                     </select></div>
+                <div class="pole"><label for="l-pohled">${t('listy.pohled')}</label>
+                    <select id="l-pohled">
+                        <option value="hodnoceni">${t('listy.pohled.hodnoceni')}</option>
+                        <option value="sebehodnoceni">${t('listy.pohled.sebehodnoceni')}</option>
+                    </select>
+                    <div class="popis">${t('listy.pohled.napoveda')}</div></div>
             </div>
             <p class="popis">${t('listy.dva')}</p>
             <div class="pole">
@@ -2120,13 +2127,29 @@ async function listy(kam) {
         e.target.value = '';
     };
 
+    /* Druhý polygon a kumulace patří k trenérskému listu. List sebehodnocení
+       v čase má vlastní stavbu (řada vyplnění), takže se ty volby vypnou —
+       jinak by vypadaly jako by se nic nestalo. */
+    const podlePohledu = () => {
+        const progres = $('#l-pohled').value === 'sebehodnoceni';
+        for (const id of ['#l-porovnani', '#l-kumulovane']) {
+            $(id).disabled = progres;
+            $(id).closest('.pole').style.opacity = progres ? '.5' : '';
+        }
+    };
+    $('#l-pohled').onchange = podlePohledu;
+    podlePohledu();
+
     $('#otevrit-listy').onclick = () => {
         const ids = [...kam.querySelectorAll('.vyber:checked')].map(c => c.value);
         if (!ids.length) { hlaska(kam, 'chyba', t('listy.nikdo')); return; }
+        const pohled = $('#l-pohled').value;
         otevriListy({
             ids: ids.join(','), porovnani: $('#l-porovnani').value,
-            obdobi: $('#l-obdobi').value, kumulovane: $('#l-kumulovane').checked,
-            vysvetlivky: $('#l-vysvetlivky').checked
+            obdobi: $('#l-obdobi').value,
+            kumulovane: pohled === 'sebehodnoceni' ? false : $('#l-kumulovane').checked,
+            vysvetlivky: $('#l-vysvetlivky').checked,
+            pohled
         });
     };
 }
@@ -2643,7 +2666,8 @@ async function odkazy(kam) {
        stejně jako u tiskových listů — odkaz nese jednu šestici os, takže „vybrat
        hráče" je málo: Ferda potřebuje tři odkazy, ale nemusíš chtít všechny. */
     const hraci = stav.lide.filter(o => o.role === 'hrac' && o.aktivni);
-    const cekaNaVyplneni = new Set(seznam.filter(x => !x.pouzit).map(x => `${x.player_id}:${x.sablona || 'pole'}`));
+    const jePlatny = x => !x.platny_do || new Date(x.platny_do) > new Date();
+    const uzMaOdkaz = new Set(seznam.filter(jePlatny).map(x => `${x.player_id}:${x.sablona || 'pole'}`));
 
     kam.innerHTML = `
         <div class="karta">
@@ -2670,8 +2694,8 @@ async function odkazy(kam) {
                                    title="${t('odkazy.komu.tip')}" checked></td>
                         ${i === 0 ? `<td rowspan="${sablony.length}">${jmenoHtml(o)}</td>` : ''}
                         <td>${stitekSablonyKlik(o.id, s)}</td>
-                        <td>${cekaNaVyplneni.has(`${o.id}:${s}`)
-                            ? `<span class="ne">${t('odkazy.uzCeka')}</span>` : ''}</td>
+                        <td>${uzMaOdkaz.has(`${o.id}:${s}`)
+                            ? `<span class="ne">${t('odkazy.uzMa')}</span>` : ''}</td>
                     </tr>`).join('');
                 }).join('') : `<tr><td colspan="4">${t('odkazy.bezHracu')}</td></tr>`}</tbody>
             </table>
@@ -2691,7 +2715,11 @@ async function odkazy(kam) {
                         <td>${stav.lide.some(o => o.id === x.player_id && o.role === 'hrac' && o.aktivni)
                             ? stitekSablonyKlik(x.player_id, x.sablona || 'pole')
                             : stitekSablony(x.sablona || 'pole')}</td>
-                        <td>${x.pouzit ? `<span class="ano">${t('odkazy.vyplneno')}</span>` : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
+                        <td>${x.pouziti
+                            ? `<span class="ano">${t('odkazy.vyplneno.pocet', x.pouziti)}</span>${
+                                x.naposledy ? ` <span class="popis">${
+                                    esc(new Date(x.naposledy + 'Z').toLocaleDateString(locale()))}</span>` : ''}`
+                            : `<span class="ne">${t('odkazy.ceka')}</span>`}</td>
                         <td>${x.platny_do ? esc(new Date(x.platny_do).toLocaleDateString(locale())) : '—'}</td>
                         <td class="odkaz-pole">${esc(zaklad)}/h/${esc(x.token.slice(0, 8))}…</td>
                         <td>

@@ -5,6 +5,33 @@ Nový záznam nahoru.
 
 ---
 
+## 2026-08-21 (33) — opakované vyplňování odkazu a list sebehodnocení v čase
+
+**Commit:** `ZDE_COMMIT` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–014).
+Naostro zatím neověřeno: v produkci není žádné sebehodnocení, na kterém by šlo řadu složit.
+
+| Kontrola | Výsledek |
+|---|---|
+| odkaz označený jako už vyplněný | otevře formulář (dřív končil zámkem 409) |
+| druhé a třetí odeslání téhož odkazu | projde, vrací `poradi` 2 a 3 |
+| počítadlo a čas posledního vyplnění | `pouziti = 3`, `naposledy` vyplněné |
+| GET `/api/self/:token` | nevrací žádná dřívější čísla (blind guard platí i na vlastní) |
+| archiv | každé vyplnění vlastní řádek, žádné id se neopakuje |
+| `/api/listy?pohled=sebehodnoceni` | řada seřazená od nejstaršího, s poznámkami, bez čísel trenéra |
+| generování odkazů | vyplněný, ale platný odkaz se nenahradí (`vytvoreno 0, preskoceno 1`) |
+| výpis v Odkazech | nese počet vyplnění |
+| stránka hráče (Edge) | první vyplnění bez počítadla, po odeslání nabídne *Vyplnit znovu* |
+| druhý formulář | prázdný (0 zaškrtnutých, prázdná poznámka), hlásí „2. vyplnění" |
+| list sebehodnocení | 1 stránka, 1 graf (poprvé × naposledy), tabulka 7 os × vyplnění, poznámky hráče |
+| bez slovních bloků trenéra | ano — `.blocks` na listu není |
+| **tisk do PDF** | **1 stránka** |
+| nabídka v Listech | *Co tisknout* má obě volby; druhý polygon a kumulace se u progresu vypnou |
+| konzole prohlížeče | žádná chyba |
+
+Celkem 15 kontrol API + 22 proklikáním, 0 chyb.
+
+---
+
 ## 2026-08-18 (32) — překryv obrysů všech hodnotitelů
 
 Skládání řad (pravidlo „do grafu jen stejná sada os"):

@@ -56,6 +56,7 @@ Migrace se pouštějí **v pořadí**; `db:init` aplikuje jen `001`. Zbytek ruč
 | `011_prihlaseni_pokusy.sql` | zámek proti hádání hesla (nutný ke 4místnému PINu) |
 | `012_uprava.sql` | `evaluations.uprava_id` — úprava hodnocení jako nová verze |
 | `013_sablony.sql` | `players.sablony` — hráč může mít víc šablon najednou |
+| `014_odkaz_opakovane.sql` | `tokens.pouziti` a `naposledy` — odkaz jde vyplnit opakovaně |
 
 ```powershell
 foreach ($f in Get-ChildItem migrations\*.sql | Sort-Object Name) {

@@ -6,6 +6,44 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 > Tím se nasadily záznamy **50, 51 i 52** najednou — krajní záložníci, věta o ose navíc
 > na listu i překryv hodnotitelů ve Shodě jsou v běžící aplikaci.
 
+## 2026-08-21 (53) — odkaz na sebehodnocení jde vyplnit opakovaně a je z toho řada v čase
+
+**Commit:** `ZDE_COMMIT` · **NENASAZENO** v okamžiku psaní — čeká migrace `014` na ostré D1.
+
+**Odkaz přestal být jednorázový.** Doteď se po odeslání zamkl a hráč se k formuláři už
+nedostal. Jenže z jednoho čísla progres nepoznáš: půl roku stará sedmička a dnešní sedmička
+nejsou totéž. Nově se týž odkaz vyplňuje, kolikrát je potřeba, a **platí to i pro odkazy
+vydané dřív** — už jednou vyplněný odkaz nasazením ožívá. Zastavit ho jde dál platností
+nebo tlačítkem *Zneplatnit*.
+
+**Archiv vzniká sám.** Zápis byl append-only už předtím: každé odeslání zakládá nový řádek
+v `evaluations` (autor='hrac'). Přepsat starší vyplnění nejde, mazat se nemaže nic.
+Migrace `014` přidává jen počítadlo (`tokens.pouziti`) a čas posledního odeslání
+(`tokens.naposledy`), aby šlo v Odkazech vidět, jak dlouhá ta řada je.
+
+**Formulář hráče** říká, kolikáté vyplnění to bude, a po odeslání nabídne *Vyplnit znovu*.
+**Dřívější čísla se dál neukazují — ani ta vlastní** (§7.2): loňská sedmička přitáhne novou
+k sobě stejně jako cizí, a tím by se řada připravila o smysl.
+
+**Nový tiskový list: Sebehodnocení v čase** (Listy → *Co tisknout*). Je to řada vyplnění
+od hráče, jak šla po sobě: v grafu **první a poslední** (pravidlo dvou polygonů platí dál),
+pod ním tabulka osa × datum se všemi vyplněními a pod ní poznámky hráče u každého z nich.
+Trenérova čísla ani slovní bloky na něm nejsou — tenhle papír ukazuje jeden pohled v čase,
+ne dva pohledy proti sobě.
+
+**Šipky a věty o zlepšení tam schválně nejsou** (ZADANI §7.5). Čísla s datem si čtenář
+porovná sám; papír, který si odnáší čtrnáctiletý domů, nad ním nemá vynášet soud.
+
+**Generování odkazů** proto přestalo koukat na `pouzit = 0`. Duplicitu hlídá platnost:
+dokud platný odkaz na tu šablonu visí, druhý nevznikne (vrací se v `preskoceno`).
+
+**Ověřeno lokálně:** 15 kontrol API (už vyplněný odkaz se otevře, druhé i třetí odeslání
+projde, počítadlo a čas se vedou, archiv má vlastní záznam na každé vyplnění, tiskový pohled
+vrací seřazenou řadu i s poznámkami, platný odkaz se nezdvojí) a 22 proklikáním v headless
+Edge — včetně **tisku listu sebehodnocení do PDF: 1 stránka**.
+
+---
+
 ## 2026-08-18 (52) — všichni hodnotitelé přes sebe (Shoda)
 
 **Commit:** `73b2ac4` · **NASAZENO** 2026-08-20 v `69d8afb`, Version ID

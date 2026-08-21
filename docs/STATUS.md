@@ -18,7 +18,8 @@ Podrobnosti a důvody rozhodnutí jsou v [HANDOFF.md](../HANDOFF.md) (deník, ne
 | Hodnocení trenérem | ✅ | **7 os** 1–10, append-only, šablony `pole` / `brankar` / `leader` |
 | Hromadné hodnocení | ✅ | jedna známka pro víc hráčů, doplní se k poslednímu záznamu |
 | Úprava hodnocení | ✅ | načíst, opravit, uložit = **nová verze**; jen vlastní, naslepo platí dál |
-| Sebehodnocení hráče | ✅ | jednorázový odkaz, blind guard ověřený naostro |
+| Sebehodnocení hráče | ✅ | **odkaz jde vyplnit opakovaně**, každé vyplnění se archivuje; blind guard ověřený naostro |
+| Sebehodnocení v čase | ✅ | tiskový list s řadou vyplnění (graf první × poslední, tabulka všechna) |
 | Porovnání trenér × hráč | ✅ | tolerance, znaménko, trend, historie verzí |
 | Srovnání hráčů mezi sebou | ✅ | tabulka osa × hráč, rozptyl |
 | Porovnat cokoliv s čímkoliv | ✅ | 2–8 záznamů (hráč × období × autor) vedle sebe; napříč obdobími i autory, v rámci jedné šablony |
@@ -72,8 +73,12 @@ Otisk z ostré databáze k **16. 8. 2026** (jen počty, žádná jména ani zná
 
 **První rozhovor nad rozdílem dvou pohledů má o co se opřít.** Jeden hráč vyplnil, takže
 na jeho listu se kreslí oba polygony. Odkazy se rozesílají **ručně, WhatsAppem** — což je
-plnohodnotná cesta: odkaz je jednorázový a je jedno, kudy se k hráči dostal. Kanály
-v aplikaci (Telegram, e-mail, SMS) jsou pohodlí, ne podmínka.
+plnohodnotná cesta: je jedno, kudy se k hráči dostal. Kanály v aplikaci (Telegram, e-mail,
+SMS) jsou pohodlí, ne podmínka.
+
+**Odkaz už není jednorázový** (21. 8. 2026): týž odkaz jde vyplnit opakovaně a každé
+vyplnění se archivuje, takže z nich vzniká řada v čase. Platí to i pro odkazy rozeslané
+dřív — ten jeden už použitý se nasazením zase otevřel.
 
 ## Co je ověřené naostro
 
@@ -91,6 +96,9 @@ Doklady a čísla v [known_good.md](../known_good.md). Ve zkratce:
   na **jednu A4**, bez přepínače tři stránky
 - slovní bloky a cíle se mezi šablonami nepřenášejí: 5 kontrol (prázdný formulář přepne
   bez ptaní, s rozepsaným textem se zeptá a text zůstane u své šablony)
+- opakované vyplňování odkazu: 15 kontrol API + 22 proklikáním (lokálně) — už vyplněný
+  odkaz se otevře, druhé i třetí odeslání projde, archiv má vlastní záznam na každé
+  vyplnění; list sebehodnocení v čase vytištěný do PDF na **jednu A4**
 - barva podle šablony: spočtené barvy u všech tří šablon zvlášť i na kumulovaném listu,
   tisk do PDF 5 listů = 5 stránek, kontrast štítků 5,0–10,6 ve světlém i tmavém vzhledu
 - výběr tisku po listech: 6 případů `ids` přes API + tabulka proklikaná v headless Edge
