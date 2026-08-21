@@ -2,13 +2,17 @@
 
 Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného počítače / po pauze.
 
-> **Stav k 20. 8. 2026:** živě běží `69d8afb`, Version ID `79d1abd7-7ecf-425c-b72d-3ab790291d56`.
-> Tím se nasadily záznamy **50, 51 i 52** najednou — krajní záložníci, věta o ose navíc
-> na listu i překryv hodnotitelů ve Shodě jsou v běžící aplikaci.
+> **Stav k 21. 8. 2026:** živě běží `9fdf510`, Version ID `5e44448d-fddb-4fb2-8e12-6561dfb70db0`.
+> Tím se nasadil záznam **53** — odkazy na sebehodnocení jsou opakovaně vyplnitelné a přibyl
+> list *Sebehodnocení v čase*. Migrace `014` je na ostré D1 (38 odkazů, 27 z nich už jednou
+> vyplněných — ty se tím zase otevřely).
 
 ## 2026-08-21 (53) — odkaz na sebehodnocení jde vyplnit opakovaně a je z toho řada v čase
 
-**Commit:** `6be0d32` · **NENASAZENO** v okamžiku psaní — čeká migrace `014` na ostré D1.
+**Commit:** `6be0d32` · **NASAZENO** 2026-08-21 v `9fdf510`, Version ID
+`5e44448d-fddb-4fb2-8e12-6561dfb70db0`. Migrace `014` puštěná na ostré D1 (40 zápisů).
+Ověřeno živě: odkaz, který už jednou vyplněný byl, se otevře znovu (`HTTP 200`, 7 os,
+`pouziti: 1`) a **žádná dřívější čísla nevrací**.
 
 **Odkaz přestal být jednorázový.** Doteď se po odeslání zamkl a hráč se k formuláři už
 nedostal. Jenže z jednoho čísla progres nepoznáš: půl roku stará sedmička a dnešní sedmička

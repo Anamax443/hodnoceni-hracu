@@ -7,8 +7,20 @@ Nový záznam nahoru.
 
 ## 2026-08-21 (33) — opakované vyplňování odkazu a list sebehodnocení v čase
 
-**Commit:** `6be0d32` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–014).
-Naostro zatím neověřeno: v produkci není žádné sebehodnocení, na kterém by šlo řadu složit.
+**Commit:** `6be0d32`, nasazeno v `9fdf510` · **Ověřeno** lokálně (`wrangler dev` + D1
+s migracemi 001–014) **i naostro** v tom rozsahu, který jde ověřit bez zápisu do ostrých dat.
+
+Živě po nasazení:
+
+| Kontrola | Výsledek |
+|---|---|
+| migrace `014` na ostré D1 | 40 zápisů; 38 odkazů, 27 z nich už jednou vyplněných |
+| GET odkazu, který **už byl vyplněný** | `HTTP 200`, vrací 7 os — dřív by skončil zámkem |
+| tentýž odkaz | `pouziti: 1`, **žádné `hodnoty` v odpovědi** (blind guard drží) |
+| `/api/version` | `9fdf510`, `cisto: true` |
+
+**Co ověřeno NEBYLO naostro:** druhé odeslání a list sebehodnocení v čase nad ostrými daty —
+znamenalo by to zapsat smyšlené sebehodnocení skutečnému hráči. Lokálně ověřeno obojí.
 
 | Kontrola | Výsledek |
 |---|---|
@@ -28,7 +40,9 @@ Naostro zatím neověřeno: v produkci není žádné sebehodnocení, na kterém
 | nabídka v Listech | *Co tisknout* má obě volby; druhý polygon a kumulace se u progresu vypnou |
 | konzole prohlížeče | žádná chyba |
 
-Celkem 15 kontrol API + 22 proklikáním, 0 chyb.
+Celkem 15 kontrol API + 22 proklikáním, 0 chyb. Navíc kontrola, že se nerozbily starší
+listy: běžný trenérský list dál 1 stránka se slovními bloky i cíli, kumulovaný 1 stránka
+se třemi radary.
 
 ---
 
