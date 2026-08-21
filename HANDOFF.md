@@ -8,7 +8,7 @@ Append-only. Nejnovější záznam nahoru. Slouží k pokračování z jiného p
 
 ## 2026-08-21 (53) — odkaz na sebehodnocení jde vyplnit opakovaně a je z toho řada v čase
 
-**Commit:** `ZDE_COMMIT` · **NENASAZENO** v okamžiku psaní — čeká migrace `014` na ostré D1.
+**Commit:** `6be0d32` · **NENASAZENO** v okamžiku psaní — čeká migrace `014` na ostré D1.
 
 **Odkaz přestal být jednorázový.** Doteď se po odeslání zamkl a hráč se k formuláři už
 nedostal. Jenže z jednoho čísla progres nepoznáš: půl roku stará sedmička a dnešní sedmička

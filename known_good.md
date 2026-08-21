@@ -7,7 +7,7 @@ Nový záznam nahoru.
 
 ## 2026-08-21 (33) — opakované vyplňování odkazu a list sebehodnocení v čase
 
-**Commit:** `ZDE_COMMIT` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–014).
+**Commit:** `6be0d32` · **Ověřeno** lokálně (`wrangler dev` + D1 s migracemi 001–014).
 Naostro zatím neověřeno: v produkci není žádné sebehodnocení, na kterém by šlo řadu složit.
 
 | Kontrola | Výsledek |
